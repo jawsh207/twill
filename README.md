@@ -6,15 +6,16 @@ A twill is a weave of many threads. The name reflects where the app is headed: o
 
 ## Features
 
-Everything from GrapheneOS Messaging, plus:
+Everything from GrapheneOS Messaging, plus the features below. Settings are grouped by protocol: today everything lives under **Settings › SMS Settings**, with app-wide items such as open source licenses on the main Settings page.
+
 
 | Feature | Where to find it | Default |
 | --- | --- | --- |
-| **Delay sending.** Holds a message for 3 seconds after you tap send. A ring counts down around the send button, which turns into an X; tap it to cancel. Leaving the chat during the wait still sends it. | Settings › Advanced, first in the Advanced section | Off |
-| **Scheduled messages.** Pick a date and time for the message in the composer. Pending messages for the chat are listed in the same dialog and can be cancelled. Text only. | Long-press the send button (on dual-SIM phones, pick Schedule message from the menu) | — |
-| **Keep unread at top.** Unread chats, including ones marked as unread, sort above read ones. Pinned chats stay first. | Settings | Off |
-| **Website link previews.** Shows a title, description and image under links. | Settings › Privacy, next to YouTube link previews | Off |
-| **Send long messages as MMS.** Text that needs more than one SMS is sent as a single MMS instead of several parts. | Settings › Advanced, last in the MMS section | Off |
+| **Delay sending.** Holds a message for 3 seconds after you tap send. A ring counts down around the send button, which turns into an X; tap it to cancel. Leaving the chat during the wait still sends it. | Settings › SMS Settings › Advanced, first in the Advanced section | Off |
+| **Scheduled messages.** Pick a date and time for the message in the composer. When a chat has pending scheduled messages, a clock with a count appears next to the call button; tap it to see and cancel them. Text only. | Long-press the send button (on dual-SIM phones, pick Schedule message from the menu) | — |
+| **Keep unread at top.** Unread chats, including ones marked as unread, sort above read ones. Pinned chats stay first. | Settings › SMS Settings | Off |
+| **Website link previews.** Shows a title, description and image under links. | Settings › SMS Settings › Privacy, next to YouTube link previews | Off |
+| **Send long messages as MMS.** Text that needs more than one SMS is sent as a single MMS instead of several parts. | Settings › SMS Settings › Advanced, last in the MMS section | Off |
 
 ### About website link previews
 

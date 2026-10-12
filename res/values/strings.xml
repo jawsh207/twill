@@ -928,4 +928,11 @@
     <string name="schedule_message_scheduled_toast">Message scheduled</string>
     <string name="schedule_message_send_failed">A scheduled message could not be sent</string>
     <string name="schedule_message_failed_channel">Scheduled messages</string>
+    <string name="sms_settings_title">SMS Settings</string>
+    <string name="sms_settings_summary">Text and picture messages over your carrier</string>
+    <string name="scheduled_messages_title">Scheduled messages</string>
+    <plurals name="scheduled_messages_indicator_description">
+        <item quantity="one">%d scheduled message</item>
+        <item quantity="other">%d scheduled messages</item>
+    </plurals>
 </resources>

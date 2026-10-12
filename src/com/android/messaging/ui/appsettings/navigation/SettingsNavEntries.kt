@@ -3,6 +3,7 @@ package com.android.messaging.ui.appsettings.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -23,6 +24,7 @@ import com.android.messaging.ui.appsettings.subscription.model.SubscriptionSetti
 import com.android.messaging.ui.appsettings.subscription.model.SubscriptionUiState
 import com.android.messaging.ui.appsettings.subscription.rememberSubscriptionSettingsEffectHandler
 import com.android.messaging.ui.appsettings.subscription.ui.SubscriptionSettingsScreen
+import com.android.messaging.ui.appsettings.twill.TwillSettingsScreen
 import com.android.messaging.ui.core.CollectEvents
 import com.android.messaging.ui.license.navigation.LicenseNavKey
 import com.android.messaging.ui.navigation.LocalNavigator
@@ -34,6 +36,10 @@ import kotlinx.collections.immutable.ImmutableList
 internal fun EntryProviderScope<NavKey>.settingsEntries() {
     entry<SettingsNavKey>(
         metadata = paneTitleMetadata(R.string.settings_activity_title),
+        content = twillSettingsRouteContent(),
+    )
+    entry<SmsSettingsNavKey>(
+        metadata = paneTitleMetadata(R.string.sms_settings_title),
         content = settingsRouteContent(),
     )
     entry<AppSettingsNavKey>(
@@ -50,7 +56,25 @@ internal fun EntryProviderScope<NavKey>.settingsEntries() {
     )
 }
 
-private fun settingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
+// Twill: top-level Settings lists protocols (SMS) plus app-wide items.
+private fun twillSettingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
+    return {
+        val navigator = LocalNavigator.current
+
+        TwillSettingsScreen(
+            onNavigateBack = navigator::back,
+            onSmsSettingsClick = {
+                navigator.push(destination = SmsSettingsNavKey)
+            },
+            onLicensesClick = {
+                navigator.push(destination = LicenseNavKey)
+            },
+        )
+    }
+}
+
+// What upstream shows as top-level Settings, now under "SMS Settings".
+private fun settingsRouteContent(): @Composable (SmsSettingsNavKey) -> Unit {
     return {
         val viewModel = hiltViewModel<SettingsMainViewModel>()
         val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -89,6 +113,7 @@ private fun SettingsMainDestination(subscriptions: ImmutableList<SubscriptionUiS
 
     SettingsMainScreen(
         subscriptions = subscriptions,
+        titleOverride = stringResource(R.string.sms_settings_title),
         onNavigateBack = navigator::back,
         onGeneralSettingsClick = {
             navigator.push(destination = AppSettingsNavKey)
@@ -137,6 +162,12 @@ private fun AppSettingsDestination(
             navigator.push(destination = PrivacySettingsNavKey)
         },
         isTopLevel = isTopLevel,
+        // Twill: licenses moved to the top-level Settings page.
+        showLicenses = false,
+        titleOverride = when {
+            isTopLevel -> stringResource(R.string.sms_settings_title)
+            else -> null
+        },
         hasAdvancedSettings = advancedSubscription != null,
         onAdvancedClick = {
             advancedSubscription?.let { subscription ->
