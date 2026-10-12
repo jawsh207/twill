@@ -137,7 +137,7 @@ android {
 
         getByName("debug") {
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "Messaging d")
+            resValue("string", "app_name", "Twill d")
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
         }
@@ -146,7 +146,7 @@ android {
             initWith(getByName("release"))
             applicationIdSuffix = ".debug"
             matchingFallbacks += listOf("release")
-            resValue("string", "app_name", "Messaging d")
+            resValue("string", "app_name", "Twill d")
             signingConfig = signingConfigs.getByName("debug")
         }
     }
