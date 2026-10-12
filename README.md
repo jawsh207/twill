@@ -24,11 +24,15 @@ Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: N
 - **Off until you sign in.** Nothing contacts a relay until you sign in under **Settings › Nostr Settings**.
 - **Sign in with Amber** (recommended): your key stays in the Amber signer app (NIP-55). Approve Twill's requests once in Amber and messages decrypt in the background.
 - **Or use a private key:** paste an nsec or create a new one. It is encrypted with the phone's Android Keystore and never leaves the device.
-- **Conversation list:** when signed in, the list has collapsible **SMS** and **Nostr** sections. Start a Nostr chat with the **+** in the Nostr header (paste an npub). Long-press a Nostr chat to pin, mark unread or delete it.
+- **Conversation list:** when signed in, the list has collapsible **SMS** and **Nostr** sections. Use the **+** in the Nostr header to start a chat or a group, by NIP-05 address (`name@domain`), npub or public key. Long-press a Nostr chat to pin, mark unread or delete it.
+- **Group chats (NIP-17):** name a group when you create it, or rename it from the chat header; members see the new name with your next message. Group messages show who sent them.
+- **Attachments:** photos and files are encrypted on your phone (AES-GCM, NIP-17 kind 15) and uploaded to a Blossom media server, which only ever sees ciphertext. Photos are re-saved first so location and camera details never leave your phone. The server is set in Nostr Settings › Media (default `blossom.primal.net`); limit 25 MB.
+- **Incoming attachments** are tap-to-download unless **Download attachments automatically** is on (off by default, because downloading reveals your IP address to the sender's file server). Downloads are hash-checked before decrypting.
+- **NIP-05:** verified addresses show with a check mark in the chat header and member list.
+- **Profile pictures:** off by default (loading them reveals your IP address to whatever server hosts each picture). Turn on in Nostr Settings › Media.
 - **Message delivery:** only while Twill is open (default), check every 15 minutes, or always connected (permanent notification, instant messages).
 - **Relays:** Twill publishes your DM relay list (kind 10050) and sends to each contact's DM relays. Relays can't read messages but can see your IP address.
 
-Group chats, attachments and NIP-05 lookups aren't supported yet.
 
 ### About website link previews
 
