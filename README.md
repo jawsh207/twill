@@ -2,7 +2,7 @@
 
 Twill is an SMS/MMS app for Android, built on the new [GrapheneOS Messaging](https://github.com/GrapheneOS/Messaging) app (the Jetpack Compose rewrite, v13+).
 
-A twill is a weave of many threads. The name reflects where the app is headed: one inbox that brings several messaging protocols together. Today it does SMS and MMS, with extra options added on top of GrapheneOS Messaging.
+A twill is a weave of many threads. The name reflects the idea: one inbox that brings several messaging protocols together. Today Twill does SMS/MMS and private Nostr messages.
 
 ## Features
 
@@ -16,6 +16,19 @@ Everything from GrapheneOS Messaging, plus the features below. Settings are grou
 | **Keep unread at top.** Unread chats, including ones marked as unread, sort above read ones. Pinned chats stay first. | Settings › SMS Settings | Off |
 | **Website link previews.** Shows a title, description and image under links. | Settings › SMS Settings › Privacy, next to YouTube link previews | Off |
 | **Send long messages as MMS.** Text that needs more than one SMS is sent as a single MMS instead of several parts. | Settings › SMS Settings › Advanced, last in the MMS section | Off |
+
+## Nostr private messages
+
+Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: NIP-44 encryption inside NIP-59 gift wraps), using [Quartz](https://github.com/vitorpamplona/amethyst/tree/main/quartz), the protocol library behind Amethyst.
+
+- **Off until you sign in.** Nothing contacts a relay until you sign in under **Settings › Nostr Settings**.
+- **Sign in with Amber** (recommended): your key stays in the Amber signer app (NIP-55). Approve Twill's requests once in Amber and messages decrypt in the background.
+- **Or use a private key:** paste an nsec or create a new one. It is encrypted with the phone's Android Keystore and never leaves the device.
+- **Conversation list:** when signed in, the list has collapsible **SMS** and **Nostr** sections. Start a Nostr chat with the **+** in the Nostr header (paste an npub). Long-press a Nostr chat to pin, mark unread or delete it.
+- **Message delivery:** only while Twill is open (default), check every 15 minutes, or always connected (permanent notification, instant messages).
+- **Relays:** Twill publishes your DM relay list (kind 10050) and sends to each contact's DM relays. Relays can't read messages but can see your IP address.
+
+Group chats, attachments and NIP-05 lookups aren't supported yet.
 
 ### About website link previews
 
