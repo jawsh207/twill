@@ -11,9 +11,9 @@ permissions:
 
 jobs:
   build:
-    name: Build debug APK
+    name: Build APKs
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
 
     steps:
       - name: Check out sources
@@ -28,12 +28,29 @@ jobs:
           java-version: 17
           cache: gradle
 
+      # Sign every test build with the same key so new APKs install as updates over old ones.
+      # This key is for test builds only; real releases use a private key kept out of the repo.
+      - name: Use the shared test signing key
+        run: |
+          mkdir -p ~/.android
+          cp .github/ci/debug.keystore ~/.android/debug.keystore
+
+      - name: Assemble optimized test APK (perf)
+        run: ./gradlew :app:assemblePerf --no-daemon --stacktrace --console=plain
+
+      - name: Upload optimized APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: twill-apk
+          path: app/build/outputs/apk/perf/*.apk
+          if-no-files-found: error
+
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace --console=plain
 
-      - name: Upload APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: messaging-debug-apk
+          name: twill-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error

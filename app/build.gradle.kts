@@ -145,11 +145,13 @@ android {
             enableAndroidTestCoverage = true
         }
 
+        // Release-optimized test build (R8, not debuggable) signed with the test key. This is
+        // the build to actually use day to day; debug builds are slow by design.
         create("perf") {
             initWith(getByName("release"))
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = ".perf"
             matchingFallbacks += listOf("release")
-            resValue("string", "app_name", "Twill d")
+            resValue("string", "app_name", "Twill")
             signingConfig = signingConfigs.getByName("debug")
         }
     }
