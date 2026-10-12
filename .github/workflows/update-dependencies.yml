@@ -1,0 +1,48 @@
+name: Update dependency checksums and licenses
+
+# Run by hand after adding or upgrading a library. Gradle verifies every downloaded
+# artifact against gradle/verification-metadata.xml, so new libraries need their
+# checksums recorded. This also regenerates the in-app open source licenses page.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Record checksums for all build dependencies
+        run: >
+          ./gradlew --write-verification-metadata sha512 --no-daemon --console=plain
+          :app:assemblePerf :app:assembleDebug :app:generateLicenses
+
+      - name: Regenerate licenses page
+        run: ./gradlew :app:generateLicenses --no-daemon --rerun --console=plain
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add gradle/verification-metadata.xml assets/licenses.html
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "Update dependency checksums and licenses"
+            git push
+          fi
