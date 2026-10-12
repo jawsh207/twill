@@ -35,7 +35,7 @@ jobs:
       - name: Regenerate licenses page (and record any checksums it needs)
         run: >
           .github/ci/gradle-report-errors.sh --write-verification-metadata sha512 --no-daemon
-          --console=plain --rerun :app:generateLicenses
+          --console=plain :app:generateLicenses --rerun
 
       - name: Commit changes
         run: |
