@@ -15,6 +15,7 @@ Twill is an SMS/MMS app forked from GrapheneOS Messaging (Compose rewrite, v13+)
 
 - `origin` = github.com/jawsh207/twill, `upstream` = github.com/GrapheneOS/Messaging.
 - `.github/workflows/build-apk.yml` builds a debug APK on every push and on manual dispatch, and uploads it as the `messaging-debug-apk` artifact. From a cloud session: `gh workflow run build-apk.yml -R jawsh207/twill --ref main`, then poll `gh run view <id> -R jawsh207/twill --json status,conclusion`.
+- CI uploads `twill-apk` (perf build: release config with R8, `app.twill.perf`, label "Twill") for everyday use and `twill-debug-apk` (`app.twill.debug`, "Twill d"). Debug builds are unoptimized and coverage-instrumented, so they stutter; judge performance only on the perf build. Test builds are signed with the committed `.github/ci/debug.keystore` (force-added; `*.keystore` is gitignored) so they update each other.
 - Cloud sessions usually can't reach Google's Maven repo, so they can't compile locally. Use the workflow to verify builds, and run `ktlint` on changed Kotlin files before pushing.
 
 ## Where Twill's features live
