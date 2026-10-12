@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.messaging.R
 import com.android.messaging.data.conversation.model.ConversationId
 import com.android.messaging.ui.common.components.PrimaryActionButton
@@ -29,6 +30,12 @@ import com.android.messaging.ui.conversationlist.common.support.previewConversat
 import com.android.messaging.ui.conversationlist.model.ConversationListContentUiState
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
 import com.android.messaging.ui.core.MessagingPreviewTheme
+import com.android.messaging.ui.nostr.inbox.ConversationListSections
+import com.android.messaging.ui.nostr.inbox.LocalTwillInbox
+import com.android.messaging.ui.nostr.inbox.TwillInboxUiState
+import com.android.messaging.ui.nostr.inbox.rememberConversationListSections
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 
 private val ChatSwipeSpec = ConversationListSwipeSpec(
     startToEnd = ConversationSwipeKind.ToggleRead,
@@ -46,7 +53,59 @@ internal fun ConversationListContent(
     pinAnimationController: OverlayReorderAnimationController<Model, ConversationId>?,
     modifier: Modifier = Modifier,
 ) {
+    // Twill: SMS and Nostr sections, only when signed in to Nostr.
+    val inbox = LocalTwillInbox.current
+    val inboxState = inbox?.controller?.uiState?.collectAsStateWithLifecycle()?.value
+        ?: TwillInboxUiState()
+    val sections = rememberConversationListSections(
+        inbox = inbox,
+        state = inboxState,
+        smsCount = (content as? ConversationListContentUiState.Items)?.items?.size ?: 0,
+    )
+
     Box(modifier = modifier.fillMaxSize()) {
+        when {
+            sections != null && content is ConversationListContentUiState.Empty -> {
+                ConversationListItems(
+                    items = persistentListOf(),
+                    restoredConversationIds = persistentSetOf(),
+                    listState = listState,
+                    isSelectionMode = isSelectionMode,
+                    scaffoldContentPadding = scaffoldContentPadding,
+                    fabBottomReserve = fabBottomReserve,
+                    pinAnimationController = pinAnimationController,
+                    swipeSpec = ChatSwipeSpec,
+                    onItemEvent = { onAction(it.toChatAction()) },
+                    sections = sections,
+                )
+            }
+
+            else -> ConversationListContentBody(
+                content = content,
+                listState = listState,
+                onAction = onAction,
+                scaffoldContentPadding = scaffoldContentPadding,
+                isSelectionMode = isSelectionMode,
+                fabBottomReserve = fabBottomReserve,
+                pinAnimationController = pinAnimationController,
+                sections = sections,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConversationListContentBody(
+    content: ConversationListContentUiState,
+    listState: LazyListState,
+    onAction: (Action) -> Unit,
+    scaffoldContentPadding: PaddingValues,
+    isSelectionMode: Boolean,
+    fabBottomReserve: Dp,
+    pinAnimationController: OverlayReorderAnimationController<Model, ConversationId>?,
+    sections: ConversationListSections?,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
         when (content) {
             ConversationListContentUiState.Loading -> {
                 ConversationListLoadingIndicator()
@@ -82,6 +141,7 @@ internal fun ConversationListContent(
                     pinAnimationController = pinAnimationController,
                     swipeSpec = ChatSwipeSpec,
                     onItemEvent = { onAction(it.toChatAction()) },
+                    sections = sections,
                 )
             }
         }

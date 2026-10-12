@@ -46,6 +46,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Scheduled messages are delivered at the exact time the user picked -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Twill: optional "Always connected" Nostr delivery -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_CELL_BROADCASTS" />
     <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" />
@@ -60,6 +63,12 @@
 
     <queries>
         <package android:name="com.android.cellbroadcastreceiver.module" />
+        <!-- Twill: find NIP-55 Nostr signer apps such as Amber and talk to them in the background -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="nostrsigner" />
+        </intent>
+        <package android:name="com.greenart7c3.nostrsigner" />
     </queries>
 
     <application
@@ -330,6 +339,22 @@
 
         <receiver android:name=".receiver.BootAndPackageReplacedReceiver"
             android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+
+        <service android:name=".nostr.NostrConnectionService"
+            android:exported="false"
+            android:foregroundServiceType="remoteMessaging" />
+
+        <service android:name=".nostr.NostrSyncJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
+        <receiver android:name=".nostr.NostrBootReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
