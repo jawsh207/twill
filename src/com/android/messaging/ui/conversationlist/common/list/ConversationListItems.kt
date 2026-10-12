@@ -35,6 +35,7 @@ import com.android.messaging.ui.conversationlist.common.support.AppearanceAnimat
 import com.android.messaging.ui.conversationlist.common.support.CONVERSATION_LIST_TEST_TAG
 import com.android.messaging.ui.conversationlist.common.support.rememberAppearanceAnimationTokens
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
+import com.android.messaging.ui.nostr.inbox.ConversationListSections
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 
@@ -61,6 +62,7 @@ internal fun ConversationListItems(
     pinAnimationController: OverlayReorderAnimationController<Model, ConversationId>?,
     swipeSpec: ConversationListSwipeSpec,
     onItemEvent: (ConversationListItemEvent) -> Unit,
+    sections: ConversationListSections? = null,
 ) {
     val rowHorizontalInsets = horizontalSafeDrawingInsets()
 
@@ -93,8 +95,15 @@ internal fun ConversationListItems(
         ),
         verticalArrangement = Arrangement.spacedBy(ListVerticalSpacing),
     ) {
+        // Twill: collapsible SMS section header when Nostr is on.
+        if (sections != null) {
+            item(key = "twill_sms_header", contentType = "twill_section_header") {
+                sections.smsHeader()
+            }
+        }
+
         items(
-            items = items,
+            items = if (sections?.isSmsCollapsed == true) emptyList() else items,
             key = { item -> item.conversationId.value },
             contentType = { CONVERSATION_ROW_CONTENT_TYPE },
         ) { item ->
@@ -119,6 +128,9 @@ internal fun ConversationListItems(
                 onItemEvent = onItemEvent,
             )
         }
+
+        // Twill: the Nostr section.
+        sections?.trailingItems?.invoke(this)
     }
 }
 

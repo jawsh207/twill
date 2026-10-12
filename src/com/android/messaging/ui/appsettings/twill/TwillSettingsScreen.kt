@@ -28,6 +28,7 @@ internal fun TwillSettingsScreen(
     onSmsSettingsClick: () -> Unit,
     onLicensesClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onNostrSettingsClick: () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -50,6 +51,13 @@ internal fun TwillSettingsScreen(
                     title = stringResource(R.string.sms_settings_title),
                     summary = stringResource(R.string.sms_settings_summary),
                     onClick = onSmsSettingsClick,
+                )
+            }
+            item(key = "nostr_settings") {
+                SettingsClickableItem(
+                    title = stringResource(R.string.nostr_settings_title),
+                    summary = stringResource(R.string.nostr_settings_summary),
+                    onClick = onNostrSettingsClick,
                 )
             }
             item(key = "licenses_divider") {

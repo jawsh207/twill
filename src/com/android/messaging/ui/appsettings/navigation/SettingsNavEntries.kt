@@ -31,6 +31,8 @@ import com.android.messaging.ui.navigation.LocalNavigator
 import com.android.messaging.ui.navigation.Navigator
 import com.android.messaging.ui.navigation.SeededViewModelStoreOwner
 import com.android.messaging.ui.navigation.paneTitleMetadata
+import com.android.messaging.ui.nostr.settings.NostrSettingsScreen
+import com.android.messaging.ui.nostr.settings.NostrSettingsViewModel
 import kotlinx.collections.immutable.ImmutableList
 
 internal fun EntryProviderScope<NavKey>.settingsEntries() {
@@ -41,6 +43,10 @@ internal fun EntryProviderScope<NavKey>.settingsEntries() {
     entry<SmsSettingsNavKey>(
         metadata = paneTitleMetadata(R.string.sms_settings_title),
         content = settingsRouteContent(),
+    )
+    entry<NostrSettingsNavKey>(
+        metadata = paneTitleMetadata(R.string.nostr_settings_title),
+        content = nostrSettingsRouteContent(),
     )
     entry<AppSettingsNavKey>(
         metadata = paneTitleMetadata(R.string.general_settings_activity_title),
@@ -66,9 +72,26 @@ private fun twillSettingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
             onSmsSettingsClick = {
                 navigator.push(destination = SmsSettingsNavKey)
             },
+            onNostrSettingsClick = {
+                navigator.push(destination = NostrSettingsNavKey)
+            },
             onLicensesClick = {
                 navigator.push(destination = LicenseNavKey)
             },
+        )
+    }
+}
+
+private fun nostrSettingsRouteContent(): @Composable (NostrSettingsNavKey) -> Unit {
+    return {
+        val navigator = LocalNavigator.current
+        val viewModel = hiltViewModel<NostrSettingsViewModel>()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+        NostrSettingsScreen(
+            uiState = uiState,
+            viewModel = viewModel,
+            onNavigateBack = navigator::back,
         )
     }
 }

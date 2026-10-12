@@ -2,6 +2,7 @@ package com.android.messaging.ui.conversationlist.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -27,6 +28,10 @@ import com.android.messaging.ui.conversationlist.chats.rememberConversationListE
 import com.android.messaging.ui.navigation.LocalNavigator
 import com.android.messaging.ui.navigation.Navigator
 import com.android.messaging.ui.navigation.paneTitleMetadata
+import com.android.messaging.ui.nostr.inbox.LocalTwillInbox
+import com.android.messaging.ui.nostr.inbox.TwillInbox
+import com.android.messaging.ui.nostr.inbox.TwillInboxViewModel
+import com.android.messaging.ui.nostr.navigation.NostrChatNavKey
 
 internal fun EntryProviderScope<NavKey>.conversationListEntries() {
     entry<ConversationListNavKey>(
@@ -74,15 +79,26 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
             )
         }
 
-        ConversationListScreen(
-            screenModel = hiltViewModel<ConversationListViewModel>(),
-            effectHandler = effectHandler,
-            navigation = navigation,
-            openedConversationId = openedConversationId(navigator = appNavigator),
-            modifier = Modifier
-                .fillMaxSize()
-                .consumeOppositePaneInsets(),
-        )
+        // Twill: SMS + Nostr sections in the list.
+        val inboxViewModel = hiltViewModel<TwillInboxViewModel>()
+        val inbox = remember(inboxViewModel, appNavigator) {
+            TwillInbox(
+                controller = inboxViewModel,
+                onOpenNostrChat = { peer -> appNavigator.push(NostrChatNavKey(peerPubKey = peer)) },
+            )
+        }
+
+        CompositionLocalProvider(LocalTwillInbox provides inbox) {
+            ConversationListScreen(
+                screenModel = hiltViewModel<ConversationListViewModel>(),
+                effectHandler = effectHandler,
+                navigation = navigation,
+                openedConversationId = openedConversationId(navigator = appNavigator),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .consumeOppositePaneInsets(),
+            )
+        }
     }
 }
 
