@@ -39,7 +39,7 @@ internal object NostrNotifications {
     fun connectionNotification(context: Context): Notification {
         ensureChannels(context)
         return Notification.Builder(context, CONNECTION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_sms_light)
+            .setSmallIcon(R.drawable.ic_notification_nostr)
             .setContentTitle(context.getString(R.string.nostr_connection_title))
             .setContentText(context.getString(R.string.nostr_connection_text))
             .setContentIntent(openAppIntent(context))
@@ -62,7 +62,7 @@ internal object NostrNotifications {
         }
         val text = if (senderName != null) "$senderName: $body" else body
         val notification = Notification.Builder(context, MESSAGES_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_sms_light)
+            .setSmallIcon(R.drawable.ic_notification_nostr)
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(Notification.BigTextStyle().bigText(text))
