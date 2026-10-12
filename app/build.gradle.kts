@@ -54,6 +54,9 @@ android {
     namespace = "com.android.messaging"
 
     defaultConfig {
+        // Twill's own package ID, so every build type installs alongside the system
+        // Messaging app (com.android.messaging) instead of replacing it.
+        applicationId = "app.twill"
         versionCode = 20000000 + 16
         versionName = "16"
         minSdk = 36
