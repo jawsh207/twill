@@ -29,8 +29,8 @@ jobs:
 
       - name: Record checksums for all build dependencies
         run: >
-          ./gradlew --write-verification-metadata sha512 --no-daemon --console=plain
-          :app:assemblePerf :app:assembleDebug :app:generateLicenses
+          .github/ci/gradle-report-errors.sh --write-verification-metadata sha512 --no-daemon
+          --console=plain :app:assemblePerf :app:assembleDebug :app:generateLicenses
 
       - name: Regenerate licenses page
         run: ./gradlew :app:generateLicenses --no-daemon --rerun --console=plain
