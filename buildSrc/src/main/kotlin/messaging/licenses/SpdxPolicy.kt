@@ -29,6 +29,8 @@ internal object SpdxPolicy {
 
     private val NAME_MAP = listOf(
         "apache" to "Apache-2.0",
+        // Twill: Nostr libraries (Quartz and its dependencies) are MIT licensed.
+        "mit license" to "MIT",
         "simplified bsd" to "BSD-2-Clause",
         "bsd 2" to "BSD-2-Clause",
         "bsd-2" to "BSD-2-Clause",
@@ -57,6 +59,7 @@ internal object SpdxPolicy {
 
     private val URL_MAP = listOf(
         "apache.org/licenses/license-2.0" to "Apache-2.0",
+        "opensource.org/licenses/mit" to "MIT",
         "opensource.org/licenses/bsd-2" to "BSD-2-Clause",
         "eclipse.org/legal/epl-2.0" to "EPL-2.0",
         "eclipse.org/legal/epl-v10" to "EPL-1.0",
