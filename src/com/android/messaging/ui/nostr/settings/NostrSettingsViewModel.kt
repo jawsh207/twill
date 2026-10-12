@@ -24,6 +24,9 @@ internal data class NostrSettingsUiState(
     val relays: List<String> = emptyList(),
     val isExternalSignerInstalled: Boolean = false,
     val deliveryMode: NostrDeliveryMode = NostrDeliveryMode.WhileOpen,
+    val mediaServer: String = "",
+    val autoDownloadMedia: Boolean = false,
+    val loadProfilePictures: Boolean = false,
 )
 
 @HiltViewModel
@@ -32,16 +35,26 @@ internal class NostrSettingsViewModel @Inject constructor(
     private val signerProvider: NostrSignerProvider,
 ) : ViewModel() {
 
+    private val mediaSettings = combine(
+        accountStore.mediaServer,
+        accountStore.autoDownloadMedia,
+        accountStore.loadProfilePictures,
+    ) { server, autoDownload, loadPictures -> Triple(server, autoDownload, loadPictures) }
+
     val uiState: StateFlow<NostrSettingsUiState> = combine(
         accountStore.account,
         accountStore.relays,
         accountStore.deliveryMode,
-    ) { account, relays, deliveryMode ->
+        mediaSettings,
+    ) { account, relays, deliveryMode, (server, autoDownload, loadPictures) ->
         NostrSettingsUiState(
             account = account,
             relays = relays,
             isExternalSignerInstalled = signerProvider.isExternalSignerInstalled(),
             deliveryMode = deliveryMode,
+            mediaServer = server,
+            autoDownloadMedia = autoDownload,
+            loadProfilePictures = loadPictures,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -81,6 +94,29 @@ internal class NostrSettingsViewModel @Inject constructor(
 
     fun setDeliveryMode(mode: NostrDeliveryMode) {
         viewModelScope.launch(Dispatchers.IO) { accountStore.setDeliveryMode(mode) }
+    }
+
+    fun setAutoDownloadMedia(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { accountStore.setAutoDownloadMedia(enabled) }
+    }
+
+    fun setLoadProfilePictures(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { accountStore.setLoadProfilePictures(enabled) }
+    }
+
+    /** Returns false if [input] isn't an https address. */
+    fun setMediaServer(input: String): Boolean {
+        val trimmed = input.trim().trimEnd('/')
+        val withScheme = if ("://" in trimmed) trimmed else "https://$trimmed"
+        if (!withScheme.startsWith("https://") ||
+            withScheme.length <= "https://".length
+        ) {
+            return false
+        }
+        val host = runCatching { java.net.URI(withScheme).host }.getOrNull()
+        if (host.isNullOrBlank() || '.' !in host) return false
+        viewModelScope.launch(Dispatchers.IO) { accountStore.setMediaServer(withScheme) }
+        return true
     }
 
     fun removeRelay(url: String) {

@@ -49,16 +49,23 @@ internal object NostrNotifications {
 
     fun showMessage(
         context: Context,
-        senderName: String,
+        title: String,
+        senderName: String?,
         message: NostrMessage,
     ) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         ensureChannels(context)
+        val body = when {
+            message.attachment?.isImage == true -> context.getString(R.string.nostr_photo)
+            message.attachment != null -> context.getString(R.string.nostr_file)
+            else -> message.content
+        }
+        val text = if (senderName != null) "$senderName: $body" else body
         val notification = Notification.Builder(context, MESSAGES_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_sms_light)
-            .setContentTitle(senderName)
-            .setContentText(message.content)
-            .setStyle(Notification.BigTextStyle().bigText(message.content))
+            .setContentTitle(title)
+            .setContentText(text)
+            .setStyle(Notification.BigTextStyle().bigText(text))
             .setCategory(Notification.CATEGORY_MESSAGE)
             .setContentIntent(openAppIntent(context))
             .setAutoCancel(true)
@@ -66,15 +73,15 @@ internal object NostrNotifications {
             .setShowWhen(true)
             .build()
         // One notification per conversation; newer messages replace older ones.
-        manager.notify(notificationTag(message.peerPubKey), 0, notification)
+        manager.notify(notificationTag(message.chatKey), 0, notification)
     }
 
-    fun cancelConversation(context: Context, peerPubKey: String) {
+    fun cancelConversation(context: Context, chatKey: String) {
         context.getSystemService(NotificationManager::class.java)
-            ?.cancel(notificationTag(peerPubKey), 0)
+            ?.cancel(notificationTag(chatKey), 0)
     }
 
-    private fun notificationTag(peerPubKey: String) = "nostr:$peerPubKey"
+    private fun notificationTag(chatKey: String) = "nostr:$chatKey"
 
     private fun openAppIntent(context: Context): PendingIntent {
         val intent = Intent(context, MainActivity::class.java)

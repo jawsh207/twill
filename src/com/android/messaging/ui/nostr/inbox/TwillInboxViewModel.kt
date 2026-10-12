@@ -8,10 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.android.messaging.data.appsettings.model.AppBooleanPref
 import com.android.messaging.data.appsettings.repository.AppPreferenceReader
 import com.android.messaging.nostr.NostrAccountStore
+import com.android.messaging.nostr.NostrChatKey
 import com.android.messaging.nostr.NostrConversation
 import com.android.messaging.nostr.NostrMessageStore
 import com.android.messaging.nostr.NostrMessenger
-import com.vitorpamplona.quartz.nip19Bech32.decodePublicKeyAsHexOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -42,18 +42,21 @@ internal interface TwillInboxController {
 
     fun toggleSmsCollapsed()
     fun toggleNostrCollapsed()
-    fun setPinned(peerPubKey: String, isPinned: Boolean)
-    fun setRead(peerPubKey: String, isRead: Boolean)
-    fun delete(peerPubKey: String)
+    fun setPinned(chatKey: String, isPinned: Boolean)
+    fun setRead(chatKey: String, isRead: Boolean)
+    fun delete(chatKey: String)
 
-    /** Returns the hex key for an npub, nprofile or hex key, or null if invalid. */
-    fun resolvePeer(input: String): String?
+    /** The hex key for an npub, nprofile, hex key or NIP-05 address, or null if invalid. */
+    suspend fun resolvePeer(input: String): String?
+
+    /** The chat key for a new group of [members] (hex keys), named [name] if given. */
+    fun createGroup(members: List<String>, name: String?): String?
 }
 
 /** The Nostr inbox plus navigation into a Nostr chat. */
 internal class TwillInbox(
     val controller: TwillInboxController,
-    val onOpenNostrChat: (peerPubKey: String) -> Unit,
+    val onOpenNostrChat: (chatKey: String) -> Unit,
 )
 
 /** Provided only by the real conversation list route; null keeps the upstream list. */
@@ -63,9 +66,9 @@ internal val LocalTwillInbox = staticCompositionLocalOf<TwillInbox?> { null }
 @HiltViewModel
 internal class TwillInboxViewModel @Inject constructor(
     @param:ApplicationContext context: Context,
-    accountStore: NostrAccountStore,
     private val store: NostrMessageStore,
-    messenger: NostrMessenger,
+    private val messenger: NostrMessenger,
+    private val accountStore: NostrAccountStore,
     private val preferenceReader: AppPreferenceReader,
 ) : ViewModel(),
     TwillInboxController {
@@ -116,27 +119,32 @@ internal class TwillInboxViewModel @Inject constructor(
         prefs.edit().putBoolean(KEY_NOSTR_COLLAPSED, nostrCollapsed.value).apply()
     }
 
-    override fun setPinned(peerPubKey: String, isPinned: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) { store.setPinned(peerPubKey, isPinned) }
+    override fun setPinned(chatKey: String, isPinned: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { store.setPinned(chatKey, isPinned) }
     }
 
-    override fun setRead(peerPubKey: String, isRead: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) { store.setConversationRead(peerPubKey, isRead) }
+    override fun setRead(chatKey: String, isRead: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { store.setConversationRead(chatKey, isRead) }
     }
 
-    override fun delete(peerPubKey: String) {
-        viewModelScope.launch(Dispatchers.IO) { store.deleteConversation(peerPubKey) }
+    override fun delete(chatKey: String) {
+        viewModelScope.launch(Dispatchers.IO) { store.deleteConversation(chatKey) }
     }
 
-    override fun resolvePeer(input: String): String? {
-        val trimmed = input.trim().removePrefix("nostr:")
-        return decodePublicKeyAsHexOrNull(trimmed)?.takeIf { it.length == PUBKEY_HEX_LENGTH }
+    override suspend fun resolvePeer(input: String): String? = messenger.resolveIdentifier(input)
+
+    override fun createGroup(members: List<String>, name: String?): String? {
+        val me = accountStore.account.value?.pubKeyHex ?: return null
+        val chatKey = NostrChatKey.forParticipants(participants = members, me = me)
+        if (!name.isNullOrBlank() && NostrChatKey.isGroup(chatKey)) {
+            messenger.renameGroup(chatKey, name)
+        }
+        return chatKey
     }
 
     private companion object {
         const val PREFS_NAME = "twill_inbox"
         const val KEY_SMS_COLLAPSED = "sms_collapsed"
         const val KEY_NOSTR_COLLAPSED = "nostr_collapsed"
-        const val PUBKEY_HEX_LENGTH = 64
     }
 }

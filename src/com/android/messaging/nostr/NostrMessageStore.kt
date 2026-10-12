@@ -2,10 +2,12 @@ package com.android.messaging.nostr
 
 import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import androidx.compose.runtime.Immutable
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -14,16 +16,40 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
+/** An encrypted file sent with NIP-17 (kind 15). */
+@Immutable
+internal data class NostrAttachment(
+    val url: String,
+    val mimeType: String?,
+    val keyHex: String,
+    val nonceHex: String,
+    val algorithm: String,
+    val encryptedHash: String?,
+    val size: Long?,
+    val width: Int?,
+    val height: Int?,
+    val fileName: String?,
+    /** Decrypted copy on this device, once downloaded. */
+    val localPath: String?,
+) {
+    val isImage: Boolean
+        get() = mimeType?.startsWith("image/") == true
+
+    val isDownloaded: Boolean
+        get() = localPath != null && File(localPath).exists()
+}
+
 @Immutable
 internal data class NostrMessage(
     val id: String,
-    val peerPubKey: String,
+    val chatKey: String,
     val senderPubKey: String,
     val content: String,
     val createdAtSeconds: Long,
     val isOutgoing: Boolean,
     val isRead: Boolean,
     val status: Status,
+    val attachment: NostrAttachment? = null,
 ) {
     enum class Status(
         val code: Int,
@@ -41,12 +67,20 @@ internal data class NostrMessage(
 
 @Immutable
 internal data class NostrConversation(
-    val peerPubKey: String,
+    val chatKey: String,
+    /** Profile name for one-to-one chats, or the group's name. */
     val displayName: String?,
+    /** Names (or null) of each other member, in [NostrChatKey.members] order. */
+    val memberNames: List<String?>,
+    /** Profile picture URL of the other person (one-to-one chats only). */
+    val pictureUrl: String?,
     val lastMessage: NostrMessage,
     val unreadCount: Int,
     val isPinned: Boolean,
-)
+) {
+    val isGroup: Boolean
+        get() = NostrChatKey.isGroup(chatKey)
+}
 
 @Immutable
 internal data class NostrProfile(
@@ -54,6 +88,13 @@ internal data class NostrProfile(
     val name: String?,
     val picture: String?,
     val nip05: String?,
+    val isNip05Verified: Boolean = false,
+)
+
+@Immutable
+internal data class NostrGroupInfo(
+    val chatKey: String,
+    val name: String?,
 )
 
 /**
@@ -70,11 +111,18 @@ internal class NostrMessageStore @Inject constructor(
     fun conversations(): Flow<List<NostrConversation>> =
         changes.map { queryConversations() }.flowOn(Dispatchers.IO)
 
-    fun messages(peerPubKey: String): Flow<List<NostrMessage>> =
-        changes.map { queryMessages(peerPubKey) }.flowOn(Dispatchers.IO)
+    fun messages(chatKey: String): Flow<List<NostrMessage>> =
+        changes.map { queryMessages(chatKey) }.flowOn(Dispatchers.IO)
 
     fun profile(pubKey: String): Flow<NostrProfile?> =
         changes.map { queryProfile(pubKey) }.flowOn(Dispatchers.IO)
+
+    fun profiles(pubKeys: List<String>): Flow<Map<String, NostrProfile>> =
+        changes.map { pubKeys.mapNotNull(::queryProfile).associateBy { it.pubKey } }
+            .flowOn(Dispatchers.IO)
+
+    fun group(chatKey: String): Flow<NostrGroupInfo> =
+        changes.map { NostrGroupInfo(chatKey, queryGroupName(chatKey)) }.flowOn(Dispatchers.IO)
 
     fun hasSeenWrap(wrapId: String): Boolean {
         helper.readableDatabase.rawQuery(
@@ -104,6 +152,13 @@ internal class NostrMessageStore @Inject constructor(
         return rowId != -1L
     }
 
+    fun message(id: String): NostrMessage? {
+        return helper.readableDatabase.rawQuery(
+            "SELECT * FROM messages WHERE id = ?",
+            arrayOf(id),
+        ).use { cursor -> if (cursor.moveToFirst()) cursor.toMessage() else null }
+    }
+
     fun updateStatus(id: String, status: NostrMessage.Status) {
         helper.writableDatabase.update(
             "messages",
@@ -114,56 +169,71 @@ internal class NostrMessageStore @Inject constructor(
         notifyChanged()
     }
 
+    fun setAttachmentLocalPath(id: String, path: String) {
+        helper.writableDatabase.update(
+            "messages",
+            ContentValues().apply { put("local_path", path) },
+            "id = ?",
+            arrayOf(id),
+        )
+        notifyChanged()
+    }
+
     fun deleteMessage(id: String) {
+        message(id)?.attachment?.localPath?.let { File(it).delete() }
         helper.writableDatabase.delete("messages", "id = ?", arrayOf(id))
         notifyChanged()
     }
 
-    fun markConversationRead(peerPubKey: String) {
+    fun markConversationRead(chatKey: String) {
         val updated = helper.writableDatabase.update(
             "messages",
             ContentValues().apply { put("is_read", 1) },
             "peer = ? AND is_read = 0",
-            arrayOf(peerPubKey),
+            arrayOf(chatKey),
         )
         if (updated > 0) notifyChanged()
     }
 
-    fun setConversationRead(peerPubKey: String, isRead: Boolean) {
-        val db = helper.writableDatabase
+    fun setConversationRead(chatKey: String, isRead: Boolean) {
         if (isRead) {
-            markConversationRead(peerPubKey)
+            markConversationRead(chatKey)
             return
         }
         // "Mark as unread" flags the newest incoming message.
-        db.execSQL(
+        helper.writableDatabase.execSQL(
             "UPDATE messages SET is_read = 0 WHERE id = (" +
                 "SELECT id FROM messages WHERE peer = ? AND outgoing = 0 " +
                 "ORDER BY created_at DESC LIMIT 1)",
-            arrayOf(peerPubKey),
+            arrayOf(chatKey),
         )
         notifyChanged()
     }
 
-    fun setPinned(peerPubKey: String, isPinned: Boolean) {
+    fun setPinned(chatKey: String, isPinned: Boolean) {
         val db = helper.writableDatabase
         if (isPinned) {
             db.insertWithOnConflict(
                 "pinned",
                 null,
-                ContentValues().apply { put("peer", peerPubKey) },
+                ContentValues().apply { put("peer", chatKey) },
                 SQLiteDatabase.CONFLICT_IGNORE,
             )
         } else {
-            db.delete("pinned", "peer = ?", arrayOf(peerPubKey))
+            db.delete("pinned", "peer = ?", arrayOf(chatKey))
         }
         notifyChanged()
     }
 
-    fun deleteConversation(peerPubKey: String) {
+    fun deleteConversation(chatKey: String) {
         val db = helper.writableDatabase
-        db.delete("messages", "peer = ?", arrayOf(peerPubKey))
-        db.delete("pinned", "peer = ?", arrayOf(peerPubKey))
+        db.rawQuery(
+            "SELECT local_path FROM messages WHERE peer = ? AND local_path IS NOT NULL",
+            arrayOf(chatKey),
+        ).use { cursor -> while (cursor.moveToNext()) File(cursor.getString(0)).delete() }
+        db.delete("messages", "peer = ?", arrayOf(chatKey))
+        db.delete("pinned", "peer = ?", arrayOf(chatKey))
+        db.delete("groups", "chat_key = ?", arrayOf(chatKey))
         notifyChanged()
     }
 
@@ -176,6 +246,7 @@ internal class NostrMessageStore @Inject constructor(
                 put("name", profile.name)
                 put("picture", profile.picture)
                 put("nip05", profile.nip05)
+                put("nip05_verified", if (profile.isNip05Verified) 1 else 0)
                 put("updated_at", System.currentTimeMillis())
             },
             SQLiteDatabase.CONFLICT_REPLACE,
@@ -190,6 +261,55 @@ internal class NostrMessageStore @Inject constructor(
         ).use { cursor ->
             return if (cursor.moveToFirst()) cursor.getLong(0) else null
         }
+    }
+
+    /**
+     * Records a group name. Names arrive as NIP-17 `subject` tags; the newest one wins.
+     * [isPendingSend] marks a name the user set here that still needs to go out with the
+     * next message.
+     */
+    fun setGroupName(
+        chatKey: String,
+        name: String?,
+        atSeconds: Long,
+        isPendingSend: Boolean = false,
+    ) {
+        val db = helper.writableDatabase
+        val currentAt = db.rawQuery(
+            "SELECT name_at FROM groups WHERE chat_key = ?",
+            arrayOf(chatKey),
+        ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else null }
+        if (currentAt != null && currentAt > atSeconds && !isPendingSend) return
+
+        db.insertWithOnConflict(
+            "groups",
+            null,
+            ContentValues().apply {
+                put("chat_key", chatKey)
+                put("name", name?.takeIf { it.isNotBlank() })
+                put("name_at", atSeconds)
+                put("subject_pending", if (isPendingSend) 1 else 0)
+            },
+            SQLiteDatabase.CONFLICT_REPLACE,
+        )
+        notifyChanged()
+    }
+
+    /** A locally set group name that hasn't been sent yet ("" to clear it), or null. */
+    fun pendingGroupSubject(chatKey: String): String? {
+        helper.readableDatabase.rawQuery(
+            "SELECT name FROM groups WHERE chat_key = ? AND subject_pending = 1",
+            arrayOf(chatKey),
+        ).use { cursor -> return if (cursor.moveToFirst()) cursor.getString(0) ?: "" else null }
+    }
+
+    fun clearPendingGroupSubject(chatKey: String) {
+        helper.writableDatabase.update(
+            "groups",
+            ContentValues().apply { put("subject_pending", 0) },
+            "chat_key = ?",
+            arrayOf(chatKey),
+        )
     }
 
     /** Newest gift wrap time seen, used as the `since` for the next subscription. */
@@ -224,7 +344,9 @@ internal class NostrMessageStore @Inject constructor(
     /** Wipes everything; used when the user signs out. */
     fun clearAll() {
         val db = helper.writableDatabase
-        listOf("messages", "seen_wraps", "profiles", "pinned", "state").forEach { table ->
+        db.rawQuery("SELECT local_path FROM messages WHERE local_path IS NOT NULL", null)
+            .use { cursor -> while (cursor.moveToNext()) File(cursor.getString(0)).delete() }
+        listOf("messages", "seen_wraps", "profiles", "pinned", "state", "groups").forEach { table ->
             db.delete(table, null, null)
         }
         notifyChanged()
@@ -239,13 +361,23 @@ internal class NostrMessageStore @Inject constructor(
         val pinned = db.rawQuery("SELECT peer FROM pinned", null).use { cursor ->
             buildSet { while (cursor.moveToNext()) add(cursor.getString(0)) }
         }
+        val profiles = db.rawQuery("SELECT pubkey, name, picture FROM profiles", null)
+            .use { cursor ->
+                buildMap {
+                    while (cursor.moveToNext()) {
+                        put(cursor.getString(0), cursor.getString(1) to cursor.getString(2))
+                    }
+                }
+            }
+        val groupNames = db.rawQuery("SELECT chat_key, name FROM groups", null).use { cursor ->
+            buildMap { while (cursor.moveToNext()) put(cursor.getString(0), cursor.getString(1)) }
+        }
 
         val sql = """
-            SELECT m.*, p.name AS profile_name,
+            SELECT m.*,
                 (SELECT COUNT(*) FROM messages u
                     WHERE u.peer = m.peer AND u.is_read = 0 AND u.outgoing = 0) AS unread
             FROM messages m
-            LEFT JOIN profiles p ON p.pubkey = m.peer
             WHERE m.created_at = (SELECT MAX(created_at) FROM messages x WHERE x.peer = m.peer)
             GROUP BY m.peer
             ORDER BY m.created_at DESC
@@ -255,13 +387,17 @@ internal class NostrMessageStore @Inject constructor(
             buildList {
                 while (cursor.moveToNext()) {
                     val message = cursor.toMessage()
+                    val key = message.chatKey
+                    val isGroup = NostrChatKey.isGroup(key)
                     add(
                         NostrConversation(
-                            peerPubKey = message.peerPubKey,
-                            displayName = cursor.getStringOrNull("profile_name"),
+                            chatKey = key,
+                            displayName = if (isGroup) groupNames[key] else profiles[key]?.first,
+                            memberNames = NostrChatKey.members(key).map { profiles[it]?.first },
+                            pictureUrl = if (isGroup) null else profiles[key]?.second,
                             lastMessage = message,
                             unreadCount = cursor.getInt(cursor.getColumnIndexOrThrow("unread")),
-                            isPinned = message.peerPubKey in pinned,
+                            isPinned = key in pinned,
                         ),
                     )
                 }
@@ -269,10 +405,10 @@ internal class NostrMessageStore @Inject constructor(
         }
     }
 
-    private fun queryMessages(peerPubKey: String): List<NostrMessage> {
+    private fun queryMessages(chatKey: String): List<NostrMessage> {
         return helper.readableDatabase.rawQuery(
             "SELECT * FROM messages WHERE peer = ? ORDER BY created_at ASC, rowid ASC",
-            arrayOf(peerPubKey),
+            arrayOf(chatKey),
         ).use { cursor ->
             buildList { while (cursor.moveToNext()) add(cursor.toMessage()) }
         }
@@ -289,35 +425,90 @@ internal class NostrMessageStore @Inject constructor(
                 name = cursor.getStringOrNull("name"),
                 picture = cursor.getStringOrNull("picture"),
                 nip05 = cursor.getStringOrNull("nip05"),
+                isNip05Verified = cursor.getIntOrNull("nip05_verified") == 1,
             )
         }
     }
 
+    private fun queryGroupName(chatKey: String): String? {
+        helper.readableDatabase.rawQuery(
+            "SELECT name FROM groups WHERE chat_key = ?",
+            arrayOf(chatKey),
+        ).use { cursor -> return if (cursor.moveToFirst()) cursor.getString(0) else null }
+    }
+
     private fun NostrMessage.toValues() = ContentValues().apply {
         put("id", id)
-        put("peer", peerPubKey)
+        put("peer", chatKey)
         put("sender", senderPubKey)
         put("content", content)
         put("created_at", createdAtSeconds)
         put("outgoing", if (isOutgoing) 1 else 0)
         put("is_read", if (isRead) 1 else 0)
         put("status", status.code)
+        val file = attachment
+        if (file == null) {
+            put("kind", KIND_TEXT)
+        } else {
+            put("kind", KIND_FILE)
+            put("file_url", file.url)
+            put("file_mime", file.mimeType)
+            put("file_key", file.keyHex)
+            put("file_nonce", file.nonceHex)
+            put("file_algo", file.algorithm)
+            put("file_hash", file.encryptedHash)
+            put("file_size", file.size)
+            put("file_width", file.width)
+            put("file_height", file.height)
+            put("file_name", file.fileName)
+            put("local_path", file.localPath)
+        }
     }
 
-    private fun android.database.Cursor.toMessage() = NostrMessage(
-        id = getString(getColumnIndexOrThrow("id")),
-        peerPubKey = getString(getColumnIndexOrThrow("peer")),
-        senderPubKey = getString(getColumnIndexOrThrow("sender")),
-        content = getString(getColumnIndexOrThrow("content")),
-        createdAtSeconds = getLong(getColumnIndexOrThrow("created_at")),
-        isOutgoing = getInt(getColumnIndexOrThrow("outgoing")) == 1,
-        isRead = getInt(getColumnIndexOrThrow("is_read")) == 1,
-        status = NostrMessage.Status.from(getInt(getColumnIndexOrThrow("status"))),
-    )
+    private fun Cursor.toMessage(): NostrMessage {
+        val isFile = getIntOrNull("kind") == KIND_FILE
+        return NostrMessage(
+            id = getString(getColumnIndexOrThrow("id")),
+            chatKey = getString(getColumnIndexOrThrow("peer")),
+            senderPubKey = getString(getColumnIndexOrThrow("sender")),
+            content = getString(getColumnIndexOrThrow("content")),
+            createdAtSeconds = getLong(getColumnIndexOrThrow("created_at")),
+            isOutgoing = getInt(getColumnIndexOrThrow("outgoing")) == 1,
+            isRead = getInt(getColumnIndexOrThrow("is_read")) == 1,
+            status = NostrMessage.Status.from(getInt(getColumnIndexOrThrow("status"))),
+            attachment = if (isFile) {
+                NostrAttachment(
+                    url = getStringOrNull("file_url").orEmpty(),
+                    mimeType = getStringOrNull("file_mime"),
+                    keyHex = getStringOrNull("file_key").orEmpty(),
+                    nonceHex = getStringOrNull("file_nonce").orEmpty(),
+                    algorithm = getStringOrNull("file_algo") ?: "aes-gcm",
+                    encryptedHash = getStringOrNull("file_hash"),
+                    size = getLongOrNull("file_size"),
+                    width = getIntOrNull("file_width"),
+                    height = getIntOrNull("file_height"),
+                    fileName = getStringOrNull("file_name"),
+                    localPath = getStringOrNull("local_path"),
+                )
+            } else {
+                null
+            },
+        )
+    }
 
-    private fun android.database.Cursor.getStringOrNull(column: String): String? {
+    private fun Cursor.getStringOrNull(column: String): String? {
         val index = getColumnIndex(column)
         return if (index < 0 || isNull(index)) null else getString(index)
+    }
+
+    private fun Cursor.getIntOrNull(column: String): Int? {
+        val index = getColumnIndex(column)
+        return if (index < 0 || isNull(index)) null else getInt(index)
+    }
+
+    private fun Cursor.getLongOrNull(column: String): Long? {
+        val index = getColumnIndex(column)
+        return if (index < 0 || isNull(index)) null else getLong(index)
     }
 
     private class Helper(
@@ -338,13 +529,46 @@ internal class NostrMessageStore @Inject constructor(
             )
             db.execSQL("CREATE TABLE pinned (peer TEXT PRIMARY KEY)")
             db.execSQL("CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT)")
+            upgradeToVersion2(db)
         }
 
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            if (oldVersion < 2) upgradeToVersion2(db)
+        }
+
+        /** Version 2: attachments, group names and NIP-05 verification. */
+        private fun upgradeToVersion2(db: SQLiteDatabase) {
+            listOf(
+                "kind INTEGER NOT NULL DEFAULT $KIND_TEXT",
+                "file_url TEXT",
+                "file_mime TEXT",
+                "file_key TEXT",
+                "file_nonce TEXT",
+                "file_algo TEXT",
+                "file_hash TEXT",
+                "file_size INTEGER",
+                "file_width INTEGER",
+                "file_height INTEGER",
+                "file_name TEXT",
+                "local_path TEXT",
+            ).forEach { column -> db.execSQL("ALTER TABLE messages ADD COLUMN $column") }
+            db.execSQL("ALTER TABLE profiles ADD COLUMN nip05_verified INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(
+                "CREATE TABLE groups (chat_key TEXT PRIMARY KEY, name TEXT, " +
+                    "name_at INTEGER NOT NULL DEFAULT 0, subject_pending INTEGER NOT NULL DEFAULT 0)",
+            )
+            // Profiles were cached without pictures or NIP-05 checks; refetch them.
+            db.execSQL("UPDATE profiles SET updated_at = 0")
+            // Version 1 skipped group and file messages; forget what was seen so they're fetched.
+            db.execSQL("DELETE FROM seen_wraps")
+            db.execSQL("DELETE FROM state WHERE key = 'last_sync'")
+        }
     }
 
     private companion object {
         const val DATABASE_NAME = "nostr.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
+        const val KIND_TEXT = 14
+        const val KIND_FILE = 15
     }
 }

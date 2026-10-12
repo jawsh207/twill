@@ -49,10 +49,11 @@ import com.android.messaging.nostr.NostrDeliveryMode
 import com.android.messaging.nostr.NostrSignerProvider
 import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
+import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.util.UiUtils
 
-private enum class NostrSettingsDialog { None, PrivateKey, SignOut, AddRelay }
+private enum class NostrSettingsDialog { None, PrivateKey, SignOut, AddRelay, MediaServer }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -183,6 +184,38 @@ internal fun NostrSettingsScreen(
                 )
             }
 
+            item(key = "media_divider") {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            item(key = "media_header") {
+                SettingsCategoryHeader(title = stringResource(R.string.nostr_media_header))
+            }
+            item(key = "load_pictures") {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.nostr_load_pictures),
+                    summary = stringResource(R.string.nostr_load_pictures_summary),
+                    checked = uiState.loadProfilePictures,
+                    onCheckedChange = viewModel::setLoadProfilePictures,
+                )
+            }
+            item(key = "auto_download") {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.nostr_auto_download),
+                    summary = stringResource(R.string.nostr_auto_download_summary),
+                    checked = uiState.autoDownloadMedia,
+                    onCheckedChange = viewModel::setAutoDownloadMedia,
+                )
+            }
+            item(key = "media_server") {
+                SettingsClickableItem(
+                    title = stringResource(R.string.nostr_media_server),
+                    summary =
+                        uiState.mediaServer + "\n" +
+                            stringResource(R.string.nostr_media_server_summary),
+                    onClick = { dialog = NostrSettingsDialog.MediaServer },
+                )
+            }
+
             item(key = "relays_divider") {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
@@ -242,6 +275,19 @@ internal fun NostrSettingsScreen(
             onConfirm = {
                 viewModel.signOut()
                 dialog = NostrSettingsDialog.None
+            },
+            onDismiss = { dialog = NostrSettingsDialog.None },
+        )
+
+        NostrSettingsDialog.MediaServer -> MediaServerDialog(
+            current = uiState.mediaServer,
+            onSave = { input ->
+                if (viewModel.setMediaServer(input)) {
+                    dialog = NostrSettingsDialog.None
+                    true
+                } else {
+                    false
+                }
             },
             onDismiss = { dialog = NostrSettingsDialog.None },
         )
@@ -375,6 +421,56 @@ private fun SignOutDialog(
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(text = stringResource(R.string.nostr_sign_out))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun MediaServerDialog(
+    current: String,
+    onSave: (String) -> Boolean,
+    onDismiss: () -> Unit,
+) {
+    var input by rememberSaveable { mutableStateOf(current) }
+    var isInvalid by rememberSaveable { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.nostr_media_server)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(text = stringResource(R.string.nostr_media_server_explainer))
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = input,
+                    onValueChange = {
+                        input = it
+                        isInvalid = false
+                    },
+                    singleLine = true,
+                    placeholder = { Text(text = "https://blossom.example.com") },
+                    isError = isInvalid,
+                    supportingText = if (isInvalid) {
+                        { Text(text = stringResource(R.string.nostr_media_server_invalid)) }
+                    } else {
+                        null
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = input.isNotBlank(),
+                onClick = { isInvalid = !onSave(input) },
+            ) {
+                Text(text = stringResource(R.string.nostr_save))
             }
         },
         dismissButton = {

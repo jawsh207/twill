@@ -27,6 +27,9 @@ internal class NostrAccountStore @Inject constructor(
     private val _account = MutableStateFlow<NostrAccount?>(null)
     private val _relays = MutableStateFlow<List<String>>(emptyList())
     private val _deliveryMode = MutableStateFlow(NostrDeliveryMode.WhileOpen)
+    private val _mediaServer = MutableStateFlow(NostrDefaults.DEFAULT_MEDIA_SERVER)
+    private val _autoDownloadMedia = MutableStateFlow(false)
+    private val _loadProfilePictures = MutableStateFlow(false)
     private var isLoaded = false
     private val lock = Any()
 
@@ -53,6 +56,51 @@ internal class NostrAccountStore @Inject constructor(
             ensureLoaded()
             prefs.edit().putString(KEY_DELIVERY_MODE, mode.key).commit()
             _deliveryMode.value = mode
+        }
+    }
+
+    /** Blossom server for uploading encrypted attachments. */
+    val mediaServer: StateFlow<String>
+        get() {
+            ensureLoaded()
+            return _mediaServer.asStateFlow()
+        }
+
+    /** Download incoming attachments without a tap. Off by default (reveals your IP). */
+    val autoDownloadMedia: StateFlow<Boolean>
+        get() {
+            ensureLoaded()
+            return _autoDownloadMedia.asStateFlow()
+        }
+
+    /** Show profile pictures. Off by default (loading them reveals your IP). */
+    val loadProfilePictures: StateFlow<Boolean>
+        get() {
+            ensureLoaded()
+            return _loadProfilePictures.asStateFlow()
+        }
+
+    fun setMediaServer(url: String) {
+        synchronized(lock) {
+            ensureLoaded()
+            prefs.edit().putString(KEY_MEDIA_SERVER, url).commit()
+            _mediaServer.value = url
+        }
+    }
+
+    fun setAutoDownloadMedia(enabled: Boolean) {
+        synchronized(lock) {
+            ensureLoaded()
+            prefs.edit().putBoolean(KEY_AUTO_DOWNLOAD, enabled).commit()
+            _autoDownloadMedia.value = enabled
+        }
+    }
+
+    fun setLoadProfilePictures(enabled: Boolean) {
+        synchronized(lock) {
+            ensureLoaded()
+            prefs.edit().putBoolean(KEY_LOAD_PICTURES, enabled).commit()
+            _loadProfilePictures.value = enabled
         }
     }
 
@@ -132,6 +180,10 @@ internal class NostrAccountStore @Inject constructor(
                 ?.filter { it.isNotBlank() }
                 ?: NostrDefaults.DEFAULT_RELAYS
             _deliveryMode.value = NostrDeliveryMode.from(prefs.getString(KEY_DELIVERY_MODE, null))
+            _mediaServer.value = prefs.getString(KEY_MEDIA_SERVER, null)
+                ?: NostrDefaults.DEFAULT_MEDIA_SERVER
+            _autoDownloadMedia.value = prefs.getBoolean(KEY_AUTO_DOWNLOAD, false)
+            _loadProfilePictures.value = prefs.getBoolean(KEY_LOAD_PICTURES, false)
             isLoaded = true
         }
     }
@@ -160,6 +212,9 @@ internal class NostrAccountStore @Inject constructor(
         const val KEY_ENCRYPTED_PRIVKEY = "encrypted_privkey"
         const val KEY_RELAYS = "relays"
         const val KEY_DELIVERY_MODE = "delivery_mode"
+        const val KEY_MEDIA_SERVER = "media_server"
+        const val KEY_AUTO_DOWNLOAD = "auto_download_media"
+        const val KEY_LOAD_PICTURES = "load_profile_pictures"
         const val METHOD_EXTERNAL = "external"
         const val METHOD_LOCAL = "local"
         const val RELAY_SEPARATOR = "\n"
