@@ -120,6 +120,39 @@ private fun LazyListScope.coreSettingsItems(
         )
     }
 
+    item(key = "send_delay") {
+        SettingsSwitchItem(
+            title = stringResource(R.string.send_delay_pref_title),
+            summary = stringResource(R.string.send_delay_pref_summary),
+            checked = appSettings.sendDelayEnabled,
+            onCheckedChange = {
+                onAction(Action.SendDelayChanged(it))
+            },
+        )
+    }
+
+    item(key = "unread_on_top") {
+        SettingsSwitchItem(
+            title = stringResource(R.string.unread_on_top_pref_title),
+            summary = stringResource(R.string.unread_on_top_pref_summary),
+            checked = appSettings.unreadOnTopEnabled,
+            onCheckedChange = {
+                onAction(Action.UnreadOnTopChanged(it))
+            },
+        )
+    }
+
+    item(key = "long_sms_as_mms") {
+        SettingsSwitchItem(
+            title = stringResource(R.string.long_sms_as_mms_pref_title),
+            summary = stringResource(R.string.long_sms_as_mms_pref_summary),
+            checked = appSettings.longSmsAsMmsEnabled,
+            onCheckedChange = {
+                onAction(Action.LongSmsAsMmsChanged(it))
+            },
+        )
+    }
+
     item(key = "privacy") {
         SettingsClickableItem(
             title = stringResource(R.string.privacy_settings_activity_title),

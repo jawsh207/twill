@@ -2,6 +2,8 @@ package com.android.messaging.ui.conversation.composer.delegate
 
 import android.app.Activity
 import com.android.messaging.R
+import com.android.messaging.data.appsettings.model.AppBooleanPref
+import com.android.messaging.data.appsettings.repository.AppPreferenceReader
 import com.android.messaging.data.conversation.model.ConversationId
 import com.android.messaging.data.conversation.model.ParticipantId
 import com.android.messaging.data.conversation.model.draft.ConversationDraft
@@ -31,7 +33,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,6 +108,9 @@ internal interface ConversationDraftDelegate : ConversationScreenDelegate<Conver
 
     fun onSendClick()
 
+    /** Cancels a send that is still inside the "Delay sending" window. */
+    fun cancelDelayedSend() {}
+
     fun dismissAttachmentLimitWarning()
 
     fun sendAnywayAfterAttachmentLimitWarning()
@@ -126,6 +133,7 @@ internal class ConversationDraftDelegateImpl @Inject constructor(
     private val sendConversationDraft: SendConversationDraft,
     @param:DefaultDispatcher
     private val defaultDispatcher: CoroutineDispatcher,
+    private val preferenceReader: AppPreferenceReader = AppPreferenceReader.Default,
 ) : ConversationDraftDelegate {
 
     private val _effects = MutableSharedFlow<ConversationScreenEffect>(
@@ -146,6 +154,7 @@ internal class ConversationDraftDelegateImpl @Inject constructor(
     private var boundScope: CoroutineScope? = null
     private var pendingDefaultSmsRoleSendRequest: DraftSendRequest? = null
     private var pendingMessageLimitSendRequest: DraftSendRequest? = null
+    private var pendingDelayedSendJob: Job? = null
 
     override fun bind(
         scope: CoroutineScope,
@@ -523,11 +532,55 @@ internal class ConversationDraftDelegateImpl @Inject constructor(
     private fun sendDraft(sendRequest: DraftSendRequest) {
         val scope = boundScope ?: return
 
-        if (conversationDraftEditorDelegate.markSendingForSendRequest(sendRequest = sendRequest)) {
-            launchDraftOperation(scope = scope) {
-                createSendDraftFlow(sendRequest = sendRequest)
+        if (!conversationDraftEditorDelegate.markSendingForSendRequest(sendRequest = sendRequest)) {
+            return
+        }
+
+        when {
+            preferenceReader.isEnabled(AppBooleanPref.SEND_DELAY) -> {
+                sendDraftAfterDelay(sendRequest = sendRequest)
+            }
+
+            else -> {
+                launchDraftOperation(scope = scope) {
+                    createSendDraftFlow(sendRequest = sendRequest)
+                }
             }
         }
+    }
+
+    /**
+     * Holds the message for [SEND_DELAY_MILLIS] before handing it to the normal send path.
+     * Runs in the application scope so leaving the conversation during the window still sends.
+     * While waiting, the draft stays in the composer (marked as sending); undo puts it back to
+     * idle so it can be edited, and nothing is written to the message database.
+     */
+    private fun sendDraftAfterDelay(sendRequest: DraftSendRequest) {
+        pendingDelayedSendJob?.cancel()
+        pendingDelayedSendJob = applicationScope.launch(defaultDispatcher) {
+            _effects.emit(
+                ConversationScreenEffect.ShowSendDelayUndo(durationMillis = SEND_DELAY_MILLIS),
+            )
+
+            try {
+                delay(SEND_DELAY_MILLIS)
+            } catch (exception: CancellationException) {
+                conversationDraftEditorDelegate.markConversationDraftAsIdle(
+                    conversationId = sendRequest.conversationId,
+                )
+                throw exception
+            }
+
+            // Past the undo window: finish the send even if the user taps undo late.
+            withContext(NonCancellable) {
+                createSendDraftFlow(sendRequest = sendRequest).collect()
+            }
+        }
+    }
+
+    override fun cancelDelayedSend() {
+        pendingDelayedSendJob?.takeIf { it.isActive }?.cancel()
+        pendingDelayedSendJob = null
     }
 
     private fun emitEffect(effect: ConversationScreenEffect) {
@@ -742,6 +795,8 @@ internal class ConversationDraftDelegateImpl @Inject constructor(
     }
 
     private companion object {
+        const val SEND_DELAY_MILLIS = 3_000L
+
         private const val TAG = "ConversationDraftDelegate"
 
         private const val DRAFT_AUTOSAVE_DELAY_MILLIS = 300L

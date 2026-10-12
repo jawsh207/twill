@@ -14,6 +14,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarVisuals
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
@@ -42,6 +43,7 @@ import com.android.messaging.ui.conversation.messages.model.message.Conversation
 import com.android.messaging.ui.conversation.messages.model.message.ConversationMessagesUiState
 import com.android.messaging.ui.conversation.messages.ui.ConversationMessages
 import com.android.messaging.ui.conversation.messages.ui.attachment.OnConversationAttachmentClick
+import com.android.messaging.ui.conversation.messages.ui.link.LocalWebLinkPreviewsEnabled
 import com.android.messaging.ui.conversation.metadata.model.ConversationMetadataUiState
 import com.android.messaging.ui.conversation.screen.model.ConversationMessageAction
 import com.android.messaging.ui.conversation.screen.model.ConversationScreenScaffoldUiState
@@ -243,29 +245,33 @@ private fun ConversationScreenPresentContent(
         onLoadOlderMessages = onLoadOlderMessages,
     )
 
-    ConversationMessages(
-        modifier = modifier.conversationScreenContentModifier(
-            contentPadding = contentPadding,
-            backdropColor = contentBackdropColor,
-        ),
-        messages = messagesState.messages,
-        listState = messagesListState,
-        selectedMessageIds = uiState.selection.selectedMessageIds,
-        showIncomingParticipantIdentity = showIncomingParticipantIdentity,
-        youTubeLinkPreviewsEnabled = messagesState.youTubeLinkPreviewsEnabled,
-        subscriptions = uiState.composer.simSelector.subscriptions,
-        currentSendSimDisplayName = currentSendSimDisplayName,
-        additionalTopContentPadding = additionalTopContentPadding,
-        onAttachmentClick = onAttachmentClick,
-        onExternalUriClick = onExternalUriClick,
-        onMessageClick = onMessageClick,
-        onMessageAvatarClick = onMessageAvatarClick,
-        onMessageDownloadClick = onMessageDownloadClick,
-        onMessageActionClick = onMessageActionClick,
-        onMessageLongClick = onMessageLongClick,
-        onMessageResendClick = onMessageResendClick,
-        onSimSelectorClick = onSimSelectorClick,
-    )
+    CompositionLocalProvider(
+        LocalWebLinkPreviewsEnabled provides messagesState.webLinkPreviewsEnabled,
+    ) {
+        ConversationMessages(
+            modifier = modifier.conversationScreenContentModifier(
+                contentPadding = contentPadding,
+                backdropColor = contentBackdropColor,
+            ),
+            messages = messagesState.messages,
+            listState = messagesListState,
+            selectedMessageIds = uiState.selection.selectedMessageIds,
+            showIncomingParticipantIdentity = showIncomingParticipantIdentity,
+            youTubeLinkPreviewsEnabled = messagesState.youTubeLinkPreviewsEnabled,
+            subscriptions = uiState.composer.simSelector.subscriptions,
+            currentSendSimDisplayName = currentSendSimDisplayName,
+            additionalTopContentPadding = additionalTopContentPadding,
+            onAttachmentClick = onAttachmentClick,
+            onExternalUriClick = onExternalUriClick,
+            onMessageClick = onMessageClick,
+            onMessageAvatarClick = onMessageAvatarClick,
+            onMessageDownloadClick = onMessageDownloadClick,
+            onMessageActionClick = onMessageActionClick,
+            onMessageLongClick = onMessageLongClick,
+            onMessageResendClick = onMessageResendClick,
+            onSimSelectorClick = onSimSelectorClick,
+        )
+    }
 }
 
 @Composable

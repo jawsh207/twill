@@ -21,6 +21,7 @@ import com.android.messaging.ui.conversation.messages.model.message.Conversation
 import com.android.messaging.ui.conversation.messages.model.message.ConversationMessageUiModel.Status
 import com.android.messaging.ui.conversation.messages.ui.attachment.ConversationMessageAttachments
 import com.android.messaging.ui.conversation.messages.ui.attachment.OnConversationAttachmentClick
+import com.android.messaging.ui.conversation.messages.ui.link.WebLinkPreviewCard
 import com.android.messaging.ui.conversation.messages.ui.text.ConversationMessageText
 import com.android.messaging.ui.conversation.messages.ui.text.LocalConversationMessageLinkColor
 import com.android.messaging.ui.conversation.preview.previewAudioPart
@@ -243,6 +244,13 @@ private fun ConversationMessageBody(
             style = MaterialTheme.typography.bodyLarge,
             onExternalUriClick = onExternalUriClick,
             onMessageLongClick = onMessageLongClick,
+        )
+    }
+
+    content.webPreviewUrl?.let { url ->
+        WebLinkPreviewCard(
+            url = url,
+            onOpen = onExternalUriClick,
         )
     }
 }

@@ -12,4 +12,8 @@ internal data class AppSettingsUiState(
     val isDebugEnabled: Boolean = false,
     val dumpSmsEnabled: Boolean = false,
     val dumpMmsEnabled: Boolean = false,
+    val webLinkPreviewsEnabled: Boolean = false,
+    val sendDelayEnabled: Boolean = false,
+    val unreadOnTopEnabled: Boolean = false,
+    val longSmsAsMmsEnabled: Boolean = false,
 )

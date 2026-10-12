@@ -20,6 +20,10 @@ internal interface AppSettingsDelegate : SettingsScreenDelegate<AppSettingsUiSta
     fun onSendSoundChanged(enabled: Boolean)
     fun onInConversationSoundChanged(enabled: Boolean)
     fun onYouTubeLinkPreviewsChanged(enabled: Boolean)
+    fun onWebLinkPreviewsChanged(enabled: Boolean)
+    fun onSendDelayChanged(enabled: Boolean)
+    fun onUnreadOnTopChanged(enabled: Boolean)
+    fun onLongSmsAsMmsChanged(enabled: Boolean)
     fun onDumpSmsChanged(enabled: Boolean)
     fun onDumpMmsChanged(enabled: Boolean)
 }
@@ -75,6 +79,34 @@ internal class AppSettingsDelegateImpl @Inject constructor(
     override fun onYouTubeLinkPreviewsChanged(enabled: Boolean) {
         setBooleanPref(
             pref = AppBooleanPref.YOUTUBE_LINK_PREVIEWS,
+            enabled = enabled,
+        )
+    }
+
+    override fun onWebLinkPreviewsChanged(enabled: Boolean) {
+        setBooleanPref(
+            pref = AppBooleanPref.WEB_LINK_PREVIEWS,
+            enabled = enabled,
+        )
+    }
+
+    override fun onSendDelayChanged(enabled: Boolean) {
+        setBooleanPref(
+            pref = AppBooleanPref.SEND_DELAY,
+            enabled = enabled,
+        )
+    }
+
+    override fun onUnreadOnTopChanged(enabled: Boolean) {
+        setBooleanPref(
+            pref = AppBooleanPref.UNREAD_ON_TOP,
+            enabled = enabled,
+        )
+    }
+
+    override fun onLongSmsAsMmsChanged(enabled: Boolean) {
+        setBooleanPref(
+            pref = AppBooleanPref.LONG_SMS_AS_MMS,
             enabled = enabled,
         )
     }

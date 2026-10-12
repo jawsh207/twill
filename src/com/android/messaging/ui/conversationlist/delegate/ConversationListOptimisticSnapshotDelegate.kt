@@ -1,5 +1,7 @@
 package com.android.messaging.ui.conversationlist.delegate
 
+import com.android.messaging.data.appsettings.model.AppBooleanPref
+import com.android.messaging.data.appsettings.repository.AppPreferenceReader
 import com.android.messaging.data.conversation.model.ConversationId
 import com.android.messaging.data.conversationlist.model.ConversationListItem
 import com.android.messaging.data.conversationlist.model.ConversationListMode
@@ -7,6 +9,8 @@ import com.android.messaging.data.conversationlist.model.ConversationListSnapsho
 import com.android.messaging.data.conversationlist.repository.ConversationListRepository
 import com.android.messaging.ui.conversationlist.delegate.ConversationRemovalOverride.Kind
 import javax.inject.Inject
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +34,7 @@ internal interface ConversationListOptimisticSnapshotDelegate {
 internal class ConversationListOptimisticSnapshotDelegateImpl @Inject constructor(
     private val repository: ConversationListRepository,
     private val reducer: ConversationListOptimisticReducer,
+    private val preferenceReader: AppPreferenceReader = AppPreferenceReader.Default,
 ) : ConversationListOptimisticSnapshotDelegate {
 
     private val _snapshot = MutableStateFlow<ConversationListSnapshot?>(null)
@@ -181,12 +186,33 @@ internal class ConversationListOptimisticSnapshotDelegateImpl @Inject constructo
             .keys
             .toImmutableSet()
 
+        val reducedItems = reducer.apply(
+            items = snapshot.items,
+            overrides = overrides,
+        )
+
         _snapshot.value = snapshot.copy(
-            items = reducer.apply(
-                items = snapshot.items,
-                overrides = overrides,
-            ),
+            items = when {
+                preferenceReader.isEnabled(AppBooleanPref.UNREAD_ON_TOP) -> {
+                    reducedItems.withUnreadOnTop()
+                }
+
+                else -> reducedItems
+            },
             restoredConversationIds = restoredConversationIds,
         )
+    }
+
+    /**
+     * Stable re-order that keeps pinned conversations first, then moves unread conversations
+     * (including ones the user marked as unread) above read ones. Within each group the
+     * existing newest-first order is preserved.
+     */
+    private fun ImmutableList<ConversationListItem>.withUnreadOnTop():
+        ImmutableList<ConversationListItem> {
+        return sortedWith(
+            compareByDescending<ConversationListItem> { it.isPinned }
+                .thenByDescending { !it.latestMessage.isRead },
+        ).toImmutableList()
     }
 }

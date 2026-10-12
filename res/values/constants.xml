@@ -23,6 +23,14 @@
     <bool name="in_conversation_sound_pref_default" translatable="false">false</bool>
     <string name="youtube_link_previews_pref_key" translatable="false">youtube_link_previews</string>
     <bool name="youtube_link_previews_pref_default" translatable="false">false</bool>
+    <string name="web_link_previews_pref_key" translatable="false">web_link_previews</string>
+    <bool name="web_link_previews_pref_default" translatable="false">false</bool>
+    <string name="send_delay_pref_key" translatable="false">send_delay</string>
+    <bool name="send_delay_pref_default" translatable="false">false</bool>
+    <string name="unread_on_top_pref_key" translatable="false">unread_on_top</string>
+    <bool name="unread_on_top_pref_default" translatable="false">false</bool>
+    <string name="long_sms_as_mms_pref_key" translatable="false">long_sms_as_mms</string>
+    <bool name="long_sms_as_mms_pref_default" translatable="false">false</bool>
 
     <!-- Subscription-specific settings. The values of these pref keys must be prefixed with
          "buglesub_" to allow for runtime checks -->

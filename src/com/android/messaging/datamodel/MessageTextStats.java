@@ -16,7 +16,12 @@
 
 package com.android.messaging.datamodel;
 
+import android.content.Context;
 import android.telephony.SmsMessage;
+
+import com.android.messaging.Factory;
+import com.android.messaging.R;
+import com.android.messaging.util.BuglePrefs;
 
 import com.android.messaging.sms.MmsConfig;
 
@@ -86,6 +91,22 @@ public class MessageTextStats {
             if (usedInCurrentMessage > smsToMmsLengthThreshold) {
                 mMessageLengthRequiresMms = true;
             }
+        }
+        // User preference: send anything that would need more than one SMS part as a single MMS
+        if (mMessageCount > 1 && isLongSmsAsMmsEnabled()) {
+            mMessageLengthRequiresMms = true;
+        }
+    }
+
+    private static boolean isLongSmsAsMmsEnabled() {
+        try {
+            final Context context = Factory.get().getApplicationContext();
+            return BuglePrefs.getApplicationPrefs().getBoolean(
+                    context.getString(R.string.long_sms_as_mms_pref_key),
+                    context.getResources().getBoolean(R.bool.long_sms_as_mms_pref_default));
+        } catch (RuntimeException e) {
+            // Factory may be unavailable in some test environments
+            return false;
         }
     }
 

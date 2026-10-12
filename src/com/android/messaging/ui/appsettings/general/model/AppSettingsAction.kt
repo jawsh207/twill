@@ -25,6 +25,22 @@ internal sealed interface AppSettingsAction {
         val enabled: Boolean,
     ) : AppSettingsAction
 
+    data class WebLinkPreviewsChanged(
+        val enabled: Boolean,
+    ) : AppSettingsAction
+
+    data class SendDelayChanged(
+        val enabled: Boolean,
+    ) : AppSettingsAction
+
+    data class UnreadOnTopChanged(
+        val enabled: Boolean,
+    ) : AppSettingsAction
+
+    data class LongSmsAsMmsChanged(
+        val enabled: Boolean,
+    ) : AppSettingsAction
+
     data class DefaultSmsAppClicked(
         val isCurrentlyDefault: Boolean,
     ) : AppSettingsAction
