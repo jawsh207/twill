@@ -1,9 +1,12 @@
 package com.android.messaging.ui.conversation.composer.ui
 
+import android.os.SystemClock
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.StartOffsetType
@@ -18,6 +21,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,12 +31,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -109,6 +117,15 @@ internal fun ConversationSendActionButton(
     onRecordGestureFinish: (Boolean) -> Unit,
     onSendActionLongClick: () -> Unit,
 ) {
+    val delayedSend = LocalDelayedSendUi.current
+    if (delayedSend != null && mode == ConversationSendActionButtonMode.Send) {
+        DelayedSendCountdownButton(
+            modifier = modifier,
+            delayedSend = delayedSend,
+        )
+        return
+    }
+
     var isRecordGestureActive by remember(mode, enabled) {
         mutableStateOf(value = false)
     }
@@ -330,7 +347,10 @@ private fun Modifier.sendClickModifier(
                 role = Role.Button,
                 onClickLabel = stringResource(R.string.sendButtonContentDescription),
                 onLongClickLabel = stringResource(
-                    id = R.string.sim_selector_button_content_description,
+                    id = when (LocalSendLongPressActions.current) {
+                        null -> R.string.sim_selector_button_content_description
+                        else -> R.string.send_long_press_options
+                    },
                 ),
                 onClick = onClick,
                 onLongClick = onSendActionLongClick,
@@ -532,4 +552,70 @@ private fun PreviewConversationSendActionButton(
         onRecordGestureFinish = { _ -> },
         onSendActionLongClick = {},
     )
+}
+
+/**
+ * Shown while "Delay sending" holds a message: a ring that empties over the countdown around a
+ * smaller button with an X. Tapping it cancels the send.
+ */
+@Composable
+private fun DelayedSendCountdownButton(
+    modifier: Modifier,
+    delayedSend: DelayedSendUi,
+) {
+    val startedAt = delayedSend.startedAtElapsedMillis
+    val durationMillis = delayedSend.durationMillis.coerceAtLeast(1L)
+
+    val remainingFraction = remember(startedAt) {
+        val elapsed = (SystemClock.elapsedRealtime() - startedAt).coerceIn(0L, durationMillis)
+        Animatable(initialValue = 1f - elapsed.toFloat() / durationMillis)
+    }
+
+    LaunchedEffect(startedAt) {
+        val remainingMillis = (durationMillis - (SystemClock.elapsedRealtime() - startedAt))
+            .coerceAtLeast(0L)
+        remainingFraction.animateTo(
+            targetValue = 0f,
+            animationSpec = tween(
+                durationMillis = remainingMillis.toInt(),
+                easing = LinearEasing,
+            ),
+        )
+    }
+
+    val cancelLabel = stringResource(id = R.string.send_delay_cancel)
+
+    Box(
+        modifier = modifier.size(size = 56.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(
+            progress = { remainingFraction.value },
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            strokeWidth = 4.dp,
+        )
+
+        Surface(
+            modifier = Modifier
+                .size(size = 44.dp)
+                .clip(shape = CircleShape)
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = cancelLabel,
+                    onClick = delayedSend.onCancel,
+                ),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = cancelLabel,
+                )
+            }
+        }
+    }
 }

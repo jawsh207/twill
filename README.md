@@ -10,11 +10,11 @@ Everything from GrapheneOS Messaging, plus:
 
 | Feature | Where to find it | Default |
 | --- | --- | --- |
-| **Delay sending.** Holds a message for 3 seconds after you tap send, with an Undo button. Leaving the chat during the wait still sends it. | Settings | Off |
-| **Scheduled messages.** Pick a date and time for the message in the composer. Pending messages for the chat are listed in the same dialog and can be cancelled. Text only. | Conversation › ⋮ menu › Schedule message | — |
+| **Delay sending.** Holds a message for 3 seconds after you tap send. A ring counts down around the send button, which turns into an X; tap it to cancel. Leaving the chat during the wait still sends it. | Settings › Advanced, first in the Advanced section | Off |
+| **Scheduled messages.** Pick a date and time for the message in the composer. Pending messages for the chat are listed in the same dialog and can be cancelled. Text only. | Long-press the send button (on dual-SIM phones, pick Schedule message from the menu) | — |
 | **Keep unread at top.** Unread chats, including ones marked as unread, sort above read ones. Pinned chats stay first. | Settings | Off |
 | **Website link previews.** Shows a title, description and image under links. | Settings › Privacy, next to YouTube link previews | Off |
-| **Send long messages as MMS.** Text that needs more than one SMS is sent as a single MMS instead of several parts. | Settings | Off |
+| **Send long messages as MMS.** Text that needs more than one SMS is sent as a single MMS instead of several parts. | Settings › Advanced, last in the MMS section | Off |
 
 ### About website link previews
 

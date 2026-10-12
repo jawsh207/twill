@@ -174,6 +174,14 @@ private fun subscriptionSettingsRouteContent(): @Composable (SubscriptionSetting
             subscriptionSettingsDefaultArgs(navKey = navKey)
         }
 
+        // Twill: app-wide toggles shown on this page (Delay sending, Long SMS as MMS).
+        val appSettingsViewModel = hiltViewModel<AppSettingsViewModel>()
+        val appSettings by appSettingsViewModel.uiState.collectAsStateWithLifecycle()
+
+        LifecycleEventEffect(event = Lifecycle.Event.ON_RESUME) {
+            appSettingsViewModel.refreshState()
+        }
+
         SeededViewModelStoreOwner(defaultArgs = defaultArgs) {
             val viewModel = hiltViewModel<SubscriptionSettingsViewModel>()
             val subscription by viewModel.uiState.collectAsStateWithLifecycle()
@@ -205,6 +213,8 @@ private fun subscriptionSettingsRouteContent(): @Composable (SubscriptionSetting
                     onAction = viewModel::onAction,
                     onNavigateBack = navigator::back,
                     phoneNumberDialogState = phoneNumberDialogState,
+                    appSettings = appSettings,
+                    onAppSettingsAction = appSettingsViewModel::onAction,
                 )
             }
         }

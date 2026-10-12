@@ -23,6 +23,8 @@ import com.android.messaging.ui.conversation.audio.delegate.ConversationAudioRec
 import com.android.messaging.ui.conversation.composer.delegate.ConversationComposerAttachmentsDelegate
 import com.android.messaging.ui.conversation.composer.delegate.ConversationDraftDelegate
 import com.android.messaging.ui.conversation.composer.delegate.ConversationSubscriptionSelectionDelegate
+import com.android.messaging.ui.conversation.composer.delegate.DelayedSendState
+import com.android.messaging.ui.conversation.composer.delegate.NoDelayedSend
 import com.android.messaging.ui.conversation.composer.mapper.ConversationComposerUiStateMapper
 import com.android.messaging.ui.conversation.composer.model.ComposerAttachmentUiModel
 import com.android.messaging.ui.conversation.composer.model.ConversationComposerUiState
@@ -108,6 +110,8 @@ internal interface ConversationScreenModel :
     )
 
     fun onSendClick()
+    val delayedSend: StateFlow<DelayedSendState?>
+        get() = NoDelayedSend
     fun onUndoDelayedSendClick() {}
     fun dismissAttachmentLimitWarning()
     fun sendAnywayAfterAttachmentLimitWarning()
@@ -636,6 +640,9 @@ internal class ConversationViewModel @Inject constructor(
     override fun dismissAttachmentLimitWarning() {
         conversationDraftDelegate.dismissAttachmentLimitWarning()
     }
+
+    override val delayedSend: StateFlow<DelayedSendState?>
+        get() = conversationDraftDelegate.delayedSend
 
     override fun onUndoDelayedSendClick() {
         conversationDraftDelegate.cancelDelayedSend()

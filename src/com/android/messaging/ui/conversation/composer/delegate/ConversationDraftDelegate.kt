@@ -1,6 +1,7 @@
 package com.android.messaging.ui.conversation.composer.delegate
 
 import android.app.Activity
+import android.os.SystemClock
 import com.android.messaging.R
 import com.android.messaging.data.appsettings.model.AppBooleanPref
 import com.android.messaging.data.appsettings.repository.AppPreferenceReader
@@ -59,6 +60,15 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+/** A send waiting out the "Delay sending" window, timed with SystemClock.elapsedRealtime. */
+internal data class DelayedSendState(
+    val conversationId: ConversationId,
+    val startedAtElapsedMillis: Long,
+    val durationMillis: Long,
+)
+
+internal val NoDelayedSend: StateFlow<DelayedSendState?> = MutableStateFlow(value = null)
+
 internal interface ConversationDraftDelegate : ConversationScreenDelegate<ConversationDraftState> {
     val effects: Flow<ConversationScreenEffect>
     val attachmentLimitWarning: StateFlow<ConversationAttachmentLimitWarning?>
@@ -108,6 +118,10 @@ internal interface ConversationDraftDelegate : ConversationScreenDelegate<Conver
 
     fun onSendClick()
 
+    /** Set while a message is held by "Delay sending"; null otherwise. */
+    val delayedSend: StateFlow<DelayedSendState?>
+        get() = NoDelayedSend
+
     /** Cancels a send that is still inside the "Delay sending" window. */
     fun cancelDelayedSend() {}
 
@@ -155,6 +169,8 @@ internal class ConversationDraftDelegateImpl @Inject constructor(
     private var pendingDefaultSmsRoleSendRequest: DraftSendRequest? = null
     private var pendingMessageLimitSendRequest: DraftSendRequest? = null
     private var pendingDelayedSendJob: Job? = null
+    private val _delayedSend = MutableStateFlow<DelayedSendState?>(value = null)
+    override val delayedSend: StateFlow<DelayedSendState?> = _delayedSend.asStateFlow()
 
     override fun bind(
         scope: CoroutineScope,
@@ -558,8 +574,10 @@ internal class ConversationDraftDelegateImpl @Inject constructor(
     private fun sendDraftAfterDelay(sendRequest: DraftSendRequest) {
         pendingDelayedSendJob?.cancel()
         pendingDelayedSendJob = applicationScope.launch(defaultDispatcher) {
-            _effects.emit(
-                ConversationScreenEffect.ShowSendDelayUndo(durationMillis = SEND_DELAY_MILLIS),
+            _delayedSend.value = DelayedSendState(
+                conversationId = sendRequest.conversationId,
+                startedAtElapsedMillis = SystemClock.elapsedRealtime(),
+                durationMillis = SEND_DELAY_MILLIS,
             )
 
             try {
@@ -569,6 +587,8 @@ internal class ConversationDraftDelegateImpl @Inject constructor(
                     conversationId = sendRequest.conversationId,
                 )
                 throw exception
+            } finally {
+                _delayedSend.value = null
             }
 
             // Past the undo window: finish the send even if the user taps undo late.

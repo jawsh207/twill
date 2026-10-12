@@ -908,9 +908,9 @@
     <string name="web_link_previews_pref_title">Website link previews</string>
     <string name="web_link_previews_pref_summary">Show a title, description and image for website links in conversations. Enabling this fetches the linked page, which reveals your IP address to that website and may reduce privacy</string>
     <string name="send_delay_pref_title">Delay sending</string>
-    <string name="send_delay_pref_summary">Wait 3 seconds before sending so you can undo</string>
-    <string name="send_delay_sending_in">Sending in 3 seconds</string>
-    <string name="send_delay_undo">Undo</string>
+    <string name="send_delay_pref_summary">Wait 3 seconds before sending. Tap the send button during the countdown to cancel</string>
+    <string name="send_delay_cancel">Cancel sending</string>
+    <string name="send_long_press_options">More send options</string>
     <string name="unread_on_top_pref_title">Keep unread at top</string>
     <string name="unread_on_top_pref_summary">Show unread conversations, including ones marked as unread, above other conversations. Pinned conversations stay first</string>
     <string name="long_sms_as_mms_pref_title">Send long messages as MMS</string>

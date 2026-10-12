@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -551,12 +554,27 @@ private fun ConversationComposeSendAction(
     onRecordGestureFinish: (Boolean) -> Unit,
     onSendActionLongClick: () -> Unit,
 ) {
+    val longPressActions = LocalSendLongPressActions.current
+    var isLongPressMenuExpanded by remember { mutableStateOf(value = false) }
+    val resolvedLongClick: () -> Unit = when {
+        longPressActions == null -> onSendActionLongClick
+        longPressActions.isEmpty() -> ({})
+        longPressActions.size == 1 -> longPressActions.single().onClick
+        else -> ({ isLongPressMenuExpanded = true })
+    }
+
     Box(
         modifier = Modifier.heightIn(
             min = 56.dp,
             max = 56.dp,
         ),
     ) {
+        SendLongPressMenu(
+            actions = longPressActions.orEmpty(),
+            expanded = isLongPressMenuExpanded,
+            onDismiss = { isLongPressMenuExpanded = false },
+        )
+
         ConversationSendActionButton(
             modifier = modifier,
             enabled = enabled,
@@ -569,7 +587,7 @@ private fun ConversationComposeSendAction(
             onRecordGestureMove = onRecordGestureMove,
             onRecordGestureLock = onRecordGestureLock,
             onRecordGestureFinish = onRecordGestureFinish,
-            onSendActionLongClick = onSendActionLongClick,
+            onSendActionLongClick = resolvedLongClick,
         )
 
         if (shouldShowLockAffordance) {
@@ -722,4 +740,32 @@ private fun PreviewConversationComposeBar(uiState: ConversationComposerUiState) 
         onSubjectChipClick = {},
         onSubjectChipClear = {},
     )
+}
+
+@Composable
+private fun SendLongPressMenu(
+    actions: List<SendLongPressAction>,
+    expanded: Boolean,
+    onDismiss: () -> Unit,
+) {
+    DropdownMenu(
+        expanded = expanded && actions.isNotEmpty(),
+        onDismissRequest = onDismiss,
+    ) {
+        actions.forEach { action ->
+            DropdownMenuItem(
+                text = { Text(text = action.label) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = action.icon,
+                        contentDescription = null,
+                    )
+                },
+                onClick = {
+                    onDismiss()
+                    action.onClick()
+                },
+            )
+        }
+    }
 }
