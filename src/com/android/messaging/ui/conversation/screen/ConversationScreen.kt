@@ -1,9 +1,13 @@
 package com.android.messaging.ui.conversation.screen
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.SimCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -12,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Rect as ComposeRect
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.messaging.R
 import com.android.messaging.data.conversation.model.ConversationId
@@ -22,6 +27,10 @@ import com.android.messaging.ui.common.components.snackbar.MessagingSnackbarHost
 import com.android.messaging.ui.contact.model.AddContactRequest
 import com.android.messaging.ui.conversation.composer.ui.ConversationComposerSection
 import com.android.messaging.ui.conversation.composer.ui.ConversationSimSelectorSheet
+import com.android.messaging.ui.conversation.composer.ui.DelayedSendUi
+import com.android.messaging.ui.conversation.composer.ui.LocalDelayedSendUi
+import com.android.messaging.ui.conversation.composer.ui.LocalSendLongPressActions
+import com.android.messaging.ui.conversation.composer.ui.SendLongPressAction
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerPermissionState
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerState
 import com.android.messaging.ui.conversation.metadata.ui.ConversationTopAppBar
@@ -152,60 +161,102 @@ internal fun ConversationScreenScaffold(
         conversationId != null &&
         uiState.composer.isMessageFieldEnabled
 
-    Scaffold(
-        modifier = modifier,
-        snackbarHost = { MessagingSnackbarHost(hostState = snackbarHostState) },
-        topBar = {
-            ConversationScreenTopBar(
-                uiState = uiState,
-                onAddPeopleClick = onAddPeopleClick,
-                onConversationDetailsClick = onConversationDetailsClick,
-                onNavigateBack = onNavigateBack,
-                onSimSelectorClick = showSimSelectorSheet,
-                onScheduleMessageClick = when {
-                    canScheduleMessages -> {
-                        { isScheduleDialogVisible = true }
-                    }
+    val scheduleLabel = stringResource(R.string.schedule_message_menu)
+    val switchSimLabel = stringResource(R.string.conversation_switch_sims)
+    val twillLongPressActions = remember(
+        canScheduleMessages,
+        isSimSelectorAvailable,
+        showSimSelectorSheet,
+        scheduleLabel,
+        switchSimLabel,
+    ) {
+        buildList {
+            if (canScheduleMessages) {
+                add(
+                    SendLongPressAction(
+                        label = scheduleLabel,
+                        icon = Icons.Rounded.Schedule,
+                        onClick = { isScheduleDialogVisible = true },
+                    ),
+                )
+            }
+            if (isSimSelectorAvailable) {
+                add(
+                    SendLongPressAction(
+                        label = switchSimLabel,
+                        icon = Icons.Rounded.SimCard,
+                        onClick = showSimSelectorSheet,
+                    ),
+                )
+            }
+        }
+    }
+    // Only the real app route provides the scheduler; previews and tests keep upstream behaviour.
+    val sendLongPressActions = twillLongPressActions.takeIf { scheduledMessagesController != null }
 
-                    else -> null
-                },
-                screenModel = screenModel,
+    val delayedSendState by screenModel.delayedSend.collectAsStateWithLifecycle()
+    val delayedSendUi = delayedSendState
+        ?.takeIf { state -> state.conversationId == conversationId }
+        ?.let { state ->
+            DelayedSendUi(
+                startedAtElapsedMillis = state.startedAtElapsedMillis,
+                durationMillis = state.durationMillis,
+                onCancel = screenModel::onUndoDelayedSendClick,
             )
-        },
-        bottomBar = {
-            ConversationScreenBottomBar(
+        }
+
+    CompositionLocalProvider(
+        LocalSendLongPressActions provides sendLongPressActions,
+        LocalDelayedSendUi provides delayedSendUi,
+    ) {
+        Scaffold(
+            modifier = modifier,
+            snackbarHost = { MessagingSnackbarHost(hostState = snackbarHostState) },
+            topBar = {
+                ConversationScreenTopBar(
+                    uiState = uiState,
+                    onAddPeopleClick = onAddPeopleClick,
+                    onConversationDetailsClick = onConversationDetailsClick,
+                    onNavigateBack = onNavigateBack,
+                    onSimSelectorClick = showSimSelectorSheet,
+                    screenModel = screenModel,
+                )
+            },
+            bottomBar = {
+                ConversationScreenBottomBar(
+                    uiState = uiState,
+                    isMediaPickerOpen = isMediaPickerOpen,
+                    messageFieldFocusRequester = messageFieldFocusRequester,
+                    onOpenContactPicker = onOpenContactPicker,
+                    onOpenMediaPicker = onOpenMediaPicker,
+                    onAudioRecordingStartRequest = onAudioRecordingStartRequest,
+                    onLockedAudioRecordingStartRequest = onLockedAudioRecordingStartRequest,
+                    onSendActionLongClick = showSimSelectorSheet,
+                    screenModel = screenModel,
+                )
+            },
+        ) { contentPadding ->
+            ConversationScreenContent(
+                modifier = Modifier.fillMaxSize(),
+                conversationId = conversationId,
                 uiState = uiState,
-                isMediaPickerOpen = isMediaPickerOpen,
-                messageFieldFocusRequester = messageFieldFocusRequester,
-                onOpenContactPicker = onOpenContactPicker,
-                onOpenMediaPicker = onOpenMediaPicker,
-                onAudioRecordingStartRequest = onAudioRecordingStartRequest,
-                onLockedAudioRecordingStartRequest = onLockedAudioRecordingStartRequest,
-                onSendActionLongClick = showSimSelectorSheet,
-                screenModel = screenModel,
+                snackbarHostState = snackbarHostState,
+                contentPadding = contentPadding,
+                pendingScrollMessageId = pendingScrollMessageId,
+                onPendingScrollMessageIdConsumed = onPendingScrollMessageIdConsumed,
+                onAttachmentClick = screenModel::onMessageAttachmentClicked,
+                onExternalUriClick = screenModel::onExternalUriClicked,
+                onLoadOlderMessages = screenModel::onLoadOlderMessages,
+                onMessageClick = screenModel::onMessageClick,
+                onMessageAvatarClick = screenModel::onMessageAvatarClick,
+                onMessageDownloadClick = screenModel::onMessageDownloadClick,
+                onMessageActionClick = screenModel::onMessageActionClick,
+                onMessageLongClick = screenModel::onMessageLongClick,
+                onMessageResendClick = screenModel::onMessageResendClick,
+                onSimSelectorClick = showSimSelectorSheet,
+                onUnblockClick = screenModel::onUnblockClick,
             )
-        },
-    ) { contentPadding ->
-        ConversationScreenContent(
-            modifier = Modifier.fillMaxSize(),
-            conversationId = conversationId,
-            uiState = uiState,
-            snackbarHostState = snackbarHostState,
-            contentPadding = contentPadding,
-            pendingScrollMessageId = pendingScrollMessageId,
-            onPendingScrollMessageIdConsumed = onPendingScrollMessageIdConsumed,
-            onAttachmentClick = screenModel::onMessageAttachmentClicked,
-            onExternalUriClick = screenModel::onExternalUriClicked,
-            onLoadOlderMessages = screenModel::onLoadOlderMessages,
-            onMessageClick = screenModel::onMessageClick,
-            onMessageAvatarClick = screenModel::onMessageAvatarClick,
-            onMessageDownloadClick = screenModel::onMessageDownloadClick,
-            onMessageActionClick = screenModel::onMessageActionClick,
-            onMessageLongClick = screenModel::onMessageLongClick,
-            onMessageResendClick = screenModel::onMessageResendClick,
-            onSimSelectorClick = showSimSelectorSheet,
-            onUnblockClick = screenModel::onUnblockClick,
-        )
+        }
     }
 
     ConversationScreenOverlays(
@@ -275,7 +326,6 @@ private fun ConversationScreenTopBar(
     onConversationDetailsClick: () -> Unit,
     onNavigateBack: () -> Unit,
     onSimSelectorClick: () -> Unit,
-    onScheduleMessageClick: (() -> Unit)?,
     screenModel: ConversationScreenModel,
 ) {
     when {
@@ -297,8 +347,6 @@ private fun ConversationScreenTopBar(
                 isAddContactVisible = uiState.canAddContact,
                 isDeleteConversationVisible = uiState.canDeleteConversation,
                 isShowSubjectFieldVisible = uiState.canEditSubject,
-                isScheduleMessageVisible = onScheduleMessageClick != null,
-                onScheduleMessageClick = onScheduleMessageClick ?: {},
                 simSelector = uiState.composer.simSelector,
                 onAddPeopleClick = onAddPeopleClick,
                 onCallClick = screenModel::onCallClick,

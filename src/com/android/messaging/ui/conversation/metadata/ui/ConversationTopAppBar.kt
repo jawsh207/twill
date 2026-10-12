@@ -20,7 +20,6 @@ import androidx.compose.material.icons.rounded.GroupAdd
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PersonAdd
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.SimCard
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material3.DropdownMenu
@@ -63,7 +62,6 @@ import com.android.messaging.ui.conversation.CONVERSATION_ARCHIVE_BUTTON_TEST_TA
 import com.android.messaging.ui.conversation.CONVERSATION_CALL_BUTTON_TEST_TAG
 import com.android.messaging.ui.conversation.CONVERSATION_DELETE_CONVERSATION_BUTTON_TEST_TAG
 import com.android.messaging.ui.conversation.CONVERSATION_OVERFLOW_BUTTON_TEST_TAG
-import com.android.messaging.ui.conversation.CONVERSATION_SCHEDULE_MESSAGE_MENU_ITEM_TEST_TAG
 import com.android.messaging.ui.conversation.CONVERSATION_SHOW_SUBJECT_FIELD_MENU_ITEM_TEST_TAG
 import com.android.messaging.ui.conversation.CONVERSATION_SIM_SELECTOR_MENU_ITEM_TEST_TAG
 import com.android.messaging.ui.conversation.CONVERSATION_TOP_APP_BAR_TITLE_TEST_TAG
@@ -96,7 +94,6 @@ internal fun ConversationTopAppBar(
     isAddContactVisible: Boolean = false,
     isDeleteConversationVisible: Boolean = false,
     isShowSubjectFieldVisible: Boolean = false,
-    isScheduleMessageVisible: Boolean = false,
     simSelector: ConversationSimSelectorUiState = ConversationSimSelectorUiState(),
     onAddPeopleClick: () -> Unit,
     onCallClick: () -> Unit = {},
@@ -105,7 +102,6 @@ internal fun ConversationTopAppBar(
     onAddContactClick: () -> Unit = {},
     onDeleteConversationClick: () -> Unit = {},
     onShowSubjectFieldClick: () -> Unit = {},
-    onScheduleMessageClick: () -> Unit = {},
     onSimSelectorClick: () -> Unit = {},
     onTitleClick: () -> Unit,
     onNavigateBack: () -> Unit,
@@ -122,7 +118,6 @@ internal fun ConversationTopAppBar(
         isDeleteConversationVisible = isDeleteConversationVisible,
         isShowSubjectFieldVisible = isShowSubjectFieldVisible,
         isSimSelectorVisible = simSelector.isAvailable,
-        isScheduleMessageVisible = isScheduleMessageVisible,
     )
 
     TopAppBar(
@@ -166,7 +161,6 @@ internal fun ConversationTopAppBar(
                 onAddContactClick = onAddContactClick,
                 onDeleteConversationClick = onDeleteConversationClick,
                 onShowSubjectFieldClick = onShowSubjectFieldClick,
-                onScheduleMessageClick = onScheduleMessageClick,
                 onSimSelectorClick = onSimSelectorClick,
             )
         },
@@ -306,7 +300,6 @@ private fun ConversationTopAppBarActions(
     onAddContactClick: () -> Unit,
     onDeleteConversationClick: () -> Unit,
     onShowSubjectFieldClick: () -> Unit,
-    onScheduleMessageClick: () -> Unit,
     onSimSelectorClick: () -> Unit,
 ) {
     if (isCallVisible) {
@@ -331,7 +324,6 @@ private fun ConversationTopAppBarActions(
             onAddContactClick = onAddContactClick,
             onDeleteConversationClick = onDeleteConversationClick,
             onShowSubjectFieldClick = onShowSubjectFieldClick,
-            onScheduleMessageClick = onScheduleMessageClick,
             onSimSelectorClick = onSimSelectorClick,
         )
     }
@@ -347,7 +339,6 @@ private fun ConversationTopAppBarOverflowMenu(
     onAddContactClick: () -> Unit,
     onDeleteConversationClick: () -> Unit,
     onShowSubjectFieldClick: () -> Unit,
-    onScheduleMessageClick: () -> Unit,
     onSimSelectorClick: () -> Unit,
 ) {
     var isExpanded by remember { mutableStateOf(value = false) }
@@ -375,7 +366,6 @@ private fun ConversationTopAppBarOverflowMenu(
             onAddContactClick = onAddContactClick,
             onDeleteConversationClick = onDeleteConversationClick,
             onShowSubjectFieldClick = onShowSubjectFieldClick,
-            onScheduleMessageClick = onScheduleMessageClick,
             onSimSelectorClick = onSimSelectorClick,
             onItemClick = { action ->
                 isExpanded = false
@@ -395,7 +385,6 @@ private fun ConversationTopAppBarOverflowMenuContent(
     onAddContactClick: () -> Unit,
     onDeleteConversationClick: () -> Unit,
     onShowSubjectFieldClick: () -> Unit,
-    onScheduleMessageClick: () -> Unit,
     onSimSelectorClick: () -> Unit,
     onItemClick: (() -> Unit) -> Unit,
 ) {
@@ -430,14 +419,6 @@ private fun ConversationTopAppBarOverflowMenuContent(
         label = stringResource(id = R.string.conversation_show_subject_field),
         icon = Icons.AutoMirrored.Rounded.Subject,
         onClick = { onItemClick(onShowSubjectFieldClick) },
-    )
-
-    ConversationTopAppBarOverflowMenuItem(
-        isVisible = visibility.isScheduleMessageVisible,
-        testTag = CONVERSATION_SCHEDULE_MESSAGE_MENU_ITEM_TEST_TAG,
-        label = stringResource(id = R.string.schedule_message_menu),
-        icon = Icons.Rounded.Schedule,
-        onClick = { onItemClick(onScheduleMessageClick) },
     )
 
     ConversationTopAppBarOverflowMenuItem(
@@ -671,7 +652,6 @@ private data class ConversationTopAppBarOverflowVisibility(
     val isDeleteConversationVisible: Boolean,
     val isShowSubjectFieldVisible: Boolean,
     val isSimSelectorVisible: Boolean,
-    val isScheduleMessageVisible: Boolean = false,
 ) {
     val isOverflowVisible: Boolean
         get() {
@@ -681,8 +661,7 @@ private data class ConversationTopAppBarOverflowVisibility(
                 isAddContactVisible ||
                 isDeleteConversationVisible ||
                 isShowSubjectFieldVisible ||
-                isSimSelectorVisible ||
-                isScheduleMessageVisible
+                isSimSelectorVisible
         }
 }
 
@@ -778,7 +757,6 @@ private fun ConversationTopAppBarOverflowMenuContentPreview() {
                 isDeleteConversationVisible = true,
                 isShowSubjectFieldVisible = true,
                 isSimSelectorVisible = true,
-                isScheduleMessageVisible = true,
             ),
             simSelectorLabel = "Personal",
             onAddPeopleClick = {},
@@ -787,7 +765,6 @@ private fun ConversationTopAppBarOverflowMenuContentPreview() {
             onAddContactClick = {},
             onDeleteConversationClick = {},
             onShowSubjectFieldClick = {},
-            onScheduleMessageClick = {},
             onSimSelectorClick = {},
             onItemClick = { action -> action() },
         )

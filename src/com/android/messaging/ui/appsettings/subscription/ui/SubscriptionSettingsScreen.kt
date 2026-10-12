@@ -42,6 +42,8 @@ import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
+import com.android.messaging.ui.appsettings.general.model.AppSettingsAction
+import com.android.messaging.ui.appsettings.general.model.AppSettingsUiState
 import com.android.messaging.ui.appsettings.subscription.model.PhoneNumberDialogUiState
 import com.android.messaging.ui.appsettings.subscription.model.SubscriptionSettingsAction as Action
 import com.android.messaging.ui.appsettings.subscription.model.SubscriptionUiState
@@ -57,6 +59,8 @@ internal fun SubscriptionSettingsScreen(
     onNavigateBack: () -> Unit,
     phoneNumberDialogState: PhoneNumberDialogUiState,
     modifier: Modifier = Modifier,
+    appSettings: AppSettingsUiState? = null,
+    onAppSettingsAction: (AppSettingsAction) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showGroupMmsDialog by rememberSaveable { mutableStateOf(false) }
@@ -81,9 +85,17 @@ internal fun SubscriptionSettingsScreen(
                 onGroupMmsClick = { showGroupMmsDialog = true },
                 onPhoneNumberClick = { onAction(Action.PhoneNumberClicked) },
             )
+            appSettings?.let {
+                longSmsAsMmsItem(
+                    appSettings = appSettings,
+                    onAppSettingsAction = onAppSettingsAction,
+                )
+            }
             advancedSettingsItems(
                 subscriptionSettings = subscriptionSettings,
                 onAction = onAction,
+                appSettings = appSettings,
+                onAppSettingsAction = onAppSettingsAction,
             )
         }
     }
@@ -233,11 +245,31 @@ private fun LazyListScope.autoRetrieveSwitchItem(
     }
 }
 
+// Twill: app-wide "Send long messages as MMS", at the bottom of the MMS section.
+private fun LazyListScope.longSmsAsMmsItem(
+    appSettings: AppSettingsUiState,
+    onAppSettingsAction: (AppSettingsAction) -> Unit,
+) {
+    item(key = "long_sms_as_mms") {
+        SettingsSwitchItem(
+            title = stringResource(R.string.long_sms_as_mms_pref_title),
+            summary = stringResource(R.string.long_sms_as_mms_pref_summary),
+            checked = appSettings.longSmsAsMmsEnabled,
+            onCheckedChange = { enabled ->
+                onAppSettingsAction(AppSettingsAction.LongSmsAsMmsChanged(enabled))
+            },
+        )
+    }
+}
+
 private fun LazyListScope.advancedSettingsItems(
     subscriptionSettings: SubscriptionUiState,
     onAction: (Action) -> Unit,
+    appSettings: AppSettingsUiState?,
+    onAppSettingsAction: (AppSettingsAction) -> Unit,
 ) {
-    val hasAdvanced = subscriptionSettings.isDeliveryReportsSupported ||
+    val hasAdvanced = appSettings != null ||
+        subscriptionSettings.isDeliveryReportsSupported ||
         subscriptionSettings.isWirelessAlertsSupported
     if (!hasAdvanced) return
 
@@ -248,6 +280,20 @@ private fun LazyListScope.advancedSettingsItems(
         SettingsCategoryHeader(
             title = stringResource(R.string.advanced_category_pref_title),
         )
+    }
+
+    // Twill: app-wide "Delay sending", first in the Advanced section.
+    if (appSettings != null) {
+        item(key = "send_delay") {
+            SettingsSwitchItem(
+                title = stringResource(R.string.send_delay_pref_title),
+                summary = stringResource(R.string.send_delay_pref_summary),
+                checked = appSettings.sendDelayEnabled,
+                onCheckedChange = { enabled ->
+                    onAppSettingsAction(AppSettingsAction.SendDelayChanged(enabled))
+                },
+            )
+        }
     }
 
     if (subscriptionSettings.isDeliveryReportsSupported) {

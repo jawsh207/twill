@@ -39,7 +39,6 @@ import com.android.messaging.util.BuglePrefs
 import com.android.messaging.util.LogUtil
 import com.android.messaging.util.MediaUtil
 import com.android.messaging.util.UiUtils
-import kotlinx.coroutines.withTimeoutOrNull
 
 private const val LOG_TAG = "ConversationScreenEffects"
 
@@ -119,15 +118,6 @@ private suspend fun ConversationScreenModel.handleConversationScreenEffect(
                 hostBoundsState = hostBoundsState,
                 effect = effect,
                 onNavigateToPhotoViewer = onNavigateToPhotoViewer,
-            )
-        }
-
-        is ConversationScreenEffect.ShowSendDelayUndo -> {
-            showSendDelayUndo(
-                context = context,
-                snackbarHostState = snackbarHostState,
-                durationMillis = effect.durationMillis,
-                onUndo = ::onUndoDelayedSendClick,
             )
         }
 
@@ -218,28 +208,6 @@ private fun handleImmediateConversationScreenEffect(
         }
 
         else -> {}
-    }
-}
-
-private suspend fun showSendDelayUndo(
-    context: Context,
-    snackbarHostState: SnackbarHostState,
-    durationMillis: Long,
-    onUndo: () -> Unit,
-) {
-    snackbarHostState.currentSnackbarData?.dismiss()
-
-    // Cancelling showSnackbar when the window ends dismisses the snackbar.
-    val undoClicked = withTimeoutOrNull(timeMillis = durationMillis) {
-        snackbarHostState.showActionSnackbar(
-            message = context.getString(R.string.send_delay_sending_in),
-            actionLabel = context.getString(R.string.send_delay_undo),
-            duration = SnackbarDuration.Indefinite,
-        )
-    } ?: false
-
-    if (undoClicked) {
-        onUndo()
     }
 }
 
