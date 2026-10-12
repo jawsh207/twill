@@ -3,6 +3,7 @@ package com.android.messaging.ui.conversation.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -24,6 +25,8 @@ import com.android.messaging.ui.conversation.entry.model.ConversationEntryUiStat
 import com.android.messaging.ui.conversation.entry.rememberNewChatEffectHandler
 import com.android.messaging.ui.conversation.messagedetails.MessageDetailsScreen
 import com.android.messaging.ui.conversation.messagedetails.MessageDetailsViewModel
+import com.android.messaging.ui.conversation.scheduled.LocalScheduledMessagesController
+import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesViewModel
 import com.android.messaging.ui.conversation.screen.ConversationScreen
 import com.android.messaging.ui.conversation.screen.ConversationViewModel
 import com.android.messaging.ui.conversation.screen.model.ConversationPendingLaunchPayload
@@ -83,62 +86,68 @@ private fun ConversationRoute(
     val navigator = rememberConversationNavigator()
     val appNavigator = LocalNavigator.current
 
-    ConversationScreen(
-        screenModel = hiltViewModel<ConversationViewModel>(),
-        conversationId = conversationId,
-        cancelIncomingNotification = !isLaunchedFromBubble,
-        offersArchiveUndo = !hasConversationList,
-        onAddPeopleClick = {
-            navigator.navigateToAddParticipants(conversationId = conversationId)
-        },
-        onConversationDetailsClick = {
-            navigator.navigateToConversationSettings(conversationId = conversationId)
-        },
-        onNavigateToMessageDetails = { messageId ->
-            navigator.navigateToMessageDetails(
-                conversationId = conversationId,
-                messageId = messageId,
-            )
-        },
-        onNavigateToVCardDetail = { uri ->
-            navigator.navigateToVCardDetail(uri = uri)
-        },
-        onNavigateToPhotoViewer = { launchRequest ->
-            navigator.navigateToPhotoViewer(
-                conversationId = conversationId,
-                launchRequest = launchRequest,
-            )
-        },
-        onNavigateToAddContact = { request ->
-            appNavigator.navigateToAddContact(request = request)
-        },
-        onNavigateToForward = { messageId ->
-            navigator.navigateToForward(
-                conversationId = conversationId,
-                messageId = messageId,
-            )
-        },
-        onNavigateBack = appNavigator::back,
-        onCloseConversation = {
-            appNavigator.closeConversation(conversationId = conversationId)
-        },
-        pendingLaunchPayload = pendingLaunchPayloadForConversation(
-            entryUiState = entryUiState,
+    val scheduledMessagesViewModel = hiltViewModel<ScheduledMessagesViewModel>()
+
+    CompositionLocalProvider(
+        LocalScheduledMessagesController provides scheduledMessagesViewModel,
+    ) {
+        ConversationScreen(
+            screenModel = hiltViewModel<ConversationViewModel>(),
             conversationId = conversationId,
-        ),
-        onPendingDraftConsumed = {
-            entryModel.onDraftPayloadConsumed(conversationId = conversationId)
-        },
-        onPendingScrollMessageIdConsumed = {
-            entryModel.onScrollMessageIdConsumed(conversationId = conversationId)
-        },
-        onPendingSelfParticipantIdConsumed = {
-            entryModel.onPendingSelfParticipantIdConsumed(conversationId = conversationId)
-        },
-        onPendingStartupAttachmentConsumed = {
-            entryModel.onStartupAttachmentConsumed(conversationId = conversationId)
-        },
-    )
+            cancelIncomingNotification = !isLaunchedFromBubble,
+            offersArchiveUndo = !hasConversationList,
+            onAddPeopleClick = {
+                navigator.navigateToAddParticipants(conversationId = conversationId)
+            },
+            onConversationDetailsClick = {
+                navigator.navigateToConversationSettings(conversationId = conversationId)
+            },
+            onNavigateToMessageDetails = { messageId ->
+                navigator.navigateToMessageDetails(
+                    conversationId = conversationId,
+                    messageId = messageId,
+                )
+            },
+            onNavigateToVCardDetail = { uri ->
+                navigator.navigateToVCardDetail(uri = uri)
+            },
+            onNavigateToPhotoViewer = { launchRequest ->
+                navigator.navigateToPhotoViewer(
+                    conversationId = conversationId,
+                    launchRequest = launchRequest,
+                )
+            },
+            onNavigateToAddContact = { request ->
+                appNavigator.navigateToAddContact(request = request)
+            },
+            onNavigateToForward = { messageId ->
+                navigator.navigateToForward(
+                    conversationId = conversationId,
+                    messageId = messageId,
+                )
+            },
+            onNavigateBack = appNavigator::back,
+            onCloseConversation = {
+                appNavigator.closeConversation(conversationId = conversationId)
+            },
+            pendingLaunchPayload = pendingLaunchPayloadForConversation(
+                entryUiState = entryUiState,
+                conversationId = conversationId,
+            ),
+            onPendingDraftConsumed = {
+                entryModel.onDraftPayloadConsumed(conversationId = conversationId)
+            },
+            onPendingScrollMessageIdConsumed = {
+                entryModel.onScrollMessageIdConsumed(conversationId = conversationId)
+            },
+            onPendingSelfParticipantIdConsumed = {
+                entryModel.onPendingSelfParticipantIdConsumed(conversationId = conversationId)
+            },
+            onPendingStartupAttachmentConsumed = {
+                entryModel.onStartupAttachmentConsumed(conversationId = conversationId)
+            },
+        )
+    }
 }
 
 private fun newChatRouteContent(): @Composable (NewChatNavKey) -> Unit {

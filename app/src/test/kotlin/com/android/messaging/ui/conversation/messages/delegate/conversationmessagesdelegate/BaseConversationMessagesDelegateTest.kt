@@ -40,6 +40,7 @@ internal abstract class BaseConversationMessagesDelegateTest {
     protected val conversationsRepository = mockk<ConversationsRepository>()
     protected val appSettingsRepository = mockk<AppSettingsRepository> {
         coEvery { isYouTubeLinkPreviewsEnabled() } returns false
+        coEvery { isWebLinkPreviewsEnabled() } returns false
     }
     protected val resolveAudioDurationMillis =
         mockk<ResolveAudioDurationMillis>(relaxed = true)

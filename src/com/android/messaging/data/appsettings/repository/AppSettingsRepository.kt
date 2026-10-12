@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 internal interface AppSettingsRepository {
     suspend fun getAppSettings(): AppSettings
     suspend fun isYouTubeLinkPreviewsEnabled(): Boolean
+    suspend fun isWebLinkPreviewsEnabled(): Boolean
     suspend fun setBooleanPref(pref: AppBooleanPref, enabled: Boolean)
 }
 
@@ -52,6 +53,19 @@ internal class AppSettingsRepositoryImpl @Inject constructor(
                     context.getString(R.string.dump_mms_pref_key),
                     resources.getBoolean(R.bool.dump_mms_pref_default),
                 ),
+                webLinkPreviewsEnabled = readWebLinkPreviewsEnabled(),
+                sendDelayEnabled = appPrefs.getBoolean(
+                    context.getString(R.string.send_delay_pref_key),
+                    resources.getBoolean(R.bool.send_delay_pref_default),
+                ),
+                unreadOnTopEnabled = appPrefs.getBoolean(
+                    context.getString(R.string.unread_on_top_pref_key),
+                    resources.getBoolean(R.bool.unread_on_top_pref_default),
+                ),
+                longSmsAsMmsEnabled = appPrefs.getBoolean(
+                    context.getString(R.string.long_sms_as_mms_pref_key),
+                    resources.getBoolean(R.bool.long_sms_as_mms_pref_default),
+                ),
             )
         }
     }
@@ -59,6 +73,12 @@ internal class AppSettingsRepositoryImpl @Inject constructor(
     override suspend fun isYouTubeLinkPreviewsEnabled(): Boolean {
         return withContext(ioDispatcher) {
             readYouTubeLinkPreviewsEnabled()
+        }
+    }
+
+    override suspend fun isWebLinkPreviewsEnabled(): Boolean {
+        return withContext(ioDispatcher) {
+            readWebLinkPreviewsEnabled()
         }
     }
 
@@ -78,6 +98,13 @@ internal class AppSettingsRepositoryImpl @Inject constructor(
         return BuglePrefs.getApplicationPrefs().getBoolean(
             context.getString(R.string.youtube_link_previews_pref_key),
             context.resources.getBoolean(R.bool.youtube_link_previews_pref_default),
+        )
+    }
+
+    private fun readWebLinkPreviewsEnabled(): Boolean {
+        return BuglePrefs.getApplicationPrefs().getBoolean(
+            context.getString(R.string.web_link_previews_pref_key),
+            context.resources.getBoolean(R.bool.web_link_previews_pref_default),
         )
     }
 }

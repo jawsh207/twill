@@ -28,6 +28,10 @@ internal class AppSettingsUiStateMapperImpl @Inject constructor(
             isDebugEnabled = appSettings.isDebugEnabled,
             dumpSmsEnabled = appSettings.dumpSmsEnabled,
             dumpMmsEnabled = appSettings.dumpMmsEnabled,
+            webLinkPreviewsEnabled = appSettings.webLinkPreviewsEnabled,
+            sendDelayEnabled = appSettings.sendDelayEnabled,
+            unreadOnTopEnabled = appSettings.unreadOnTopEnabled,
+            longSmsAsMmsEnabled = appSettings.longSmsAsMmsEnabled,
         )
     }
 }

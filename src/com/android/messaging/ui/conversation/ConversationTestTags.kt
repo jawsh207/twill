@@ -136,3 +136,6 @@ internal val conversationShapeSemanticsKey = SemanticsPropertyKey<String>(
 )
 
 internal var SemanticsPropertyReceiver.conversationShape by conversationShapeSemanticsKey
+
+internal const val CONVERSATION_SCHEDULE_MESSAGE_MENU_ITEM_TEST_TAG =
+    "conversation_schedule_message_menu_item"

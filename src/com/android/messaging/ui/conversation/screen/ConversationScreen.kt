@@ -7,13 +7,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Rect as ComposeRect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.android.messaging.R
 import com.android.messaging.data.conversation.model.ConversationId
 import com.android.messaging.data.conversation.model.MessageId
 import com.android.messaging.data.conversation.model.ParticipantId
+import com.android.messaging.data.conversation.model.draft.ConversationDraft
 import com.android.messaging.ui.common.components.snackbar.MessagingSnackbarHost
 import com.android.messaging.ui.contact.model.AddContactRequest
 import com.android.messaging.ui.conversation.composer.ui.ConversationComposerSection
@@ -21,9 +25,12 @@ import com.android.messaging.ui.conversation.composer.ui.ConversationSimSelector
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerPermissionState
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerState
 import com.android.messaging.ui.conversation.metadata.ui.ConversationTopAppBar
+import com.android.messaging.ui.conversation.scheduled.LocalScheduledMessagesController
+import com.android.messaging.ui.conversation.scheduled.ScheduleMessageDialog
 import com.android.messaging.ui.conversation.screen.model.ConversationPendingLaunchPayload
 import com.android.messaging.ui.conversation.screen.model.ConversationScreenScaffoldUiState
 import com.android.messaging.ui.photoviewer.model.PhotoViewerLaunchRequest
+import com.android.messaging.util.UiUtils
 
 @Composable
 @Suppress("LongMethod") // Long arguments list, not too much logic, so it's ok to suppress
@@ -139,6 +146,11 @@ internal fun ConversationScreenScaffold(
         simSheetState = simSheetState,
         isAvailable = isSimSelectorAvailable,
     )
+    val scheduledMessagesController = LocalScheduledMessagesController.current
+    var isScheduleDialogVisible by rememberSaveable { mutableStateOf(false) }
+    val canScheduleMessages = scheduledMessagesController != null &&
+        conversationId != null &&
+        uiState.composer.isMessageFieldEnabled
 
     Scaffold(
         modifier = modifier,
@@ -150,6 +162,13 @@ internal fun ConversationScreenScaffold(
                 onConversationDetailsClick = onConversationDetailsClick,
                 onNavigateBack = onNavigateBack,
                 onSimSelectorClick = showSimSelectorSheet,
+                onScheduleMessageClick = when {
+                    canScheduleMessages -> {
+                        { isScheduleDialogVisible = true }
+                    }
+
+                    else -> null
+                },
                 screenModel = screenModel,
             )
         },
@@ -194,6 +213,30 @@ internal fun ConversationScreenScaffold(
         uiState = uiState,
         screenModel = screenModel,
     )
+
+    if (isScheduleDialogVisible && scheduledMessagesController != null && conversationId != null) {
+        val composer = uiState.composer
+
+        ScheduleMessageDialog(
+            conversationId = conversationId,
+            controller = scheduledMessagesController,
+            messageText = composer.messageText,
+            subjectText = composer.subjectText,
+            selfParticipantId = composer.selfParticipantId,
+            hasAttachments = composer.attachments.isNotEmpty() ||
+                composer.pendingAttachmentCount > 0,
+            onScheduled = {
+                isScheduleDialogVisible = false
+                // The message now lives in the schedule, so empty the composer.
+                screenModel.onSeedDraft(
+                    conversationId = conversationId,
+                    draft = ConversationDraft(selfParticipantId = composer.selfParticipantId),
+                )
+                UiUtils.showToastAtBottom(R.string.schedule_message_scheduled_toast)
+            },
+            onDismiss = { isScheduleDialogVisible = false },
+        )
+    }
 }
 
 @Composable
@@ -232,6 +275,7 @@ private fun ConversationScreenTopBar(
     onConversationDetailsClick: () -> Unit,
     onNavigateBack: () -> Unit,
     onSimSelectorClick: () -> Unit,
+    onScheduleMessageClick: (() -> Unit)?,
     screenModel: ConversationScreenModel,
 ) {
     when {
@@ -253,6 +297,8 @@ private fun ConversationScreenTopBar(
                 isAddContactVisible = uiState.canAddContact,
                 isDeleteConversationVisible = uiState.canDeleteConversation,
                 isShowSubjectFieldVisible = uiState.canEditSubject,
+                isScheduleMessageVisible = onScheduleMessageClick != null,
+                onScheduleMessageClick = onScheduleMessageClick ?: {},
                 simSelector = uiState.composer.simSelector,
                 onAddPeopleClick = onAddPeopleClick,
                 onCallClick = screenModel::onCallClick,

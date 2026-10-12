@@ -12,4 +12,5 @@ internal data class ConversationMessageContent(
     val attachments: ImmutableList<ConversationMessageAttachment>,
     val attachmentSections: ConversationAttachmentSections,
     val isAttachmentOnly: Boolean,
+    val webPreviewUrl: String? = null,
 )

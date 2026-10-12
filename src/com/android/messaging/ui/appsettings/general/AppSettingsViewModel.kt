@@ -49,6 +49,17 @@ internal class AppSettingsViewModel @Inject constructor(
                 appSettingsDelegate.onYouTubeLinkPreviewsChanged(action.enabled)
             }
 
+            is Action.WebLinkPreviewsChanged -> {
+                appSettingsDelegate.onWebLinkPreviewsChanged(action.enabled)
+            }
+
+            is Action.SendDelayChanged -> appSettingsDelegate.onSendDelayChanged(action.enabled)
+            is Action.UnreadOnTopChanged -> appSettingsDelegate.onUnreadOnTopChanged(action.enabled)
+
+            is Action.LongSmsAsMmsChanged -> {
+                appSettingsDelegate.onLongSmsAsMmsChanged(action.enabled)
+            }
+
             is Action.NotificationsClicked -> _effects.trySend(Effect.OpenNotificationSettings)
 
             is Action.DefaultSmsAppClicked -> {

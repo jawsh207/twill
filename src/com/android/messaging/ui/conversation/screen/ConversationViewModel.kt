@@ -108,6 +108,7 @@ internal interface ConversationScreenModel :
     )
 
     fun onSendClick()
+    fun onUndoDelayedSendClick() {}
     fun dismissAttachmentLimitWarning()
     fun sendAnywayAfterAttachmentLimitWarning()
     fun onDefaultSmsRolePromptActionClick()
@@ -634,6 +635,10 @@ internal class ConversationViewModel @Inject constructor(
 
     override fun dismissAttachmentLimitWarning() {
         conversationDraftDelegate.dismissAttachmentLimitWarning()
+    }
+
+    override fun onUndoDelayedSendClick() {
+        conversationDraftDelegate.cancelDelayedSend()
     }
 
     override fun sendAnywayAfterAttachmentLimitWarning() {

@@ -29,6 +29,7 @@ import com.android.messaging.ui.conversation.messages.model.message.Conversation
 import com.android.messaging.ui.conversation.messages.model.message.ConversationMessageUiModel
 import com.android.messaging.ui.conversation.messages.model.message.ConversationMessageUiModel.Status
 import com.android.messaging.ui.conversation.messages.ui.attachment.OnConversationAttachmentClick
+import com.android.messaging.ui.conversation.messages.ui.link.LocalWebLinkPreviewsEnabled
 import com.android.messaging.ui.conversation.preview.previewAudioPart
 import com.android.messaging.ui.conversation.preview.previewFilePart
 import com.android.messaging.ui.conversation.preview.previewImagePart
@@ -227,18 +228,22 @@ private fun rememberConversationMessageContent(
         )
     }
 
+    val webLinkPreviewsEnabled = LocalWebLinkPreviewsEnabled.current
+
     return remember(
         message.canResendMessage,
         message.text,
         message.mmsSubject,
         message.parts,
         youTubeLinkPreviewsEnabled,
+        webLinkPreviewsEnabled,
         subjectText,
     ) {
         buildConversationMessageContent(
             message = message,
             subjectText = subjectText,
             youTubeLinkPreviewsEnabled = youTubeLinkPreviewsEnabled,
+            webLinkPreviewsEnabled = webLinkPreviewsEnabled,
         )
     }
 }

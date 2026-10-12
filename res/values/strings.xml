@@ -904,4 +904,28 @@
 
     <string name="mark_as_read">Mark as read</string>
     <string name="mark_as_unread">Mark as unread</string>
+    <!-- Extra messaging options -->
+    <string name="web_link_previews_pref_title">Website link previews</string>
+    <string name="web_link_previews_pref_summary">Show a title, description and image for website links in conversations. Enabling this fetches the linked page, which reveals your IP address to that website and may reduce privacy</string>
+    <string name="send_delay_pref_title">Delay sending</string>
+    <string name="send_delay_pref_summary">Wait 3 seconds before sending so you can undo</string>
+    <string name="send_delay_sending_in">Sending in 3 seconds</string>
+    <string name="send_delay_undo">Undo</string>
+    <string name="unread_on_top_pref_title">Keep unread at top</string>
+    <string name="unread_on_top_pref_summary">Show unread conversations, including ones marked as unread, above other conversations. Pinned conversations stay first</string>
+    <string name="long_sms_as_mms_pref_title">Send long messages as MMS</string>
+    <string name="long_sms_as_mms_pref_summary">Send text longer than a single SMS as one MMS instead of several SMS parts</string>
+    <string name="schedule_message_menu">Schedule message</string>
+    <string name="schedule_message_title">Schedule message</string>
+    <string name="schedule_message_empty_draft">Type a message first, then schedule it here</string>
+    <string name="schedule_message_attachments_unsupported">Scheduled messages can only contain text. Remove attachments to schedule</string>
+    <string name="schedule_message_pick_time">Time</string>
+    <string name="schedule_message_confirm">Schedule</string>
+    <string name="schedule_message_time_in_past">Pick a time in the future</string>
+    <string name="schedule_message_scheduled_header">Scheduled</string>
+    <string name="schedule_message_none">No scheduled messages</string>
+    <string name="schedule_message_cancel">Cancel scheduled message</string>
+    <string name="schedule_message_scheduled_toast">Message scheduled</string>
+    <string name="schedule_message_send_failed">A scheduled message could not be sent</string>
+    <string name="schedule_message_failed_channel">Scheduled messages</string>
 </resources>

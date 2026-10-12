@@ -51,6 +51,16 @@ internal fun PrivacySettingsScreen(
                     },
                 )
             }
+            item(key = "web_link_previews") {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.web_link_previews_pref_title),
+                    summary = stringResource(R.string.web_link_previews_pref_summary),
+                    checked = appSettings.webLinkPreviewsEnabled,
+                    onCheckedChange = {
+                        onAction(Action.WebLinkPreviewsChanged(it))
+                    },
+                )
+            }
         }
     }
 }

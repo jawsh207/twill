@@ -43,6 +43,7 @@ internal class MessageDetailsViewModelTest {
     private val conversationsRepository = mockk<ConversationsRepository>()
     private val appSettingsRepository = mockk<AppSettingsRepository> {
         coEvery { isYouTubeLinkPreviewsEnabled() } returns false
+        coEvery { isWebLinkPreviewsEnabled() } returns false
     }
     private val messageDetailsUiStateMapper = mockk<MessageDetailsUiStateMapper>()
     private val resolveAudioDurationMillis = mockk<ResolveAudioDurationMillis>()

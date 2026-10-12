@@ -195,10 +195,12 @@ internal class ConversationMessagesDelegateImpl @Inject constructor(
                     )
                 },
             observeYouTubeLinkPreviewsEnabled(),
-        ) { messages, youTubeLinkPreviewsEnabled ->
+            observeWebLinkPreviewsEnabled(),
+        ) { messages, youTubeLinkPreviewsEnabled, webLinkPreviewsEnabled ->
             ConversationMessagesUiState.Present(
                 messages = messages,
                 youTubeLinkPreviewsEnabled = youTubeLinkPreviewsEnabled,
+                webLinkPreviewsEnabled = webLinkPreviewsEnabled,
             )
         }
             .flowOn(defaultDispatcher)
@@ -208,6 +210,13 @@ internal class ConversationMessagesDelegateImpl @Inject constructor(
         return refreshTriggers
             .onStart { emit(Unit) }
             .map { appSettingsRepository.isYouTubeLinkPreviewsEnabled() }
+            .distinctUntilChanged()
+    }
+
+    private fun observeWebLinkPreviewsEnabled(): Flow<Boolean> {
+        return refreshTriggers
+            .onStart { emit(Unit) }
+            .map { appSettingsRepository.isWebLinkPreviewsEnabled() }
             .distinctUntilChanged()
     }
 

@@ -17,6 +17,7 @@ internal fun buildConversationMessageContent(
     message: ConversationMessageUiModel,
     subjectText: String?,
     youTubeLinkPreviewsEnabled: Boolean,
+    webLinkPreviewsEnabled: Boolean = false,
 ): ConversationMessageContent {
     val attachments = buildConversationMessageAttachments(
         message = message,
@@ -35,13 +36,30 @@ internal fun buildConversationMessageContent(
         bodyText.isNullOrBlank() &&
         attachments.isNotEmpty()
 
+    val webPreviewUrl = when {
+        !webLinkPreviewsEnabled -> null
+        // Only plain text messages get a website card; media and YouTube previews win.
+        attachments.isNotEmpty() -> null
+        message.mmsDownload != null -> null
+        else -> message.text?.let(::findFirstWebPreviewUrl)
+    }
+
     return ConversationMessageContent(
         subjectText = subjectText,
         bodyText = bodyText,
         attachments = attachments,
         attachmentSections = attachmentSections,
         isAttachmentOnly = isAttachmentOnly,
+        webPreviewUrl = webPreviewUrl,
     )
+}
+
+private fun findFirstWebPreviewUrl(text: String): String? {
+    return extractConversationWebUrls(text).firstOrNull { url ->
+        val isWeb = url.startsWith("https://", ignoreCase = true) ||
+            url.startsWith("http://", ignoreCase = true)
+        isWeb && YouTubeUtil.getYoutubePreviewImageLink(url) == null
+    }
 }
 
 private fun vCardSubtitleTextResIdOverride(message: ConversationMessageUiModel): Int? {

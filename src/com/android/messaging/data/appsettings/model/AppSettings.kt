@@ -9,4 +9,8 @@ internal data class AppSettings(
     val isDebugEnabled: Boolean,
     val dumpSmsEnabled: Boolean,
     val dumpMmsEnabled: Boolean,
+    val webLinkPreviewsEnabled: Boolean = false,
+    val sendDelayEnabled: Boolean = false,
+    val unreadOnTopEnabled: Boolean = false,
+    val longSmsAsMmsEnabled: Boolean = false,
 )

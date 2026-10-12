@@ -18,6 +18,10 @@ internal sealed interface ConversationScreenEffect {
 
     data object NotifyDraftSent : ConversationScreenEffect
 
+    data class ShowSendDelayUndo(
+        val durationMillis: Long,
+    ) : ConversationScreenEffect
+
     data class OpenAttachmentPreview(
         val contentType: String,
         val contentUri: String,
