@@ -11,6 +11,8 @@ if [ "$status" -ne 0 ]; then
     grep -E '^e: |ERROR:|error:|Missing class|Duplicate class' "$log" | head -n 40
     echo '----'
     sed -n '/What went wrong/,/Try:/p' "$log" | head -n 40
+    echo '---- last lines ----'
+    grep -v '^\s*$' "$log" | grep -v '^> Task' | tail -n 25
   } | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')"
   echo "::error title=Gradle build failed::${summary}"
 fi
