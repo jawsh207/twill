@@ -33,9 +33,11 @@ internal fun AppSettingsScreen(
     isTopLevel: Boolean = false,
     hasAdvancedSettings: Boolean = false,
     onAdvancedClick: () -> Unit = {},
+    titleOverride: String? = null,
+    showLicenses: Boolean = true,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val title = if (isTopLevel) {
+    val title = titleOverride ?: if (isTopLevel) {
         stringResource(R.string.settings_activity_title)
     } else {
         stringResource(R.string.general_settings_activity_title)
@@ -70,7 +72,9 @@ internal fun AppSettingsScreen(
                 onAction = onAction,
             )
 
-            licenseSettingsItems(onAction)
+            if (showLicenses) {
+                licenseSettingsItems(onAction)
+            }
         }
     }
 }

@@ -71,6 +71,7 @@ import com.android.messaging.ui.conversation.metadata.model.ConversationMetadata
 import com.android.messaging.ui.conversation.preview.previewGroupMetadata
 import com.android.messaging.ui.conversation.preview.previewMetadata
 import com.android.messaging.ui.conversation.preview.previewSimSelectorUiState
+import com.android.messaging.ui.conversation.scheduled.LocalConversationTopBarExtraActions
 import com.android.messaging.ui.core.MessagingPreviewColumn
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.subscription.mapper.resolveDisplayName
@@ -313,6 +314,9 @@ private fun ConversationTopAppBarActions(
             )
         }
     }
+
+    // Twill: e.g. the scheduled-messages indicator.
+    LocalConversationTopBarExtraActions.current?.invoke()
 
     if (overflowVisibility.isOverflowVisible) {
         ConversationTopAppBarOverflowMenu(

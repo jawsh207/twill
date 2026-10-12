@@ -8,6 +8,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,8 +35,12 @@ import com.android.messaging.ui.conversation.composer.ui.SendLongPressAction
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerPermissionState
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerState
 import com.android.messaging.ui.conversation.metadata.ui.ConversationTopAppBar
+import com.android.messaging.ui.conversation.scheduled.LocalConversationTopBarExtraActions
 import com.android.messaging.ui.conversation.scheduled.LocalScheduledMessagesController
 import com.android.messaging.ui.conversation.scheduled.ScheduleMessageDialog
+import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesListDialog
+import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesTopBarAction
+import com.android.messaging.ui.conversation.scheduled.rememberScheduledMessagesFor
 import com.android.messaging.ui.conversation.screen.model.ConversationPendingLaunchPayload
 import com.android.messaging.ui.conversation.screen.model.ConversationScreenScaffoldUiState
 import com.android.messaging.ui.photoviewer.model.PhotoViewerLaunchRequest
@@ -205,9 +210,34 @@ internal fun ConversationScreenScaffold(
             )
         }
 
+    var isScheduledListVisible by rememberSaveable { mutableStateOf(false) }
+    val scheduledHere = when {
+        scheduledMessagesController != null && conversationId != null -> {
+            rememberScheduledMessagesFor(
+                controller = scheduledMessagesController,
+                conversationId = conversationId,
+            )
+        }
+
+        else -> emptyList()
+    }
+    val scheduledCount = scheduledHere.size
+    val topBarExtraActions: (@Composable () -> Unit)? =
+        if (scheduledMessagesController != null) {
+            {
+                ScheduledMessagesTopBarAction(
+                    count = scheduledCount,
+                    onClick = { isScheduledListVisible = true },
+                )
+            }
+        } else {
+            null
+        }
+
     CompositionLocalProvider(
         LocalSendLongPressActions provides sendLongPressActions,
         LocalDelayedSendUi provides delayedSendUi,
+        LocalConversationTopBarExtraActions provides topBarExtraActions,
     ) {
         Scaffold(
             modifier = modifier,
@@ -264,6 +294,24 @@ internal fun ConversationScreenScaffold(
         uiState = uiState,
         screenModel = screenModel,
     )
+
+    // Close the list once the last scheduled message is cancelled or sent.
+    LaunchedEffect(scheduledCount) {
+        if (scheduledCount == 0) {
+            isScheduledListVisible = false
+        }
+    }
+
+    if (isScheduledListVisible &&
+        scheduledMessagesController != null &&
+        scheduledHere.isNotEmpty()
+    ) {
+        ScheduledMessagesListDialog(
+            messages = scheduledHere,
+            onCancel = scheduledMessagesController::cancel,
+            onDismiss = { isScheduledListVisible = false },
+        )
+    }
 
     if (isScheduleDialogVisible && scheduledMessagesController != null && conversationId != null) {
         val composer = uiState.composer

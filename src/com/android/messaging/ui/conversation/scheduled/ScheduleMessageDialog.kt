@@ -237,7 +237,7 @@ private fun DraftSummary(
 }
 
 @Composable
-private fun ScheduledList(
+internal fun ScheduledList(
     messages: List<ScheduledMessage>,
     onCancel: (String) -> Unit,
 ) {

@@ -31,6 +31,7 @@ internal fun SettingsMainScreen(
     onGeneralSettingsClick: () -> Unit,
     onSubscriptionClick: (subId: SubId, title: String) -> Unit,
     modifier: Modifier = Modifier,
+    titleOverride: String? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -38,7 +39,7 @@ internal fun SettingsMainScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             SettingsTopAppBar(
-                title = stringResource(R.string.settings_activity_title),
+                title = titleOverride ?: stringResource(R.string.settings_activity_title),
                 onNavigateBack = onNavigateBack,
                 scrollBehavior = scrollBehavior,
             )
