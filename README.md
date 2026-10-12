@@ -22,11 +22,20 @@ Previews are off by default because turning them on means Twill contacts the lin
 
 ## Installing
 
-Twill uses its own package ID (`app.twill`), so it installs **alongside** the system Messaging app rather than replacing it. Debug builds use `app.twill.debug` and show up as "Twill d".
+Twill uses its own package ID (`app.twill`), so every build installs **alongside** the system Messaging app rather than replacing it.
 
-1. Open the [Actions tab](../../actions), pick the latest successful **Build installable APK** run, and download the `messaging-debug-apk` artifact.
-2. Unzip it and install the APK on your phone.
+1. Open the [Actions tab](../../actions), pick the latest successful **Build installable APK** run, and download the `twill-apk` artifact.
+2. Unzip it and install the APK on your phone. Later builds install as updates over it.
 3. Open Twill and set it as your default SMS app when asked.
+
+Each run produces two APKs:
+
+| Artifact | Package | Name on phone | Use it for |
+| --- | --- | --- | --- |
+| `twill-apk` | `app.twill.perf` | Twill | Everyday use. Fully optimized, same as a release build. |
+| `twill-debug-apk` | `app.twill.debug` | Twill d | Debugging only. Unoptimized, so scrolling stutters. |
+
+Both are signed with a shared test key (`.github/ci/debug.keystore`) so new builds update old ones. That key is public, so it is only for test builds; real releases must be signed with a private key.
 
 ## Building
 
