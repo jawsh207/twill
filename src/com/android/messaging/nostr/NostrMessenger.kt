@@ -3,10 +3,12 @@ package com.android.messaging.nostr
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.util.LogUtil
 import com.vitorpamplona.quartz.nip01Core.core.Event
+import com.vitorpamplona.quartz.nip01Core.core.toHexKey
 import com.vitorpamplona.quartz.nip01Core.crypto.verify
 import com.vitorpamplona.quartz.nip01Core.metadata.MetadataEvent
 import com.vitorpamplona.quartz.nip01Core.relay.client.NostrClient
@@ -18,12 +20,21 @@ import com.vitorpamplona.quartz.nip01Core.relay.normalizer.NormalizedRelayUrl
 import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNull
 import com.vitorpamplona.quartz.nip01Core.relay.sockets.okhttp.BasicOkHttpWebSocket
 import com.vitorpamplona.quartz.nip01Core.tags.people.PTag
+import com.vitorpamplona.quartz.nip05DnsIdentifiers.Nip05Client
+import com.vitorpamplona.quartz.nip05DnsIdentifiers.Nip05Id
+import com.vitorpamplona.quartz.nip05DnsIdentifiers.OkHttpNip05Fetcher
+import com.vitorpamplona.quartz.nip05DnsIdentifiers.resolveUserHexOrNull
 import com.vitorpamplona.quartz.nip17Dm.NIP17Factory
+import com.vitorpamplona.quartz.nip17Dm.files.ChatMessageEncryptedFileHeaderEvent
 import com.vitorpamplona.quartz.nip17Dm.messages.ChatMessageEvent
+import com.vitorpamplona.quartz.nip17Dm.messages.changeSubject
 import com.vitorpamplona.quartz.nip17Dm.settings.DmRelayListEvent
 import com.vitorpamplona.quartz.nip59Giftwrap.seals.SealEvent
 import com.vitorpamplona.quartz.nip59Giftwrap.wraps.GiftWrapEvent
+import com.vitorpamplona.quartz.nip94FileMetadata.tags.DimensionTag
+import com.vitorpamplona.quartz.utils.sha256.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -52,11 +63,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 
 /**
- * Sends and receives NIP-17 private DMs (NIP-44 encryption inside NIP-59 gift wraps).
+ * Sends and receives NIP-17 private messages (NIP-44 encryption inside NIP-59 gift wraps):
+ * one-to-one and group chats, text (kind 14) and encrypted files (kind 15).
  *
- * Relays are only contacted while signed in and while [shouldStayConnected] says so: by
- * default while Twill is on screen, or always when background delivery is on (see
- * [setKeepConnectedInBackground]).
+ * Relays are only contacted while signed in, and then only while Twill is on screen or when
+ * background delivery is on (see [setKeepConnectedInBackground]).
  */
 @Singleton
 internal class NostrMessenger @Inject constructor(
@@ -64,6 +75,7 @@ internal class NostrMessenger @Inject constructor(
     private val accountStore: NostrAccountStore,
     private val signerProvider: NostrSignerProvider,
     private val store: NostrMessageStore,
+    private val media: NostrMedia,
     private val deliveryManager: NostrDeliveryManager,
     @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
 ) {
@@ -80,9 +92,14 @@ internal class NostrMessenger @Inject constructor(
         )
     }
 
+    private val nip05Client: Nip05Client by lazy {
+        Nip05Client(fetcher = OkHttpNip05Fetcher { okHttp })
+    }
+
     private val processMutex = Mutex()
     private val dmRelayCache = ConcurrentHashMap<String, Pair<Long, List<NormalizedRelayUrl>>>()
     private val profileRequests = ConcurrentHashMap.newKeySet<String>()
+    private val downloadsInFlight = ConcurrentHashMap.newKeySet<String>()
 
     private val visibleActivities = MutableStateFlow(0)
     private val isAppVisible = MutableStateFlow(false)
@@ -98,8 +115,16 @@ internal class NostrMessenger @Inject constructor(
     /** New incoming messages as they are decrypted; used for notifications. */
     val incoming: SharedFlow<NostrMessage> = _incoming.asSharedFlow()
 
+    private val _errors = MutableSharedFlow<NostrError>(extraBufferCapacity = 8)
+
+    /** Problems worth telling the user about, such as a failed upload. */
+    val errors: SharedFlow<NostrError> = _errors.asSharedFlow()
+
+    /** Message ids whose attachments are downloading. */
+    val downloading = MutableStateFlow<Set<String>>(emptySet())
+
     @Volatile
-    private var activeChatPeer: String? = null
+    private var activeChatKey: String? = null
 
     /**
      * Starts watching app visibility and the account. Safe to call more than once. Screens
@@ -131,11 +156,17 @@ internal class NostrMessenger @Inject constructor(
         // Notify about new messages unless that chat is open on screen.
         appScope.launch {
             _incoming.collect { message ->
-                val isViewing = isAppVisible.value && activeChatPeer == message.peerPubKey
+                val isViewing = isAppVisible.value && activeChatKey == message.chatKey
                 if (!isViewing) {
-                    val name = store.profile(message.peerPubKey).first()?.name
-                        ?: NostrSignerProvider.shortNpub(message.peerPubKey)
-                    NostrNotifications.showMessage(context, name, message)
+                    NostrNotifications.showMessage(
+                        context = context,
+                        title = chatTitle(message.chatKey),
+                        senderName = when {
+                            NostrChatKey.isGroup(message.chatKey) -> nameOf(message.senderPubKey)
+                            else -> null
+                        },
+                        message = message,
+                    )
                 }
             }
         }
@@ -168,9 +199,9 @@ internal class NostrMessenger @Inject constructor(
     }
 
     /** The chat currently on screen, so its messages don't raise notifications. */
-    fun setActiveChat(peerPubKey: String?) {
-        activeChatPeer = peerPubKey
-        if (peerPubKey != null) NostrNotifications.cancelConversation(context, peerPubKey)
+    fun setActiveChat(chatKey: String?) {
+        activeChatKey = chatKey
+        if (chatKey != null) NostrNotifications.cancelConversation(context, chatKey)
     }
 
     fun launchInAppScope(block: suspend CoroutineScope.() -> Unit): Job =
@@ -178,6 +209,22 @@ internal class NostrMessenger @Inject constructor(
 
     fun setKeepConnectedInBackground(enabled: Boolean) {
         keepConnectedInBackground.value = enabled
+    }
+
+    /**
+     * Turns what the user typed into a hex public key: an npub, nprofile, hex key or a
+     * NIP-05 address (name@domain, looked up over HTTPS). Returns null if it can't.
+     */
+    suspend fun resolveIdentifier(input: String): String? = withContext(Dispatchers.IO) {
+        val cleaned = input.trim().removePrefix("nostr:")
+        val pubKey = try {
+            resolveUserHexOrNull(cleaned, nip05Client)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            null
+        }
+        pubKey?.takeIf { it.length == PUBKEY_HEX_LENGTH }
     }
 
     /**
@@ -194,10 +241,8 @@ internal class NostrMessenger @Inject constructor(
         client.connect()
         client.subscribe(
             SYNC_SUB_ID,
-            relays.associateWith {
-                listOf(dmFilter(account.pubKeyHex))
-            },
-            listener
+            relays.associateWith { listOf(dmFilter(account.pubKeyHex)) },
+            listener,
         )
         withTimeoutOrNull(timeoutMillis) {
             finishedRelays.first { count -> count >= relays.size }
@@ -206,22 +251,76 @@ internal class NostrMessenger @Inject constructor(
         if (!_isConnected.value) client.disconnect()
     }
 
-    /** Sends [text] to [peerPubKey]. The message shows immediately as sending. */
-    fun send(peerPubKey: String, text: String) {
-        appScope.launch(Dispatchers.IO) {
-            sendNow(peerPubKey = peerPubKey, text = text)
-        }
+    /** Sends [text] to everyone in [chatKey]. The message shows immediately as sending. */
+    fun send(chatKey: String, text: String) {
+        appScope.launch(Dispatchers.IO) { sendText(chatKey = chatKey, text = text) }
+    }
+
+    /** Encrypts, uploads and sends the file at [uri] to everyone in [chatKey]. */
+    fun sendFile(chatKey: String, uri: Uri) {
+        appScope.launch(Dispatchers.IO) { sendAttachment(chatKey = chatKey, uri = uri) }
     }
 
     /** Sends a failed message again. */
     fun retry(message: NostrMessage) {
         appScope.launch(Dispatchers.IO) {
-            store.deleteMessage(message.id)
-            sendNow(peerPubKey = message.peerPubKey, text = message.content)
+            val local = message.attachment?.localPath?.let(::File)?.takeIf { it.exists() }
+            when {
+                message.attachment == null -> {
+                    store.deleteMessage(message.id)
+                    sendText(chatKey = message.chatKey, text = message.content)
+                }
+
+                local != null -> {
+                    // Keep the local copy: deleteMessage would remove it.
+                    val copy = File(local.parentFile, "retry-" + System.nanoTime())
+                    local.copyTo(copy)
+                    store.deleteMessage(message.id)
+                    sendAttachment(chatKey = message.chatKey, uri = Uri.fromFile(copy))
+                    copy.delete()
+                }
+            }
         }
     }
 
-    /** Fetches [pubKey]'s profile name if it's missing or more than a day old. */
+    /** Downloads and decrypts a received attachment. */
+    fun download(message: NostrMessage) {
+        val attachment = message.attachment ?: return
+        if (attachment.isDownloaded || !downloadsInFlight.add(message.id)) return
+        downloading.value = downloadsInFlight.toSet()
+
+        appScope.launch(Dispatchers.IO) {
+            try {
+                val file = media.download(message.id, attachment)
+                store.setAttachmentLocalPath(message.id, file.absolutePath)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                LogUtil.w(TAG, "Download failed: ${exception.javaClass.simpleName}")
+                _errors.tryEmit(NostrError.DownloadFailed)
+            } finally {
+                downloadsInFlight.remove(message.id)
+                downloading.value = downloadsInFlight.toSet()
+            }
+        }
+    }
+
+    /** Names a group. Sent to the other members with the next message. */
+    fun renameGroup(chatKey: String, name: String) {
+        appScope.launch(Dispatchers.IO) {
+            store.setGroupName(
+                chatKey = chatKey,
+                name = name.trim(),
+                atSeconds = System.currentTimeMillis() / 1000,
+                isPendingSend = true,
+            )
+        }
+    }
+
+    /**
+     * Fetches [pubKey]'s profile (name, picture, NIP-05) if it's missing or more than a day
+     * old, and checks the NIP-05 address really belongs to them.
+     */
     fun refreshProfile(pubKey: String) {
         if (!profileRequests.add(pubKey)) return
         appScope.launch(Dispatchers.IO) {
@@ -242,12 +341,21 @@ internal class NostrMessenger @Inject constructor(
                 val metadata = (event as? MetadataEvent)
                     ?.takeIf { it.verify() }
                     ?.contactMetaData()
+                val nip05 = metadata?.nip05()?.takeIf { it.isNotBlank() }
+                val isVerified = nip05?.let { address ->
+                    val id = Nip05Id.parse(address) ?: return@let false
+                    runCatching {
+                        withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) { nip05Client.verify(id, pubKey) }
+                    }.getOrNull() == true
+                } ?: false
+
                 store.upsertProfile(
                     NostrProfile(
                         pubKey = pubKey,
                         name = metadata?.bestName()?.takeIf { it.isNotBlank() },
-                        picture = null,
-                        nip05 = metadata?.nip05(),
+                        picture = metadata?.profilePicture()?.takeIf { it.startsWith("https://") },
+                        nip05 = nip05,
+                        isNip05Verified = isVerified,
                     ),
                 )
             } catch (exception: CancellationException) {
@@ -260,41 +368,41 @@ internal class NostrMessenger @Inject constructor(
         }
     }
 
-    private suspend fun sendNow(peerPubKey: String, text: String) {
+    private suspend fun sendText(chatKey: String, text: String) {
         val signer = signerProvider.signer() ?: return
-        val me = signer.pubKey
-        val myRelays = normalizedRelays(accountStore.relays.value)
+        val members = NostrChatKey.members(chatKey)
+        val subject = if (NostrChatKey.isGroup(
+                chatKey
+            )
+        ) {
+            store.pendingGroupSubject(chatKey)
+        } else {
+            null
+        }
 
         val result = try {
             NIP17Factory().createMessageNIP17(
-                template = ChatMessageEvent.build(msg = text, to = listOf(PTag(peerPubKey))),
+                template = ChatMessageEvent.build(
+                    msg = text,
+                    to = members.map { PTag(it) },
+                ) {
+                    if (subject != null) changeSubject(subject)
+                },
                 signer = signer,
             )
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
             LogUtil.w(TAG, "Could not build message: ${exception.javaClass.simpleName}")
-            store.insertMessage(
-                NostrMessage(
-                    id = "failed-" + System.nanoTime(),
-                    peerPubKey = peerPubKey,
-                    senderPubKey = me,
-                    content = text,
-                    createdAtSeconds = System.currentTimeMillis() / 1000,
-                    isOutgoing = true,
-                    isRead = true,
-                    status = NostrMessage.Status.Failed,
-                ),
-            )
+            insertFailed(chatKey = chatKey, me = signer.pubKey, text = text)
             return
         }
 
-        val messageId = result.msg.id
         store.insertMessage(
             NostrMessage(
-                id = messageId,
-                peerPubKey = peerPubKey,
-                senderPubKey = me,
+                id = result.msg.id,
+                chatKey = chatKey,
+                senderPubKey = signer.pubKey,
                 content = text,
                 createdAtSeconds = result.msg.createdAt,
                 isOutgoing = true,
@@ -302,9 +410,147 @@ internal class NostrMessenger @Inject constructor(
                 status = NostrMessage.Status.Sending,
             ),
         )
+        val delivered = publishWraps(result.wraps, me = signer.pubKey)
+        if (delivered && subject != null) store.clearPendingGroupSubject(chatKey)
+        store.updateStatus(
+            id = result.msg.id,
+            status = if (delivered) NostrMessage.Status.Sent else NostrMessage.Status.Failed,
+        )
+        members.forEach(::refreshProfile)
+    }
 
-        var deliveredToPeer = false
-        for (wrap in result.wraps) {
+    private suspend fun sendAttachment(chatKey: String, uri: Uri) {
+        val signer = signerProvider.signer() ?: return
+        val members = NostrChatKey.members(chatKey)
+        val placeholderId = "upload-" + System.nanoTime()
+
+        val prepared = try {
+            media.prepare(uri)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            _errors.tryEmit(
+                if (exception.message ==
+                    "File is too large"
+                ) {
+                    NostrError.FileTooLarge
+                } else {
+                    NostrError.UploadFailed
+                },
+            )
+            return
+        }
+
+        val pendingAttachment = NostrAttachment(
+            url = "",
+            mimeType = prepared.mimeType,
+            keyHex = prepared.cipher.keyBytes.toHexKey(),
+            nonceHex = prepared.cipher.nonce.toHexKey(),
+            algorithm = prepared.cipher.name(),
+            encryptedHash = null,
+            size = prepared.encrypted.size.toLong(),
+            width = prepared.width,
+            height = prepared.height,
+            fileName = prepared.fileName,
+            localPath = prepared.localCopy.absolutePath,
+        )
+        store.insertMessage(
+            NostrMessage(
+                id = placeholderId,
+                chatKey = chatKey,
+                senderPubKey = signer.pubKey,
+                content = "",
+                createdAtSeconds = System.currentTimeMillis() / 1000,
+                isOutgoing = true,
+                isRead = true,
+                status = NostrMessage.Status.Sending,
+                attachment = pendingAttachment,
+            ),
+        )
+
+        val result = try {
+            val url = media.upload(
+                encrypted = prepared.encrypted,
+                server = accountStore.mediaServer.value,
+                signer = signer,
+            )
+            val template = ChatMessageEncryptedFileHeaderEvent.build(
+                to = members.map { PTag(it) },
+                url = url,
+                cipher = prepared.cipher,
+                mimeType = prepared.mimeType,
+                hash = sha256(prepared.encrypted).toHexKey(),
+                size = prepared.encrypted.size,
+                dimension = if (prepared.width != null && prepared.height != null) {
+                    DimensionTag(prepared.width, prepared.height)
+                } else {
+                    null
+                },
+                originalHash = prepared.originalHash,
+            )
+            url to NIP17Factory().createEncryptedFileNIP17(template = template, signer = signer)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            LogUtil.w(TAG, "Upload failed: ${exception.javaClass.simpleName}: ${exception.message}")
+            _errors.tryEmit(NostrError.UploadFailed)
+            store.updateStatus(placeholderId, NostrMessage.Status.Failed)
+            return
+        }
+
+        val (url, built) = result
+        // Swap the placeholder for the real message (same local file).
+        store.insertMessage(
+            NostrMessage(
+                id = built.msg.id,
+                chatKey = chatKey,
+                senderPubKey = signer.pubKey,
+                content = "",
+                createdAtSeconds = built.msg.createdAt,
+                isOutgoing = true,
+                isRead = true,
+                status = NostrMessage.Status.Sending,
+                attachment = pendingAttachment.copy(
+                    url = url,
+                    encryptedHash = sha256(prepared.encrypted).toHexKey(),
+                ),
+            ),
+        )
+        removePlaceholderKeepingFile(placeholderId)
+
+        val delivered = publishWraps(built.wraps, me = signer.pubKey)
+        store.updateStatus(
+            id = built.msg.id,
+            status = if (delivered) NostrMessage.Status.Sent else NostrMessage.Status.Failed,
+        )
+    }
+
+    private fun removePlaceholderKeepingFile(placeholderId: String) {
+        // deleteMessage removes the local file, which the real message now points at.
+        store.setAttachmentLocalPath(placeholderId, "")
+        store.deleteMessage(placeholderId)
+    }
+
+    private fun insertFailed(chatKey: String, me: String, text: String) {
+        store.insertMessage(
+            NostrMessage(
+                id = "failed-" + System.nanoTime(),
+                chatKey = chatKey,
+                senderPubKey = me,
+                content = text,
+                createdAtSeconds = System.currentTimeMillis() / 1000,
+                isOutgoing = true,
+                isRead = true,
+                status = NostrMessage.Status.Failed,
+            ),
+        )
+    }
+
+    /** Publishes each gift wrap to its recipient's DM relays. True if any other member got it. */
+    private suspend fun publishWraps(wraps: List<GiftWrapEvent>, me: String): Boolean {
+        val myRelays = normalizedRelays(accountStore.relays.value)
+        var deliveredToSomeone = false
+        for (wrap in wraps) {
             val recipient = wrap.recipientPubKey()
             if (recipient == me) {
                 // Our own copy comes back through the subscription; no need to decrypt it.
@@ -321,14 +567,10 @@ internal class NostrMessenger @Inject constructor(
             } catch (exception: Exception) {
                 false
             }
-            if (recipient == peerPubKey && accepted) deliveredToPeer = true
+            if (recipient != me && accepted) deliveredToSomeone = true
         }
-
-        store.updateStatus(
-            id = messageId,
-            status = if (deliveredToPeer) NostrMessage.Status.Sent else NostrMessage.Status.Failed,
-        )
-        refreshProfile(peerPubKey)
+        // Notes to self only have our own wrap.
+        return deliveredToSomeone || wraps.all { it.recipientPubKey() == me }
     }
 
     /** The relays [pubKey] reads DMs from (NIP-17 kind 10050), cached for an hour. */
@@ -471,35 +713,93 @@ internal class NostrMessenger @Inject constructor(
 
         store.markWrapSeen(wrap.id)
         store.setLastSyncSeconds(wrap.createdAt)
-        if (rumor == null || rumor.kind != ChatMessageEvent.KIND) return
+        if (rumor == null) return
+        if (rumor.kind != ChatMessageEvent.KIND &&
+            rumor.kind != ChatMessageEncryptedFileHeaderEvent.KIND
+        ) {
+            return
+        }
 
-        val recipients = rumor.tags
-            .filter { tag -> tag.size > 1 && tag[0] == "p" }
-            .map { tag -> tag[1] }
-            .distinct()
-        // Group chats aren't supported yet; only one-to-one conversations are shown.
-        if ((recipients + rumor.pubKey).toSet().size > 2) return
-
+        val recipients = rumor.tags.valuesOf("p")
+        val chatKey = NostrChatKey.forParticipants(
+            participants = recipients + rumor.pubKey,
+            me = me
+        )
         val isOutgoing = rumor.pubKey == me
-        val peer = when {
-            isOutgoing -> recipients.firstOrNull { it != me } ?: me
-            else -> rumor.pubKey
+
+        // A subject tag names (or renames) the chat.
+        rumor.tags.valuesOf("subject").firstOrNull()?.let { subject ->
+            if (NostrChatKey.isGroup(chatKey)) {
+                store.setGroupName(chatKey = chatKey, name = subject, atSeconds = rumor.createdAt)
+            }
+        }
+
+        val attachment = if (rumor.kind == ChatMessageEncryptedFileHeaderEvent.KIND) {
+            parseAttachment(rumor) ?: return
+        } else {
+            null
         }
 
         val message = NostrMessage(
             id = rumor.id,
-            peerPubKey = peer,
+            chatKey = chatKey,
             senderPubKey = rumor.pubKey,
-            content = rumor.content,
+            content = if (attachment != null) "" else rumor.content,
             createdAtSeconds = rumor.createdAt,
             isOutgoing = isOutgoing,
             isRead = isOutgoing,
             status = NostrMessage.Status.Sent,
+            attachment = attachment,
         )
-        if (store.insertMessage(message) && !isOutgoing) {
-            _incoming.tryEmit(message)
+        if (store.insertMessage(message)) {
+            if (!isOutgoing) _incoming.tryEmit(message)
+            if (attachment != null && !isOutgoing && accountStore.autoDownloadMedia.value) {
+                download(message)
+            }
         }
-        refreshProfile(peer)
+        refreshProfile(rumor.pubKey)
+        NostrChatKey.members(chatKey).forEach(::refreshProfile)
+    }
+
+    /** Reads a kind 15 file message. Returns null if it can't be decrypted. */
+    private fun parseAttachment(rumor: Event): NostrAttachment? {
+        val tags = rumor.tags
+        val algorithm = tags.valuesOf("encryption-algorithm").firstOrNull() ?: "aes-gcm"
+        if (!algorithm.equals("aes-gcm", ignoreCase = true)) return null
+        val key = tags.valuesOf("decryption-key").firstOrNull() ?: return null
+        val nonce = tags.valuesOf("decryption-nonce").firstOrNull() ?: return null
+        val url = rumor.content.trim().takeIf { it.startsWith("https://", ignoreCase = true) }
+            ?: return null
+        val dimensions = tags.valuesOf("dim").firstOrNull()
+            ?.split("x")
+            ?.mapNotNull { it.trim().toFloatOrNull()?.toInt() }
+            ?.takeIf { it.size == 2 && it[0] > 0 && it[1] > 0 }
+
+        return NostrAttachment(
+            url = url,
+            mimeType = tags.valuesOf("file-type").firstOrNull(),
+            keyHex = key,
+            nonceHex = nonce,
+            algorithm = algorithm,
+            encryptedHash = tags.valuesOf("x").firstOrNull(),
+            size = tags.valuesOf("size").firstOrNull()?.toLongOrNull(),
+            width = dimensions?.get(0),
+            height = dimensions?.get(1),
+            fileName = null,
+            localPath = null,
+        )
+    }
+
+    private fun Array<Array<String>>.valuesOf(name: String): List<String> =
+        filter { tag -> tag.size > 1 && tag[0] == name }.map { tag -> tag[1] }.distinct()
+
+    private suspend fun nameOf(pubKey: String): String =
+        store.profile(pubKey).first()?.name ?: NostrSignerProvider.shortNpub(pubKey)
+
+    private suspend fun chatTitle(chatKey: String): String {
+        if (!NostrChatKey.isGroup(chatKey)) return nameOf(chatKey)
+        store.group(chatKey).first().name?.let { return it }
+        return NostrChatKey.members(chatKey).take(3).map { nameOf(it) }.joinToString(", ")
     }
 
     private fun normalizedRelays(urls: List<String>): List<NormalizedRelayUrl> =
@@ -546,6 +846,7 @@ internal class NostrMessenger @Inject constructor(
         const val LIVE_SUB_ID = "twill-dms"
         const val SYNC_SUB_ID = "twill-dms-sync"
         const val STATE_PUBLISHED_RELAYS = "published_dm_relays"
+        const val PUBKEY_HEX_LENGTH = 64
         const val PING_INTERVAL_SECONDS = 30L
         const val FETCH_TIMEOUT_MILLIS = 8_000L
         const val ONE_SHOT_SYNC_TIMEOUT_MILLIS = 25_000L
@@ -555,4 +856,11 @@ internal class NostrMessenger @Inject constructor(
         const val GIFT_WRAP_TIME_SKEW_SECONDS = 2 * 24 * 60 * 60L + 3600L
         const val FIRST_SYNC_LOOKBACK_SECONDS = 30 * 24 * 60 * 60L
     }
+}
+
+/** User-visible Nostr problems. */
+internal enum class NostrError {
+    UploadFailed,
+    FileTooLarge,
+    DownloadFailed,
 }

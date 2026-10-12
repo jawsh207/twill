@@ -1,9 +1,14 @@
 package com.android.messaging.ui.nostr.chat
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.messaging.nostr.NostrAccount
 import com.android.messaging.nostr.NostrAccountStore
+import com.android.messaging.nostr.NostrChatKey
+import com.android.messaging.nostr.NostrError
+import com.android.messaging.nostr.NostrGroupInfo
+import com.android.messaging.nostr.NostrMedia
 import com.android.messaging.nostr.NostrMessage
 import com.android.messaging.nostr.NostrMessageStore
 import com.android.messaging.nostr.NostrMessenger
@@ -15,6 +20,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
@@ -29,40 +35,65 @@ internal class NostrChatViewModel @Inject constructor(
     private val store: NostrMessageStore,
     private val messenger: NostrMessenger,
     private val signerProvider: NostrSignerProvider,
+    val media: NostrMedia,
     accountStore: NostrAccountStore,
 ) : ViewModel() {
 
-    private val peer = MutableStateFlow<String?>(null)
+    private val chat = MutableStateFlow<String?>(null)
 
     val account: StateFlow<NostrAccount?> = accountStore.account
 
-    val messages: StateFlow<List<NostrMessage>> = peer
-        .flatMapLatest { pubKey -> pubKey?.let(store::messages) ?: flowOf(emptyList()) }
+    val messages: StateFlow<List<NostrMessage>> = chat
+        .flatMapLatest { key -> key?.let(store::messages) ?: flowOf(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val profile: StateFlow<NostrProfile?> = peer
+    /** Profiles of everyone else in the chat, by public key. */
+    val profiles: StateFlow<Map<String, NostrProfile>> = chat
         .filterNotNull()
-        .flatMapLatest { pubKey -> store.profile(pubKey) }
+        .flatMapLatest { key -> store.profiles(NostrChatKey.members(key)) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    val group: StateFlow<NostrGroupInfo?> = chat
+        .filterNotNull()
+        .flatMapLatest { key -> store.group(key) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun bind(peerPubKey: String) {
-        if (peer.value == peerPubKey) return
-        peer.value = peerPubKey
+    val downloading: StateFlow<Set<String>> = messenger.downloading
+
+    val errors: SharedFlow<NostrError> = messenger.errors
+
+    fun bind(chatKey: String) {
+        if (chat.value == chatKey) return
+        chat.value = chatKey
         messenger.install()
-        messenger.refreshProfile(peerPubKey)
+        NostrChatKey.members(chatKey).forEach(messenger::refreshProfile)
     }
 
     fun signer(): NostrSigner? = signerProvider.signer()
 
     fun setActive(isActive: Boolean) {
-        messenger.setActiveChat(if (isActive) peer.value else null)
+        messenger.setActiveChat(if (isActive) chat.value else null)
     }
 
     fun send(text: String) {
-        val target = peer.value ?: return
+        val target = chat.value ?: return
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
-        messenger.send(peerPubKey = target, text = trimmed)
+        messenger.send(chatKey = target, text = trimmed)
+    }
+
+    fun sendFile(uri: Uri) {
+        val target = chat.value ?: return
+        messenger.sendFile(chatKey = target, uri = uri)
+    }
+
+    fun download(message: NostrMessage) {
+        messenger.download(message)
+    }
+
+    fun rename(name: String) {
+        val target = chat.value ?: return
+        messenger.renameGroup(target, name)
     }
 
     fun retry(message: NostrMessage) {
@@ -70,7 +101,7 @@ internal class NostrChatViewModel @Inject constructor(
     }
 
     fun markRead() {
-        val target = peer.value ?: return
+        val target = chat.value ?: return
         viewModelScope.launch(Dispatchers.IO) { store.markConversationRead(target) }
     }
 }

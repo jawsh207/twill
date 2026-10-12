@@ -11,10 +11,10 @@ import com.android.messaging.ui.nostr.chat.NostrChatScreen
 import com.android.messaging.ui.nostr.chat.NostrChatViewModel
 import kotlinx.serialization.Serializable
 
-/** A one-to-one Nostr DM conversation with [peerPubKey] (hex). */
+/** A one-to-one Nostr DM conversation with [chatKey] (hex). */
 @Serializable
 internal data class NostrChatNavKey(
-    val peerPubKey: String,
+    val chatKey: String,
 ) : NavKey
 
 internal fun EntryProviderScope<NavKey>.nostrEntries() {
@@ -29,8 +29,8 @@ private fun nostrChatRouteContent(): @Composable (NostrChatNavKey) -> Unit {
         val navigator = LocalNavigator.current
 
         NostrChatScreen(
-            peerPubKey = navKey.peerPubKey,
-            viewModel = hiltViewModel<NostrChatViewModel>(key = "nostr-chat-" + navKey.peerPubKey),
+            chatKey = navKey.chatKey,
+            viewModel = hiltViewModel<NostrChatViewModel>(key = "nostr-chat-" + navKey.chatKey),
             onNavigateBack = navigator::back,
         )
     }

@@ -7,6 +7,7 @@ import com.vitorpamplona.quartz.nip01Core.core.hexToByteArray
 import com.vitorpamplona.quartz.nip01Core.crypto.KeyPair
 import com.vitorpamplona.quartz.nip01Core.signers.NostrSigner
 import com.vitorpamplona.quartz.nip01Core.signers.NostrSignerInternal
+import com.vitorpamplona.quartz.nip17Dm.files.ChatMessageEncryptedFileHeaderEvent
 import com.vitorpamplona.quartz.nip17Dm.messages.ChatMessageEvent
 import com.vitorpamplona.quartz.nip17Dm.settings.DmRelayListEvent
 import com.vitorpamplona.quartz.nip19Bech32.decodePrivateKeyAsHexOrNull
@@ -22,6 +23,7 @@ import com.vitorpamplona.quartz.nip55AndroidSigner.api.foreground.intents.result
 import com.vitorpamplona.quartz.nip55AndroidSigner.api.permission.Permission
 import com.vitorpamplona.quartz.nip55AndroidSigner.client.NostrSignerExternal
 import com.vitorpamplona.quartz.nip59Giftwrap.seals.SealEvent
+import com.vitorpamplona.quartz.nipB7Blossom.BlossomAuthorizationEvent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -117,6 +119,9 @@ internal class NostrSignerProvider @Inject constructor(
             // NIP-17: the user signs the seal; the outer gift wrap uses a throwaway key.
             Permission(CommandType.SIGN_EVENT, SealEvent.KIND),
             Permission(CommandType.SIGN_EVENT, ChatMessageEvent.KIND),
+            Permission(CommandType.SIGN_EVENT, ChatMessageEncryptedFileHeaderEvent.KIND),
+            // Authorizing encrypted attachment uploads to the Blossom media server.
+            Permission(CommandType.SIGN_EVENT, BlossomAuthorizationEvent.KIND),
             // Publishing the user's DM relay list (NIP-17 kind 10050).
             Permission(CommandType.SIGN_EVENT, DmRelayListEvent.KIND),
             Permission(CommandType.NIP44_ENCRYPT),

@@ -49,4 +49,7 @@ internal object NostrDefaults {
 
     /** Package of the Amber signer app. */
     const val AMBER_PACKAGE = "com.greenart7c3.nostrsigner"
+
+    /** Blossom server attachments are uploaded to (encrypted) until the user picks another. */
+    const val DEFAULT_MEDIA_SERVER = "https://blossom.primal.net"
 }

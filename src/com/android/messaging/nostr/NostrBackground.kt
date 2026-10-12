@@ -32,6 +32,10 @@ internal interface NostrEntryPoint {
     fun nostrMessenger(): NostrMessenger
 
     fun nostrDeliveryManager(): NostrDeliveryManager
+
+    fun nostrMedia(): NostrMedia
+
+    fun nostrAccountStore(): NostrAccountStore
 }
 
 internal fun Context.nostrEntryPoint(): NostrEntryPoint =

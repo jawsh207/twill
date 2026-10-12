@@ -3,7 +3,6 @@ package com.android.messaging.ui.nostr.inbox
 import android.text.format.DateUtils
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,13 +14,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -34,20 +35,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.android.messaging.R
+import com.android.messaging.nostr.NostrChatKey
 import com.android.messaging.nostr.NostrConversation
 import com.android.messaging.nostr.NostrSignerProvider
+import com.android.messaging.ui.nostr.NostrAvatar
+import kotlinx.coroutines.launch
 
 /**
  * Twill's protocol sections for the conversation list. When Nostr is signed in, the list
@@ -59,6 +63,21 @@ internal class ConversationListSections(
     val trailingItems: LazyListScope.() -> Unit,
 )
 
+private enum class NewChatDialog { None, Chat, Group }
+
+/** A conversation's title: its name, or members' names, or short npubs. */
+internal fun nostrConversationTitle(conversation: NostrConversation): String {
+    conversation.displayName?.let { return it }
+    val members = NostrChatKey.members(conversation.chatKey)
+    val names = members.mapIndexed { index, pubKey ->
+        conversation.memberNames.getOrNull(index) ?: NostrSignerProvider.shortNpub(pubKey)
+    }
+    return when {
+        names.size <= 3 -> names.joinToString(", ")
+        else -> names.take(3).joinToString(", ") + " +" + (names.size - 3)
+    }
+}
+
 /** Builds the sections from the inbox state, or null when Nostr is off. */
 @Composable
 internal fun rememberConversationListSections(
@@ -68,16 +87,29 @@ internal fun rememberConversationListSections(
 ): ConversationListSections? {
     if (inbox == null || !state.isNostrEnabled) return null
 
-    var isNewChatDialogVisible by rememberSaveable { mutableStateOf(false) }
+    var dialog by rememberSaveable { mutableStateOf(NewChatDialog.None) }
 
-    if (isNewChatDialogVisible) {
-        NewNostrChatDialog(
+    when (dialog) {
+        NewChatDialog.None -> Unit
+
+        NewChatDialog.Chat -> NewNostrChatDialog(
             resolvePeer = inbox.controller::resolvePeer,
             onStart = { peer ->
-                isNewChatDialogVisible = false
+                dialog = NewChatDialog.None
                 inbox.onOpenNostrChat(peer)
             },
-            onDismiss = { isNewChatDialogVisible = false },
+            onDismiss = { dialog = NewChatDialog.None },
+        )
+
+        NewChatDialog.Group -> NewNostrGroupDialog(
+            resolvePeer = inbox.controller::resolvePeer,
+            onCreate = { members, name ->
+                inbox.controller.createGroup(members, name)?.let { chatKey ->
+                    dialog = NewChatDialog.None
+                    inbox.onOpenNostrChat(chatKey)
+                }
+            },
+            onDismiss = { dialog = NewChatDialog.None },
         )
     }
 
@@ -98,7 +130,24 @@ internal fun rememberConversationListSections(
                     count = state.nostrConversations.size,
                     isCollapsed = state.isNostrCollapsed,
                     onToggle = inbox.controller::toggleNostrCollapsed,
-                    onAdd = { isNewChatDialogVisible = true },
+                    addMenu = { onDone ->
+                        DropdownMenuItem(
+                            text = { Text(text = stringResource(R.string.inbox_new_nostr_chat)) },
+                            leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
+                            onClick = {
+                                onDone()
+                                dialog = NewChatDialog.Chat
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(text = stringResource(R.string.inbox_new_nostr_group)) },
+                            leadingIcon = { Icon(Icons.Rounded.Group, contentDescription = null) },
+                            onClick = {
+                                onDone()
+                                dialog = NewChatDialog.Group
+                            },
+                        )
+                    },
                 )
             }
             if (!state.isNostrCollapsed) {
@@ -114,13 +163,13 @@ internal fun rememberConversationListSections(
                 }
                 items(
                     items = state.nostrConversations,
-                    key = { "twill_nostr:" + it.peerPubKey },
+                    key = { "twill_nostr:" + it.chatKey },
                     contentType = { "twill_nostr_row" },
                 ) { conversation ->
                     NostrConversationRow(
                         conversation = conversation,
                         controller = inbox.controller,
-                        onOpen = { inbox.onOpenNostrChat(conversation.peerPubKey) },
+                        onOpen = { inbox.onOpenNostrChat(conversation.chatKey) },
                     )
                 }
             }
@@ -134,7 +183,7 @@ private fun InboxSectionHeader(
     count: Int,
     isCollapsed: Boolean,
     onToggle: () -> Unit,
-    onAdd: (() -> Unit)? = null,
+    addMenu: (@Composable (onDone: () -> Unit) -> Unit)? = null,
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (isCollapsed) -90f else 0f,
@@ -143,6 +192,7 @@ private fun InboxSectionHeader(
     val stateLabel = stringResource(
         if (isCollapsed) R.string.inbox_section_expand else R.string.inbox_section_collapse,
     )
+    var isMenuExpanded by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -165,13 +215,21 @@ private fun InboxSectionHeader(
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
         )
-        if (onAdd != null) {
-            IconButton(onClick = onAdd) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = stringResource(R.string.inbox_new_nostr_chat),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
+        if (addMenu != null) {
+            Box {
+                IconButton(onClick = { isMenuExpanded = true }) {
+                    Icon(
+                        imageVector = Icons.Rounded.Add,
+                        contentDescription = stringResource(R.string.inbox_new_nostr_conversation),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                DropdownMenu(
+                    expanded = isMenuExpanded,
+                    onDismissRequest = { isMenuExpanded = false },
+                ) {
+                    addMenu { isMenuExpanded = false }
+                }
             }
         }
     }
@@ -184,16 +242,25 @@ private fun NostrConversationRow(
     controller: TwillInboxController,
     onOpen: () -> Unit,
 ) {
-    val context = LocalContext.current
     var isMenuExpanded by remember { mutableStateOf(false) }
     val isUnread = conversation.unreadCount > 0
-    val name = conversation.displayName
-        ?: remember(conversation.peerPubKey) {
-            NostrSignerProvider.shortNpub(conversation.peerPubKey)
+    val name = remember(conversation) { nostrConversationTitle(conversation) }
+    val last = conversation.lastMessage
+    val body = when {
+        last.attachment?.isImage == true -> stringResource(R.string.nostr_photo)
+        last.attachment != null -> stringResource(R.string.nostr_file)
+        else -> last.content.replace('\n', ' ')
+    }
+    val senderIndex = NostrChatKey.members(conversation.chatKey).indexOf(last.senderPubKey)
+    val prefix = when {
+        last.isOutgoing -> stringResource(R.string.inbox_you_prefix)
+        conversation.isGroup -> {
+            val sender = conversation.memberNames.getOrNull(senderIndex)
+                ?: NostrSignerProvider.shortNpub(last.senderPubKey)
+            "$sender: "
         }
-    val snippet = buildString {
-        if (conversation.lastMessage.isOutgoing) append(stringResource(R.string.inbox_you_prefix))
-        append(conversation.lastMessage.content.replace('\n', ' '))
+
+        else -> ""
     }
 
     Box {
@@ -208,18 +275,11 @@ private fun NostrConversationRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
+            NostrAvatar(
+                name = name,
+                pictureUrl = conversation.pictureUrl,
+                isGroup = conversation.isGroup,
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -243,7 +303,7 @@ private fun NostrConversationRow(
                     Text(
                         modifier = Modifier.padding(start = 8.dp),
                         text = DateUtils.getRelativeTimeSpanString(
-                            conversation.lastMessage.createdAtSeconds * 1000,
+                            last.createdAtSeconds * 1000,
                             System.currentTimeMillis(),
                             DateUtils.MINUTE_IN_MILLIS,
                             DateUtils.FORMAT_ABBREV_ALL,
@@ -255,7 +315,7 @@ private fun NostrConversationRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         modifier = Modifier.weight(1f),
-                        text = snippet,
+                        text = prefix + body,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isUnread) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isUnread) {
@@ -289,7 +349,7 @@ private fun NostrConversationRow(
                 },
                 onClick = {
                     isMenuExpanded = false
-                    controller.setPinned(conversation.peerPubKey, !conversation.isPinned)
+                    controller.setPinned(conversation.chatKey, !conversation.isPinned)
                 },
             )
             DropdownMenuItem(
@@ -302,14 +362,14 @@ private fun NostrConversationRow(
                 },
                 onClick = {
                     isMenuExpanded = false
-                    controller.setRead(conversation.peerPubKey, isUnread)
+                    controller.setRead(conversation.chatKey, isUnread)
                 },
             )
             DropdownMenuItem(
                 text = { Text(text = stringResource(R.string.inbox_delete_conversation)) },
                 onClick = {
                     isMenuExpanded = false
-                    controller.delete(conversation.peerPubKey)
+                    controller.delete(conversation.chatKey)
                 },
             )
         }
@@ -318,12 +378,14 @@ private fun NostrConversationRow(
 
 @Composable
 private fun NewNostrChatDialog(
-    resolvePeer: (String) -> String?,
+    resolvePeer: suspend (String) -> String?,
     onStart: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val scope = rememberCoroutineScope()
     var input by rememberSaveable { mutableStateOf("") }
     var isInvalid by rememberSaveable { mutableStateOf(false) }
+    var isLooking by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -337,6 +399,7 @@ private fun NewNostrChatDialog(
                     isInvalid = false
                 },
                 singleLine = true,
+                enabled = !isLooking,
                 label = { Text(text = stringResource(R.string.inbox_new_nostr_chat_hint)) },
                 isError = isInvalid,
                 supportingText = if (isInvalid) {
@@ -344,17 +407,112 @@ private fun NewNostrChatDialog(
                 } else {
                     null
                 },
+                trailingIcon = if (isLooking) {
+                    {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                } else {
+                    null
+                },
             )
         },
         confirmButton = {
             TextButton(
-                enabled = input.isNotBlank(),
+                enabled = input.isNotBlank() && !isLooking,
                 onClick = {
-                    val peer = resolvePeer(input)
-                    if (peer == null) isInvalid = true else onStart(peer)
+                    isLooking = true
+                    scope.launch {
+                        val peer = resolvePeer(input)
+                        isLooking = false
+                        if (peer == null) isInvalid = true else onStart(peer)
+                    }
                 },
             ) {
                 Text(text = stringResource(R.string.inbox_start_chat))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun NewNostrGroupDialog(
+    resolvePeer: suspend (String) -> String?,
+    onCreate: (members: List<String>, name: String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var name by rememberSaveable { mutableStateOf("") }
+    var membersInput by rememberSaveable { mutableStateOf("") }
+    var invalidEntries by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isLooking by remember { mutableStateOf(false) }
+
+    val entries = membersInput.split('\n', ',', ' ').map { it.trim() }.filter { it.isNotEmpty() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.inbox_new_nostr_group)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = name,
+                    onValueChange = { name = it },
+                    singleLine = true,
+                    enabled = !isLooking,
+                    label = { Text(text = stringResource(R.string.inbox_group_name_hint)) },
+                )
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = membersInput,
+                    onValueChange = {
+                        membersInput = it
+                        invalidEntries = emptyList()
+                    },
+                    enabled = !isLooking,
+                    minLines = 3,
+                    label = { Text(text = stringResource(R.string.inbox_group_members_hint)) },
+                    isError = invalidEntries.isNotEmpty(),
+                    supportingText = {
+                        Text(
+                            text = when {
+                                invalidEntries.isNotEmpty() -> stringResource(
+                                    R.string.inbox_group_members_invalid,
+                                    invalidEntries.joinToString(", "),
+                                )
+
+                                else -> stringResource(R.string.inbox_group_members_help)
+                            },
+                        )
+                    },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = entries.size >= 2 && !isLooking,
+                onClick = {
+                    isLooking = true
+                    scope.launch {
+                        val resolved = entries.map { entry -> entry to resolvePeer(entry) }
+                        isLooking = false
+                        val invalid = resolved.filter { it.second == null }.map { it.first }
+                        if (invalid.isNotEmpty()) {
+                            invalidEntries = invalid
+                        } else {
+                            onCreate(resolved.mapNotNull { it.second }.distinct(), name.trim())
+                        }
+                    }
+                },
+            ) {
+                Text(text = stringResource(R.string.inbox_create_group))
             }
         },
         dismissButton = {

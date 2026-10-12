@@ -84,7 +84,7 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
         val inbox = remember(inboxViewModel, appNavigator) {
             TwillInbox(
                 controller = inboxViewModel,
-                onOpenNostrChat = { peer -> appNavigator.push(NostrChatNavKey(peerPubKey = peer)) },
+                onOpenNostrChat = { peer -> appNavigator.push(NostrChatNavKey(chatKey = peer)) },
             )
         }
 
