@@ -17,6 +17,10 @@ Everything from GrapheneOS Messaging, plus the features below. Settings are grou
 | **Website link previews.** Shows a title, description and image under links. | Settings › SMS Settings › Privacy, next to YouTube link previews | Off |
 | **Send long messages as MMS.** Text that needs more than one SMS is sent as a single MMS instead of several parts. | Settings › SMS Settings › Advanced, last in the MMS section | Off |
 
+## Using Twill without SMS
+
+Twill can be used only for Nostr and Delta Chat, alongside another SMS app. Choose **Use Twill without SMS** on the first screen, or turn off **Use Twill for SMS/MMS** on the main Settings page (if Twill is your default SMS app, it asks you to pick another one first). With SMS off, Twill doesn't ask for SMS permissions, hides the SMS section, isn't offered as an SMS app, and the new-message button starts a Nostr or Delta Chat chat. Turn the switch back on to use Twill for texts again.
+
 ## Nostr private messages
 
 Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: NIP-44 encryption inside NIP-59 gift wraps), using [Quartz](https://github.com/vitorpamplona/amethyst/tree/main/quartz), the protocol library behind Amethyst.

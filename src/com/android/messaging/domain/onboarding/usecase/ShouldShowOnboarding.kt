@@ -2,6 +2,7 @@ package com.android.messaging.domain.onboarding.usecase
 
 import com.android.messaging.data.onboarding.RequiredPermissionsChecker
 import com.android.messaging.data.onboarding.store.SmsWarningStore
+import com.android.messaging.twill.TwillSms
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -20,9 +21,12 @@ internal interface ShouldShowOnboarding {
 internal class ShouldShowOnboardingImpl @Inject constructor(
     private val checker: RequiredPermissionsChecker,
     private val smsWarningStore: SmsWarningStore,
+    private val twillSms: TwillSms,
 ) : ShouldShowOnboarding {
 
     override fun invoke(): Boolean {
+        // Twill: with SMS off, there's nothing to set up (no SMS role or permissions).
+        if (!twillSms.isEnabled.value) return false
         val needsSmsWarning = !smsWarningStore.isAcknowledged()
         val needsPermissions = !checker.hasRequiredPermissions()
 

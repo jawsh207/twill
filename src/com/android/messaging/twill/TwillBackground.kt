@@ -45,6 +45,8 @@ internal interface TwillEntryPoint {
     fun twillProtocols(): TwillProtocols
 
     fun twillAppVisibility(): TwillAppVisibility
+
+    fun twillSms(): TwillSms
 }
 
 internal fun Context.twillEntryPoint(): TwillEntryPoint =
@@ -66,6 +68,7 @@ internal class TwillRuntime @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val protocols: TwillProtocols,
     private val visibility: TwillAppVisibility,
+    private val sms: TwillSms,
     @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
 ) {
     private var planJob: Job? = null
@@ -79,6 +82,7 @@ internal class TwillRuntime @Inject constructor(
         synchronized(this) {
             if (planJob == null) {
                 TwillNotifications.ensureChannels(context)
+                sms.sync()
                 protocols.installAll()
                 // Known right away, so the service and job never act on an empty plan.
                 _plan.value = currentPlan()

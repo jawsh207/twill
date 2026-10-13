@@ -350,6 +350,7 @@ class OnboardingViewModelTest {
             getMissingPermissionLabels = getMissingPermissionLabels,
             elapsedRealtimeProvider = elapsedRealtimeProvider,
             smsWarningStore = smsWarningStore,
+            twillSms = mockk(relaxed = true),
         )
     }
 

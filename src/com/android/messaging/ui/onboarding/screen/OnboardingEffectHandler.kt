@@ -5,11 +5,13 @@ import android.app.role.RoleManager
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.android.messaging.Factory
+import com.android.messaging.R
 import com.android.messaging.di.onboarding.OnboardingEntryPoint
 import com.android.messaging.ui.onboarding.screen.model.OnboardingScreenEffect as Effect
 import dagger.hilt.android.EntryPointAccessors
@@ -53,6 +55,14 @@ internal class OnboardingEffectHandlerImpl(
             Effect.Redirect -> {
                 Factory.get().onRequiredPermissionsAcquired()
             }
+
+            Effect.OpenDefaultAppsSettings -> {
+                Toast.makeText(activity, R.string.twill_sms_choose_other_app, Toast.LENGTH_LONG)
+                    .show()
+                activity.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            }
+
+            Effect.ContinueWithoutSms -> Unit
 
             is Effect.RequestRuntimePermissions -> Unit
             is Effect.RequestSmsRole -> Unit

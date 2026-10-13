@@ -98,6 +98,8 @@ internal fun OnboardingScreen(
                     onComplete()
                 }
 
+                Effect.ContinueWithoutSms -> onComplete()
+
                 else -> currentEffectHandler.handle(effect)
             }
         }
@@ -321,6 +323,14 @@ private fun OnboardingActions(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // Twill: skip the SMS setup and use Twill for Nostr and Delta Chat only.
+        TextButton(
+            onClick = { onAction(Action.WithoutSmsClicked) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(text = stringResource(R.string.twill_use_without_sms))
+        }
 
         TextButton(
             onClick = onNavigateBack,

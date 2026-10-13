@@ -64,6 +64,10 @@ class ShouldShowOnboardingTest {
         return ShouldShowOnboardingImpl(
             checker = checker,
             smsWarningStore = smsWarningStore,
+            twillSms = io.mockk.mockk {
+                io.mockk.every { isEnabled } returns
+                    kotlinx.coroutines.flow.MutableStateFlow(true)
+            },
         )
     }
 }
