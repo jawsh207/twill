@@ -6,6 +6,7 @@ import com.android.messaging.data.onboarding.RequiredPermissionsChecker
 import com.android.messaging.data.onboarding.store.SmsWarningStore
 import com.android.messaging.domain.onboarding.model.PermissionRequest
 import com.android.messaging.domain.onboarding.usecase.DeterminePermissionRequest
+import com.android.messaging.twill.TwillSms
 import com.android.messaging.ui.onboarding.screen.model.OnboardingAction as Action
 import com.android.messaging.ui.onboarding.screen.model.OnboardingScreenEffect as Effect
 import com.android.messaging.ui.onboarding.screen.model.OnboardingUiState as State
@@ -37,6 +38,7 @@ internal class OnboardingViewModel @Inject constructor(
     private val getMissingPermissionLabels: GetMissingPermissionLabels,
     private val elapsedRealtimeProvider: ElapsedRealtimeProvider,
     private val smsWarningStore: SmsWarningStore,
+    private val twillSms: TwillSms,
 ) : ViewModel(),
     OnboardingScreenModel {
 
@@ -61,6 +63,16 @@ internal class OnboardingViewModel @Inject constructor(
 
             Action.SettingsClicked -> {
                 emitEffect(Effect.OpenAppSettings)
+            }
+
+            Action.WithoutSmsClicked -> {
+                emitEffect(
+                    if (twillSms.disable()) {
+                        Effect.ContinueWithoutSms
+                    } else {
+                        Effect.OpenDefaultAppsSettings
+                    },
+                )
             }
         }
     }

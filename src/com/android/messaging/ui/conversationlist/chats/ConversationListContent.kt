@@ -65,7 +65,9 @@ internal fun ConversationListContent(
 
     Box(modifier = modifier.fillMaxSize()) {
         when {
-            sections != null && content is ConversationListContentUiState.Empty -> {
+            // Twill: protocol sections only (no SMS rows) when SMS is empty or turned off.
+            sections != null &&
+                (content is ConversationListContentUiState.Empty || sections.isSmsHidden) -> {
                 ConversationListItems(
                     items = persistentListOf(),
                     restoredConversationIds = persistentSetOf(),

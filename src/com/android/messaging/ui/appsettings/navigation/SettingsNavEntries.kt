@@ -3,6 +3,7 @@ package com.android.messaging.ui.appsettings.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -12,6 +13,7 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavKey
 import com.android.messaging.R
 import com.android.messaging.data.subscription.model.SubId
+import com.android.messaging.twill.twillEntryPoint
 import com.android.messaging.ui.appsettings.general.AppSettingsViewModel
 import com.android.messaging.ui.appsettings.general.model.AppSettingsNavEvent
 import com.android.messaging.ui.appsettings.general.rememberAppSettingsEffectHandler
@@ -35,6 +37,8 @@ import com.android.messaging.ui.navigation.SeededViewModelStoreOwner
 import com.android.messaging.ui.navigation.paneTitleMetadata
 import com.android.messaging.ui.nostr.settings.NostrSettingsScreen
 import com.android.messaging.ui.nostr.settings.NostrSettingsViewModel
+import com.android.messaging.ui.onboarding.navigation.OnboardingNavKey
+import com.android.messaging.ui.twill.TwillSmsSwitch
 import kotlinx.collections.immutable.ImmutableList
 
 internal fun EntryProviderScope<NavKey>.settingsEntries() {
@@ -73,8 +77,17 @@ private fun twillSettingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
     return {
         val navigator = LocalNavigator.current
 
+        val context = LocalContext.current
+        val sms = remember(context) { context.twillEntryPoint().twillSms() }
+        val isSmsEnabled by sms.isEnabled.collectAsStateWithLifecycle()
+
         TwillSettingsScreen(
             onNavigateBack = navigator::back,
+            isSmsEnabled = isSmsEnabled,
+            smsSwitch = {
+                // Turning SMS on goes through onboarding (default SMS app, permissions).
+                TwillSmsSwitch(onTurnedOn = { navigator.reset(listOf(OnboardingNavKey)) })
+            },
             onSmsSettingsClick = {
                 navigator.push(destination = SmsSettingsNavKey)
             },

@@ -1109,4 +1109,19 @@
     <string name="deltachat_privacy_header">Privacy</string>
     <string name="deltachat_read_receipts">Read receipts</string>
     <string name="deltachat_read_receipts_summary">Let people know when you\'ve read their messages, and see when they\'ve read yours</string>
+
+    <!-- Twill: turning SMS/MMS off -->
+    <string name="twill_use_without_sms">Use Twill without SMS</string>
+    <string name="twill_use_for_sms">Use Twill for SMS/MMS</string>
+    <string name="twill_use_for_sms_on">Twill is your text messaging app</string>
+    <string name="twill_use_for_sms_off">Off. Twill is only used for Nostr and Delta Chat</string>
+    <string name="twill_turn_off_sms">Turn off SMS/MMS?</string>
+    <string name="twill_turn_off_sms_explainer">Twill will stop showing text messages and won\'t be offered as an SMS app. Your texts stay on the phone, where your default SMS app can see them. You can turn this back on in Settings.</string>
+    <string name="twill_turn_off">Turn off</string>
+    <string name="twill_sms_choose_other_app">Twill is your default SMS app, which receives every text. Choose a different SMS app first, then come back.</string>
+    <string name="twill_choose_sms_app">Choose SMS app</string>
+    <string name="twill_setup_hint">SMS is off in Twill. Set up Nostr or Delta Chat in Settings to start chatting.</string>
+    <string name="twill_open_settings">Open Settings</string>
+    <string name="inbox_new_protocol_chat">New %s chat</string>
+    <string name="inbox_new_protocol_group">New %s group</string>
 </resources>

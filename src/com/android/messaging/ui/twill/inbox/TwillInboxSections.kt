@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -47,9 +48,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.android.messaging.R
@@ -68,6 +71,8 @@ import kotlinx.coroutines.launch
  */
 internal class ConversationListSections(
     val isSmsCollapsed: Boolean,
+    /** SMS is off: no SMS header or rows, whatever the SMS list contains. */
+    val isSmsHidden: Boolean,
     val smsHeader: @Composable () -> Unit,
     val trailingItems: LazyListScope.() -> Unit,
 )
@@ -84,17 +89,36 @@ private sealed interface NewChatDialog {
     ) : NewChatDialog
 }
 
-/** Builds the sections from the inbox state, or null when no protocol is set up. */
+/**
+ * Builds the sections from the inbox state, or null for the plain upstream SMS list (SMS on
+ * and no other protocol set up).
+ */
 @Composable
 internal fun rememberConversationListSections(
     inbox: TwillInbox?,
     state: TwillInboxUiState,
     smsCount: Int,
 ): ConversationListSections? {
-    if (inbox == null || state.sections.isEmpty()) return null
+    if (inbox == null || (state.isSmsEnabled && state.sections.isEmpty())) return null
 
     var dialog by remember { mutableStateOf<NewChatDialog>(NewChatDialog.None) }
     val controller = inbox.controller
+
+    // The new-message button, with SMS off: choose where to start the chat.
+    if (inbox.isNewChatPickerVisible.value) {
+        NewChatPicker(
+            sections = state.sections,
+            onPick = { section, isGroup ->
+                inbox.isNewChatPickerVisible.value = false
+                dialog = if (isGroup) NewChatDialog.Group(section) else NewChatDialog.Chat(section)
+            },
+            onOpenSettings = {
+                inbox.isNewChatPickerVisible.value = false
+                inbox.onOpenSettings()
+            },
+            onDismiss = { inbox.isNewChatPickerVisible.value = false },
+        )
+    }
 
     if (state.sections.any { it.protocol == TwillProtocolId.Nostr }) NostrForegroundHost()
 
@@ -128,6 +152,7 @@ internal fun rememberConversationListSections(
 
     return ConversationListSections(
         isSmsCollapsed = state.isSmsCollapsed,
+        isSmsHidden = !state.isSmsEnabled,
         smsHeader = {
             InboxSectionHeader(
                 title = stringResource(R.string.inbox_section_sms),
@@ -137,6 +162,11 @@ internal fun rememberConversationListSections(
             )
         },
         trailingItems = {
+            if (state.sections.isEmpty()) {
+                item(key = "twill_setup_hint") {
+                    SetupHint(onOpenSettings = inbox.onOpenSettings)
+                }
+            }
             state.sections.forEach { section ->
                 protocolSection(
                     section = section,
@@ -148,6 +178,93 @@ internal fun rememberConversationListSections(
             }
         },
     )
+}
+
+/** Shown when SMS is off and no other protocol is set up yet. */
+@Composable
+private fun SetupHint(onOpenSettings: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.twill_setup_hint),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Button(onClick = onOpenSettings) {
+            Text(text = stringResource(R.string.twill_open_settings))
+        }
+    }
+}
+
+/** Where to start a new chat: one "chat" and one "group" choice per set-up protocol. */
+@Composable
+private fun NewChatPicker(
+    sections: List<TwillInboxSection>,
+    onPick: (TwillInboxSection, isGroup: Boolean) -> Unit,
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(R.string.inbox_new_chat)) },
+        text = {
+            Column {
+                if (sections.isEmpty()) {
+                    Text(text = stringResource(R.string.twill_setup_hint))
+                }
+                sections.forEach { section ->
+                    val name = stringResource(section.text.sectionTitle)
+                    PickerRow(
+                        icon = Icons.Rounded.Person,
+                        label = stringResource(R.string.inbox_new_protocol_chat, name),
+                        onClick = { onPick(section, false) },
+                    )
+                    PickerRow(
+                        icon = Icons.Rounded.Group,
+                        label = stringResource(R.string.inbox_new_protocol_group, name),
+                        onClick = { onPick(section, true) },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (sections.isEmpty()) {
+                TextButton(onClick = onOpenSettings) {
+                    Text(text = stringResource(R.string.twill_open_settings))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun PickerRow(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(imageVector = icon, contentDescription = null)
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+    }
 }
 
 private fun LazyListScope.protocolSection(

@@ -2,6 +2,7 @@ package com.android.messaging.ui.twill.inbox
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,6 +15,7 @@ import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
 import com.android.messaging.twill.TwillProtocols
 import com.android.messaging.twill.TwillRuntime
+import com.android.messaging.twill.TwillSms
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -38,6 +40,8 @@ internal data class TwillInboxSection(
 
 @Immutable
 internal data class TwillInboxUiState(
+    /** Twill handles SMS/MMS (see [com.android.messaging.twill.TwillSms]). */
+    val isSmsEnabled: Boolean = true,
     val isSmsCollapsed: Boolean = false,
     /** Enabled protocols only. Empty hides the section headers: the list looks like SMS. */
     val sections: List<TwillInboxSection> = emptyList(),
@@ -70,7 +74,11 @@ internal interface TwillInboxController {
 internal class TwillInbox(
     val controller: TwillInboxController,
     val onOpenChat: (protocol: TwillProtocolId, chatId: String) -> Unit,
-)
+    val onOpenSettings: () -> Unit,
+) {
+    /** Set by the new-message button when SMS is off: pick a protocol to start a chat in. */
+    val isNewChatPickerVisible = mutableStateOf(false)
+}
 
 /** Provided only by the real conversation list route; null keeps the upstream list. */
 internal val LocalTwillInbox = staticCompositionLocalOf<TwillInbox?> { null }
@@ -82,6 +90,7 @@ internal class TwillInboxViewModel @Inject constructor(
     private val protocols: TwillProtocols,
     runtime: TwillRuntime,
     private val preferenceReader: AppPreferenceReader,
+    private val sms: TwillSms,
 ) : ViewModel(),
     TwillInboxController {
 
@@ -120,9 +129,17 @@ internal class TwillInboxViewModel @Inject constructor(
     }
 
     override val uiState: StateFlow<TwillInboxUiState> =
-        combine(smsCollapsed, sections) { isSmsCollapsed, sectionList ->
-            TwillInboxUiState(isSmsCollapsed = isSmsCollapsed, sections = sectionList)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TwillInboxUiState())
+        combine(sms.isEnabled, smsCollapsed, sections) { smsEnabled, isSmsCollapsed, sectionList ->
+            TwillInboxUiState(
+                isSmsEnabled = smsEnabled,
+                isSmsCollapsed = isSmsCollapsed,
+                sections = sectionList,
+            )
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            TwillInboxUiState(isSmsEnabled = sms.isEnabled.value),
+        )
 
     /** Pinned first, then unread (when "Keep unread at top" is on), then newest. */
     private fun sortForList(items: List<TwillChat>): List<TwillChat> {

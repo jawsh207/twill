@@ -95,15 +95,19 @@ internal fun ConversationListItems(
         ),
         verticalArrangement = Arrangement.spacedBy(ListVerticalSpacing),
     ) {
-        // Twill: collapsible SMS section header when another protocol is on.
-        if (sections != null) {
+        // Twill: collapsible SMS section header when another protocol is on (none if SMS is off).
+        if (sections != null && !sections.isSmsHidden) {
             item(key = "twill_sms_header", contentType = "twill_section_header") {
                 sections.smsHeader()
             }
         }
 
         items(
-            items = if (sections?.isSmsCollapsed == true) emptyList() else items,
+            items = if (sections?.isSmsCollapsed == true || sections?.isSmsHidden == true) {
+                emptyList()
+            } else {
+                items
+            },
             key = { item -> item.conversationId.value },
             contentType = { CONVERSATION_ROW_CONTENT_TYPE },
         ) { item ->

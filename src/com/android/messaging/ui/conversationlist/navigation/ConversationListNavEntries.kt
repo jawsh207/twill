@@ -55,12 +55,31 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
             },
         )
 
-        val navigation = remember(navigator, appNavigator) {
+        // Twill: SMS + protocol sections in the list.
+        val inboxViewModel = hiltViewModel<TwillInboxViewModel>()
+        val inbox = remember(inboxViewModel, appNavigator) {
+            TwillInbox(
+                controller = inboxViewModel,
+                onOpenChat = { protocol, chatId ->
+                    appNavigator.push(TwillChatNavKey(protocol = protocol.key, chatId = chatId))
+                },
+                onOpenSettings = { appNavigator.push(destination = SettingsNavKey) },
+            )
+        }
+
+        val navigation = remember(navigator, appNavigator, inbox) {
             ConversationListNavigationCallbacks(
                 onNavigateToConversation = { conversationId ->
                     navigator.navigateToConversation(conversationId = conversationId)
                 },
-                onNavigateToNewChat = navigator::navigateToNewChat,
+                // Twill: with SMS off, the new-message button picks a protocol instead.
+                onNavigateToNewChat = {
+                    if (inboxViewModel.uiState.value.isSmsEnabled) {
+                        navigator.navigateToNewChat()
+                    } else {
+                        inbox.isNewChatPickerVisible.value = true
+                    }
+                },
                 onNavigateToConversationSettings = { conversationId ->
                     navigator.navigateToConversationSettings(conversationId = conversationId)
                 },
@@ -75,17 +94,6 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
                 },
                 onNavigateToSettings = {
                     appNavigator.push(destination = SettingsNavKey)
-                },
-            )
-        }
-
-        // Twill: SMS + protocol sections in the list.
-        val inboxViewModel = hiltViewModel<TwillInboxViewModel>()
-        val inbox = remember(inboxViewModel, appNavigator) {
-            TwillInbox(
-                controller = inboxViewModel,
-                onOpenChat = { protocol, chatId ->
-                    appNavigator.push(TwillChatNavKey(protocol = protocol.key, chatId = chatId))
                 },
             )
         }
