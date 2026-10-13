@@ -125,6 +125,8 @@ internal data class TwillChatDetails(
     val canRename: Boolean,
     val canSend: Boolean,
     val isRequest: Boolean,
+    /** Messages in this chat are end-to-end encrypted. */
+    val isEncrypted: Boolean = true,
     /** Everyone else in the chat, by [TwillMember.id], for sender names and the info sheet. */
     val members: Map<String, TwillMember>,
 )
@@ -143,6 +145,12 @@ internal data class TwillProtocolText(
     @StringRes val groupMembersHelp: Int,
     @StringRes val emptySection: Int,
     @StringRes val composerSignedOut: Int,
+    @StringRes val composerHint: Int,
+    /** Shown in an empty chat that is end-to-end encrypted. */
+    @StringRes val emptyChat: Int,
+    /** Shown in an empty chat that isn't (e.g. Delta Chat with a plain email address). */
+    @StringRes val emptyChatUnencrypted: Int,
+    @StringRes val uploadFailed: Int,
     @StringRes val renameHelp: Int?,
     @DrawableRes val notificationIcon: Int,
     /** Whether group members can be typed in (Nostr keys), besides picking known contacts. */

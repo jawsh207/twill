@@ -83,6 +83,10 @@ internal class DeltaChatProtocol @Inject constructor(
         groupMembersHelp = R.string.inbox_group_members_help,
         emptySection = R.string.deltachat_empty,
         composerSignedOut = R.string.deltachat_cannot_send,
+        composerHint = R.string.deltachat_composer_hint,
+        emptyChat = R.string.deltachat_chat_empty,
+        emptyChatUnencrypted = R.string.deltachat_chat_empty_unencrypted,
+        uploadFailed = R.string.deltachat_upload_failed,
         renameHelp = null,
         notificationIcon = R.drawable.ic_notification_deltachat,
         canTypeGroupMembers = false,
@@ -428,7 +432,7 @@ internal class DeltaChatProtocol @Inject constructor(
                     context.getString(R.string.deltachat_saved_subtitle)
                 chat.optBoolean("isDeviceChat") ->
                     context.getString(R.string.deltachat_device_subtitle)
-                isGroup -> context.getString(R.string.nostr_group_subtitle, members.size + 1)
+                isGroup -> context.getString(R.string.deltachat_group_subtitle, members.size + 1)
                 else -> peer?.detail.orEmpty()
             },
             isSubtitleVerified = false,
@@ -441,6 +445,7 @@ internal class DeltaChatProtocol @Inject constructor(
             canRename = isGroup && chat.optBoolean("selfInGroup"),
             canSend = chat.optBoolean("canSend"),
             isRequest = chat.optBoolean("isContactRequest"),
+            isEncrypted = chat.optBoolean("isEncrypted"),
             members = members,
         )
     } catch (exception: CancellationException) {
