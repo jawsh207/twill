@@ -12,7 +12,6 @@ import com.vitorpamplona.quartz.nip01Core.core.toHexKey
 import com.vitorpamplona.quartz.nip01Core.crypto.verify
 import com.vitorpamplona.quartz.nip01Core.metadata.MetadataEvent
 import com.vitorpamplona.quartz.nip01Core.relay.client.NostrClient
-import com.vitorpamplona.quartz.nip01Core.relay.client.accessories.fetchFirst
 import com.vitorpamplona.quartz.nip01Core.relay.client.accessories.publishAndConfirm
 import com.vitorpamplona.quartz.nip01Core.relay.client.reqs.SubscriptionListener
 import com.vitorpamplona.quartz.nip01Core.relay.filters.Filter
@@ -21,7 +20,6 @@ import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNu
 import com.vitorpamplona.quartz.nip01Core.relay.sockets.okhttp.BasicOkHttpWebSocket
 import com.vitorpamplona.quartz.nip01Core.tags.people.PTag
 import com.vitorpamplona.quartz.nip05DnsIdentifiers.Nip05Client
-import com.vitorpamplona.quartz.nip05DnsIdentifiers.Nip05Id
 import com.vitorpamplona.quartz.nip05DnsIdentifiers.OkHttpNip05Fetcher
 import com.vitorpamplona.quartz.nip05DnsIdentifiers.resolveUserHexOrNull
 import com.vitorpamplona.quartz.nip17Dm.NIP17Factory
@@ -35,8 +33,10 @@ import com.vitorpamplona.quartz.nip94FileMetadata.tags.DimensionTag
 import com.vitorpamplona.quartz.utils.sha256.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -60,7 +60,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 
 /**
  * Sends and receives NIP-17 private messages (NIP-44 encryption inside NIP-59 gift wraps):
@@ -99,6 +102,11 @@ internal class NostrMessenger @Inject constructor(
     private val processMutex = Mutex()
     private val dmRelayCache = ConcurrentHashMap<String, Pair<Long, List<NormalizedRelayUrl>>>()
     private val profileRequests = ConcurrentHashMap.newKeySet<String>()
+    private val profileFailures = ConcurrentHashMap<String, Long>()
+    private val fetchCounter = AtomicLong()
+
+    /** Profiles whose fetch is running, so the settings page can show progress. */
+    val refreshingProfiles = MutableStateFlow<Set<String>>(emptySet())
     private val downloadsInFlight = ConcurrentHashMap.newKeySet<String>()
 
     private val visibleActivities = MutableStateFlow(0)
@@ -109,11 +117,6 @@ internal class NostrMessenger @Inject constructor(
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
-
-    private val _incoming = MutableSharedFlow<NostrMessage>(extraBufferCapacity = 64)
-
-    /** New incoming messages as they are decrypted; used for notifications. */
-    val incoming: SharedFlow<NostrMessage> = _incoming.asSharedFlow()
 
     private val _errors = MutableSharedFlow<NostrError>(extraBufferCapacity = 8)
 
@@ -153,24 +156,6 @@ internal class NostrMessenger @Inject constructor(
         NostrNotifications.ensureChannels(context)
         deliveryManager.start()
 
-        // Notify about new messages unless that chat is open on screen.
-        appScope.launch {
-            _incoming.collect { message ->
-                val isViewing = isAppVisible.value && activeChatKey == message.chatKey
-                if (!isViewing) {
-                    NostrNotifications.showMessage(
-                        context = context,
-                        title = chatTitle(message.chatKey),
-                        senderName = when {
-                            NostrChatKey.isGroup(message.chatKey) -> nameOf(message.senderPubKey)
-                            else -> null
-                        },
-                        message = message,
-                    )
-                }
-            }
-        }
-
         appScope.launch {
             combine(
                 accountStore.account,
@@ -193,6 +178,19 @@ internal class NostrMessenger @Inject constructor(
                 if (account == null) {
                     withContext(Dispatchers.IO) { store.clearAll() }
                     dmRelayCache.clear()
+                    profileFailures.clear()
+                } else {
+                    withContext(Dispatchers.IO) {
+                        // Messages older than the sign-in (the first sync fetches a month
+                        // of history) are not news, so they don't raise notifications.
+                        if (store.readState(STATE_NOTIFY_SINCE) == null) {
+                            store.writeState(
+                                STATE_NOTIFY_SINCE,
+                                (System.currentTimeMillis() / 1000).toString(),
+                            )
+                        }
+                    }
+                    refreshProfile(account.pubKeyHex)
                 }
             }
         }
@@ -248,6 +246,10 @@ internal class NostrMessenger @Inject constructor(
             finishedRelays.first { count -> count >= relays.size }
         }
         client.unsubscribe(SYNC_SUB_ID)
+        // Let profile lookups started by new messages finish before hanging up.
+        withTimeoutOrNull(FETCH_TIMEOUT_MILLIS * 2) {
+            refreshingProfiles.first { it.isEmpty() }
+        }
         if (!_isConnected.value) client.disconnect()
     }
 
@@ -319,54 +321,171 @@ internal class NostrMessenger @Inject constructor(
 
     /**
      * Fetches [pubKey]'s profile (name, picture, NIP-05) if it's missing or more than a day
-     * old, and checks the NIP-05 address really belongs to them.
+     * old (or always, with [force]), and checks the NIP-05 address really belongs to them.
+     * A failed lookup is retried after a few minutes rather than cached.
      */
-    fun refreshProfile(pubKey: String) {
+    fun refreshProfile(pubKey: String, force: Boolean = false) {
+        if (pubKey.length != PUBKEY_HEX_LENGTH) return
         if (!profileRequests.add(pubKey)) return
+        refreshingProfiles.value = profileRequests.toSet()
         appScope.launch(Dispatchers.IO) {
             try {
-                val updatedAt = store.profileUpdatedAt(pubKey)
-                if (updatedAt != null &&
-                    System.currentTimeMillis() - updatedAt < PROFILE_MAX_AGE_MILLIS
-                ) {
+                if (!force && !isProfileStale(pubKey)) return@launch
+                val metadata = fetchNewestMetadata(pubKey)
+                if (metadata == null) {
+                    profileFailures[pubKey] = System.currentTimeMillis()
                     return@launch
                 }
-                val relays = normalizedRelays(accountStore.relays.value)
-                if (relays.isEmpty()) return@launch
-                val filter =
-                    Filter(kinds = listOf(MetadataEvent.KIND), authors = listOf(pubKey), limit = 1)
-                val event = withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
-                    client.fetchFirst(filters = relays.associateWith { listOf(filter) })
-                }
-                val metadata = (event as? MetadataEvent)
-                    ?.takeIf { it.verify() }
-                    ?.contactMetaData()
-                val nip05 = metadata?.nip05()?.takeIf { it.isNotBlank() }
-                val isVerified = nip05?.let { address ->
-                    val id = Nip05Id.parse(address) ?: return@let false
-                    runCatching {
-                        withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) { nip05Client.verify(id, pubKey) }
-                    }.getOrNull() == true
-                } ?: false
-
+                profileFailures.remove(pubKey)
+                val nip05 = metadata.optCleanString("nip05")
                 store.upsertProfile(
                     NostrProfile(
                         pubKey = pubKey,
-                        name = metadata?.bestName()?.takeIf { it.isNotBlank() },
-                        picture = metadata?.profilePicture()?.takeIf { it.startsWith("https://") },
+                        name = metadata.optCleanString("display_name")
+                            ?: metadata.optCleanString("displayName")
+                            ?: metadata.optCleanString("name"),
+                        picture = metadata.optCleanString("picture")
+                            ?.takeIf { it.startsWith("https://", ignoreCase = true) },
                         nip05 = nip05,
-                        isNip05Verified = isVerified,
+                        isNip05Verified = nip05 != null && verifyNip05(nip05, pubKey),
                     ),
                 )
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
+                profileFailures[pubKey] = System.currentTimeMillis()
                 LogUtil.w(TAG, "Profile fetch failed: ${exception.javaClass.simpleName}")
             } finally {
                 profileRequests.remove(pubKey)
+                refreshingProfiles.value = profileRequests.toSet()
             }
         }
     }
+
+    private fun isProfileStale(pubKey: String): Boolean {
+        profileFailures[pubKey]?.let { failedAt ->
+            if (System.currentTimeMillis() - failedAt < PROFILE_RETRY_MILLIS) return false
+        }
+        val updatedAt = store.profileUpdatedAt(pubKey) ?: return true
+        return System.currentTimeMillis() - updatedAt >= PROFILE_MAX_AGE_MILLIS
+    }
+
+    /**
+     * Asks the user's relays, plus the person's own DM relays when known, for their kind 0
+     * profile and returns the newest valid one's content. Null if no relay had one.
+     */
+    private suspend fun fetchNewestMetadata(pubKey: String): JSONObject? {
+        val relays = (
+            normalizedRelays(accountStore.relays.value) +
+                dmRelayCache[pubKey]?.second.orEmpty()
+            ).distinct()
+        if (relays.isEmpty()) return null
+
+        val filter = Filter(kinds = listOf(MetadataEvent.KIND), authors = listOf(pubKey))
+        val events = fetchAll(relays, filter)
+        val newest = events
+            .filter { it.kind == MetadataEvent.KIND && it.pubKey == pubKey && it.verify() }
+            .maxByOrNull { it.createdAt }
+            ?: return null
+        return runCatching { JSONObject(newest.content) }.getOrNull() ?: JSONObject()
+    }
+
+    /**
+     * Collects every event matching [filter] from [relays] until each relay has finished
+     * (EOSE, closed or unreachable) or the timeout passes.
+     */
+    private suspend fun fetchAll(
+        relays: List<NormalizedRelayUrl>,
+        filter: Filter,
+    ): List<Event> {
+        val events = Collections.synchronizedList(mutableListOf<Event>())
+        val finished = MutableStateFlow<Set<NormalizedRelayUrl>>(emptySet())
+        val subscriptionId = "twill-fetch-" + fetchCounter.incrementAndGet()
+        val listener = object : SubscriptionListener {
+            override suspend fun onEvent(
+                event: Event,
+                isLive: Boolean,
+                relay: NormalizedRelayUrl,
+                forFilters: List<Filter>?,
+            ) {
+                events.add(event)
+            }
+
+            override fun onEose(relay: NormalizedRelayUrl, forFilters: List<Filter>?) {
+                finished.value += relay
+            }
+
+            override fun onClosed(
+                message: String,
+                relay: NormalizedRelayUrl,
+                forFilters: List<Filter>?,
+            ) {
+                finished.value += relay
+            }
+
+            override fun onCannotConnect(
+                relay: NormalizedRelayUrl,
+                message: String,
+                forFilters: List<Filter>?,
+            ) {
+                finished.value += relay
+            }
+        }
+        try {
+            client.subscribe(subscriptionId, relays.associateWith { listOf(filter) }, listener)
+            withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
+                finished.first { it.size >= relays.size }
+            }
+        } finally {
+            client.unsubscribe(subscriptionId)
+        }
+        return events.toList()
+    }
+
+    /**
+     * Checks that [address] (name@domain) lists [pubKey], by fetching
+     * https://domain/.well-known/nostr.json?name=name (NIP-05).
+     */
+    private suspend fun verifyNip05(address: String, pubKey: String): Boolean {
+        val trimmed = address.trim().lowercase()
+        val at = trimmed.lastIndexOf('@')
+        val name = if (at > 0) trimmed.substring(0, at) else "_"
+        val domain = if (at >= 0) trimmed.substring(at + 1) else trimmed
+        if (domain.isBlank() || '.' !in domain || '/' in domain) return false
+
+        val url = runCatching {
+            HttpUrl.Builder()
+                .scheme("https")
+                .host(domain.substringBefore(':'))
+                .apply { domain.substringAfter(':', "").toIntOrNull()?.let(::port) }
+                .addPathSegments(".well-known/nostr.json")
+                .addQueryParameter("name", name)
+                .build()
+        }.getOrNull() ?: return false
+        return withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
+            runCatching {
+                // NIP-05: clients must not follow redirects.
+                okHttp.newBuilder().followRedirects(false).followSslRedirects(false).build()
+                    .newCall(Request.Builder().url(url).get().build())
+                    .execute()
+                    .use { response ->
+                        if (!response.isSuccessful) return@use false
+                        val body = response.body.byteStream().use { stream ->
+                            String(stream.readNBytes(NIP05_MAX_BYTES), Charsets.UTF_8)
+                        }
+                        val names = JSONObject(body).optJSONObject("names")
+                            ?: return@use false
+                        val listed = names.keys().asSequence()
+                            .firstOrNull { it.equals(name, ignoreCase = true) }
+                            ?.let { names.optString(it) }
+                        listed.equals(pubKey, ignoreCase = true)
+                    }
+            }.getOrDefault(false)
+        } ?: false
+    }
+
+    private fun JSONObject.optCleanString(key: String): String? =
+        (opt(key) as? String)?.trim()?.takeIf { it.isNotEmpty() && it != "null" }
 
     private suspend fun sendText(chatKey: String, text: String) {
         val signer = signerProvider.signer() ?: return
@@ -581,19 +700,18 @@ internal class NostrMessenger @Inject constructor(
         val myRelays = normalizedRelays(accountStore.relays.value)
         if (myRelays.isEmpty()) return emptyList()
 
-        val filter =
-            Filter(kinds = listOf(DmRelayListEvent.KIND), authors = listOf(pubKey), limit = 1)
-        val event = try {
-            withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
-                client.fetchFirst(filters = myRelays.associateWith { listOf(filter) })
-            }
+        val filter = Filter(kinds = listOf(DmRelayListEvent.KIND), authors = listOf(pubKey))
+        val events = try {
+            fetchAll(myRelays, filter)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
-            null
+            emptyList()
         }
-        val relays = (event as? DmRelayListEvent)
-            ?.takeIf { it.verify() }
+        val relays = events
+            .filterIsInstance<DmRelayListEvent>()
+            .filter { it.pubKey == pubKey && it.verify() }
+            .maxByOrNull { it.createdAt }
             ?.relays()
             .orEmpty()
         dmRelayCache[pubKey] = System.currentTimeMillis() to relays
@@ -726,6 +844,10 @@ internal class NostrMessenger @Inject constructor(
             me = me
         )
         val isOutgoing = rumor.pubKey == me
+        val isNew = rumor.createdAt >= notifySinceSeconds()
+        // Notes to self written in another client count as news; Twill's own sends are
+        // already stored by the time their echo arrives, so they never get here as new.
+        val isFromOtherDevice = isOutgoing && chatKey == me
 
         // A subject tag names (or renames) the chat.
         rumor.tags.valuesOf("subject").firstOrNull()?.let { subject ->
@@ -747,12 +869,12 @@ internal class NostrMessenger @Inject constructor(
             content = if (attachment != null) "" else rumor.content,
             createdAtSeconds = rumor.createdAt,
             isOutgoing = isOutgoing,
-            isRead = isOutgoing,
+            isRead = isOutgoing && !(isFromOtherDevice && isNew),
             status = NostrMessage.Status.Sent,
             attachment = attachment,
         )
         if (store.insertMessage(message)) {
-            if (!isOutgoing) _incoming.tryEmit(message)
+            if ((!isOutgoing || isFromOtherDevice) && isNew) notify(message)
             if (attachment != null && !isOutgoing && accountStore.autoDownloadMedia.value) {
                 download(message)
             }
@@ -792,6 +914,29 @@ internal class NostrMessenger @Inject constructor(
 
     private fun Array<Array<String>>.valuesOf(name: String): List<String> =
         filter { tag -> tag.size > 1 && tag[0] == name }.map { tag -> tag[1] }.distinct()
+
+    private fun notifySinceSeconds(): Long =
+        store.readState(STATE_NOTIFY_SINCE)?.toLongOrNull() ?: Long.MAX_VALUE
+
+    /** Posts a notification for [message] unless its chat is open on screen. */
+    private suspend fun notify(message: NostrMessage) {
+        // Uses the real on-screen state, not the delayed one that keeps relays connected.
+        val isViewing = visibleActivities.value > 0 && activeChatKey == message.chatKey
+        if (isViewing) return
+        try {
+            NostrNotifications.showMessage(
+                context = context,
+                title = chatTitle(message.chatKey),
+                senderName = when {
+                    NostrChatKey.isGroup(message.chatKey) -> nameOf(message.senderPubKey)
+                    else -> null
+                },
+                message = message,
+            )
+        } catch (exception: SecurityException) {
+            LogUtil.w(TAG, "Notification permission missing")
+        }
+    }
 
     private suspend fun nameOf(pubKey: String): String =
         store.profile(pubKey).first()?.name ?: NostrSignerProvider.shortNpub(pubKey)
@@ -846,6 +991,9 @@ internal class NostrMessenger @Inject constructor(
         const val LIVE_SUB_ID = "twill-dms"
         const val SYNC_SUB_ID = "twill-dms-sync"
         const val STATE_PUBLISHED_RELAYS = "published_dm_relays"
+        const val STATE_NOTIFY_SINCE = "notify_since"
+        const val PROFILE_RETRY_MILLIS = 10 * 60 * 1000L
+        const val NIP05_MAX_BYTES = 512 * 1024
         const val PUBKEY_HEX_LENGTH = 64
         const val PING_INTERVAL_SECONDS = 30L
         const val FETCH_TIMEOUT_MILLIS = 8_000L

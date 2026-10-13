@@ -1,23 +1,34 @@
 package com.android.messaging.ui.nostr.settings
 
+import android.Manifest
+import android.app.NotificationManager
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.PersistableBundle
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,10 +42,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -42,15 +56,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.android.messaging.R
 import com.android.messaging.nostr.NostrAccount
 import com.android.messaging.nostr.NostrDeliveryMode
+import com.android.messaging.nostr.NostrProfile
 import com.android.messaging.nostr.NostrSignerProvider
 import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
+import com.android.messaging.ui.nostr.NostrAvatar
 import com.android.messaging.util.UiUtils
 
 private enum class NostrSettingsDialog { None, PrivateKey, SignOut, AddRelay, MediaServer }
@@ -72,6 +90,46 @@ internal fun NostrSettingsScreen(
     ) { result ->
         if (!viewModel.onExternalSignerResult(result.data)) {
             UiUtils.showToastAtBottom(R.string.nostr_sign_in_failed)
+        }
+    }
+
+    var notificationsAllowed by remember { mutableStateOf(areNotificationsAllowed(context)) }
+    LifecycleResumeEffect(Unit) {
+        notificationsAllowed = areNotificationsAllowed(context)
+        onPauseOrDispose {}
+    }
+    var openSettingsIfDenied by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        notificationsAllowed = areNotificationsAllowed(context)
+        if (!granted && openSettingsIfDenied) openNotificationSettings(context)
+    }
+    fun requestNotifications(openSettingsOnDenial: Boolean) {
+        openSettingsIfDenied = openSettingsOnDenial
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            // Permission granted but notifications switched off in system settings.
+            if (openSettingsOnDenial) openNotificationSettings(context)
+        } else {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Ask once, right after signing in on this screen.
+    var wasSignedOut by remember { mutableStateOf(uiState.account == null) }
+    LaunchedEffect(uiState.account != null) {
+        if (uiState.account == null) {
+            wasSignedOut = true
+        } else if (wasSignedOut) {
+            wasSignedOut = false
+            if (!areNotificationsAllowed(
+                    context
+                )
+            ) {
+                requestNotifications(openSettingsOnDenial = false)
+            }
         }
     }
 
@@ -135,10 +193,12 @@ internal fun NostrSettingsScreen(
 
                 else -> {
                     item(key = "signed_in_as") {
-                        SettingsClickableItem(
-                            title = stringResource(R.string.nostr_signed_in_as),
-                            summary = NostrSignerProvider.shortNpub(account.pubKeyHex),
-                            onClick = {
+                        OwnProfileRow(
+                            pubKeyHex = account.pubKeyHex,
+                            profile = uiState.ownProfile,
+                            isRefreshing = uiState.isRefreshingProfile,
+                            onRefresh = viewModel::refreshOwnProfile,
+                            onCopyNpub = {
                                 copyToClipboard(
                                     context = context,
                                     text = NostrSignerProvider.npubOf(account.pubKeyHex),
@@ -147,6 +207,15 @@ internal fun NostrSettingsScreen(
                                 UiUtils.showToastAtBottom(R.string.nostr_npub_copied)
                             },
                         )
+                    }
+                    if (!notificationsAllowed) {
+                        item(key = "notifications_off") {
+                            SettingsClickableItem(
+                                title = stringResource(R.string.nostr_notifications_off),
+                                summary = stringResource(R.string.nostr_notifications_off_summary),
+                                onClick = { requestNotifications(openSettingsOnDenial = true) },
+                            )
+                        }
                     }
                     item(key = "sign_in_method") {
                         SettingsClickableItem(
@@ -302,6 +371,85 @@ internal fun NostrSettingsScreen(
                 }
             },
             onDismiss = { dialog = NostrSettingsDialog.None },
+        )
+    }
+}
+
+@Composable
+private fun OwnProfileRow(
+    pubKeyHex: String,
+    profile: NostrProfile?,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
+    onCopyNpub: () -> Unit,
+) {
+    val shortNpub = NostrSignerProvider.shortNpub(pubKeyHex)
+    val name = profile?.name
+    ListItem(
+        modifier = Modifier.clickable(onClick = onCopyNpub),
+        leadingContent = {
+            NostrAvatar(name = name ?: shortNpub, pictureUrl = profile?.picture)
+        },
+        overlineContent = { Text(text = stringResource(R.string.nostr_signed_in_as)) },
+        headlineContent = {
+            Text(text = name ?: shortNpub, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        supportingContent = {
+            Column {
+                val nip05 = profile?.nip05
+                if (nip05 != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = nip05.removePrefix("_@"),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (profile?.isNip05Verified == true) {
+                            Icon(
+                                imageVector = Icons.Rounded.Verified,
+                                contentDescription = stringResource(R.string.nostr_nip05_verified),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        } else {
+                            Text(text = " · " + stringResource(R.string.nostr_nip05_not_verified))
+                        }
+                    }
+                }
+                if (name != null) Text(text = shortNpub)
+                if (profile == null && !isRefreshing) {
+                    Text(text = stringResource(R.string.nostr_profile_not_found))
+                }
+            }
+        },
+        trailingContent = {
+            if (isRefreshing) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            } else {
+                IconButton(onClick = onRefresh) {
+                    Icon(
+                        imageVector = Icons.Rounded.Refresh,
+                        contentDescription = stringResource(R.string.nostr_refresh_profile),
+                    )
+                }
+            }
+        },
+    )
+}
+
+private fun areNotificationsAllowed(context: Context): Boolean =
+    context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+        PackageManager.PERMISSION_GRANTED &&
+        context.getSystemService(NotificationManager::class.java)
+            ?.areNotificationsEnabled() != false
+
+private fun openNotificationSettings(context: Context) {
+    runCatching {
+        context.startActivity(
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
     }
 }
