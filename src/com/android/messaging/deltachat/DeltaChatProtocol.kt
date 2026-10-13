@@ -38,7 +38,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -216,7 +215,7 @@ internal class DeltaChatProtocol @Inject constructor(
         if (!on) {
             flowOf(emptyList())
         } else {
-            changes.conflate().mapLatest { loadChats() }.flowOn(Dispatchers.IO)
+            changes.mapLatest { loadChats() }.flowOn(Dispatchers.IO)
         }
     }
 
@@ -270,7 +269,7 @@ internal class DeltaChatProtocol @Inject constructor(
     }
 
     override fun messages(chatId: String): Flow<List<TwillMessage>> =
-        changes.conflate().mapLatest { loadMessages(chatId.toInt()) }.flowOn(Dispatchers.IO)
+        changes.mapLatest { loadMessages(chatId.toInt()) }.flowOn(Dispatchers.IO)
 
     private suspend fun loadMessages(chatId: Int): List<TwillMessage> = try {
         val account = account()
@@ -324,7 +323,7 @@ internal class DeltaChatProtocol @Inject constructor(
     }
 
     override fun details(chatId: String): Flow<TwillChatDetails> =
-        changes.conflate().mapLatest { loadDetails(chatId.toInt()) }.flowOn(Dispatchers.IO)
+        changes.mapLatest { loadDetails(chatId.toInt()) }.flowOn(Dispatchers.IO)
 
     private suspend fun loadDetails(chatId: Int): TwillChatDetails = try {
         val account = account()
