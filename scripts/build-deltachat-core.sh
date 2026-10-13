@@ -57,6 +57,9 @@ fi
 
 # Core library. 16 KB page alignment keeps it loadable on 16 KB page-size devices.
 rustup target add "$RUST_TARGET"
+# OpenSSL's Android build (vendored by the core) finds the NDK through these.
+export ANDROID_NDK_ROOT="$NDK" ANDROID_NDK_HOME="$NDK"
+export PATH="$TOOLCHAIN:$PATH"
 export CC_aarch64_linux_android="$CLANG"
 export AR_aarch64_linux_android="$TOOLCHAIN/llvm-ar"
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$CLANG"
