@@ -177,7 +177,11 @@ internal interface TwillProtocol {
 
     val chats: Flow<List<TwillChat>>
 
-    fun messages(chatId: String): Flow<List<TwillMessage>>
+    /**
+     * The newest [limit] messages of [chatId], oldest first. Implementations should only
+     * re-read what changed: open chats stay subscribed while new messages arrive.
+     */
+    fun messages(chatId: String, limit: Int): Flow<List<TwillMessage>>
 
     fun details(chatId: String): Flow<TwillChatDetails>
 

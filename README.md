@@ -49,7 +49,7 @@ Twill can send and receive [Delta Chat](https://delta.chat) messages: end-to-end
 - **Groups, photos and files** work like the other sections; sent messages show ✓ when delivered and ✓✓ when read (read receipts can be turned off).
 - **Message delivery:** the same three choices as Nostr. If both use "Always connected", they share one permanent notification.
 - Delta Chat notifications have their own icon (a speech bubble with a Δ).
-- The core is only included for 64-bit ARM phones (every phone GrapheneOS supports).
+- The core is built from source (pinned version) and runs inside Twill; when Delta Chat isn't needed (Twill closed, not "always connected") it's unloaded after a minute to free memory. Twill ships for 64-bit ARM phones only (every phone GrapheneOS supports).
 
 ## How the protocols fit together
 
@@ -83,7 +83,7 @@ Requires JDK 17 and the Android SDK (Android Studio is the easiest way to get bo
 ```sh
 git clone --recurse-submodules https://github.com/jawsh207/twill
 cd twill
-python3 scripts/fetch-deltachat-core.py   # optional: Delta Chat core (checksum verified)
+scripts/build-deltachat-core.sh   # optional: Delta Chat core (needs Rust + Android NDK, ~20 min)
 ./gradlew :app:assembleDebug
 ```
 

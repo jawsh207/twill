@@ -13,7 +13,7 @@ jobs:
   build:
     name: Build APKs
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 100
 
     steps:
       - name: Check out sources
@@ -35,9 +35,33 @@ jobs:
           mkdir -p ~/.android
           cp .github/ci/debug.keystore ~/.android/debug.keystore
 
-      # The Delta Chat core (official build, checksum pinned in the script).
-      - name: Fetch Delta Chat core
-        run: python3 scripts/fetch-deltachat-core.py
+      # The Delta Chat core, built from source at a pinned commit (see the script). It takes
+      # 15-30 minutes, so the result is cached until the version or the build files change.
+      # Saved right after building, so a later failure doesn't throw the work away.
+      - name: Restore Delta Chat core
+        id: deltachat-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: deltachat
+          key: deltachat-core-${{ hashFiles('scripts/build-deltachat-core.sh', 'native/deltachat/**') }}
+
+      - name: Build Delta Chat core
+        if: steps.deltachat-cache.outputs.cache-hit != 'true'
+        # On failure, the last lines become an annotation (logs aren't always reachable).
+        run: |
+          set -o pipefail
+          if ! scripts/build-deltachat-core.sh 2>&1 | tee core-build.log; then
+            tail -n 40 core-build.log | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > core-tail.txt
+            echo "::error title=Delta Chat core build failed::$(cat core-tail.txt)"
+            exit 1
+          fi
+
+      - name: Save Delta Chat core
+        if: steps.deltachat-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: deltachat
+          key: deltachat-core-${{ hashFiles('scripts/build-deltachat-core.sh', 'native/deltachat/**') }}
 
       - name: Assemble optimized test APK (perf)
         run: .github/ci/gradle-report-errors.sh :app:assemblePerf --no-daemon --console=plain

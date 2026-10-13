@@ -30,8 +30,8 @@ tasks.register<GenerateLicensesTask>("generateLicenses") {
             spdxId = "Apache-2.0",
             text = "Copyright (c) 2005-2008, The Android Open Source Project",
         ),
-        // Twill: the Delta Chat core (chatmail core), bundled as a program; see
-        // scripts/fetch-deltachat-core.py. Its source code is at the URL below.
+        // Twill: the Delta Chat core (chatmail core), built from source by
+        // scripts/build-deltachat-core.sh. Its source code is at the URL below.
         ExtraNotice(
             name = "Delta Chat core (chatmail core) 2.63.0",
             url = "https://github.com/chatmail/core",

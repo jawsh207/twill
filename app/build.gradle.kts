@@ -63,9 +63,11 @@ android {
         targetSdk = 37
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // Twill: 64-bit ARM only (every phone GrapheneOS supports), which keeps the APK
+        // smaller. Add "x86_64" here temporarily to run in an x86 emulator.
         ndk {
             abiFilters.clear()
-            abiFilters.addAll(listOf("arm64-v8a", "x86_64"))
+            abiFilters.add("arm64-v8a")
         }
     }
 
@@ -94,16 +96,9 @@ android {
         java.srcDirs("../src")
         kotlin.srcDirs("../src")
         res.srcDir("../res")
-        // Twill: the Delta Chat core, fetched by scripts/fetch-deltachat-core.py (not in git).
+        // Twill: the Delta Chat core and its JNI bridge, built by
+        // scripts/build-deltachat-core.sh (not in git). Loaded straight from the APK.
         jniLibs.srcDir("../deltachat/jniLibs")
-    }
-
-    // Twill: Android only lets apps run programs from their extracted native library
-    // directory, so native libraries (the Delta Chat core) must be extracted on install.
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
-        }
     }
 
     sourceSets.getByName("test") {

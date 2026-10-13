@@ -17,5 +17,5 @@ local.properties
 
 *.log
 
-# Twill: Delta Chat core binary, downloaded by scripts/fetch-deltachat-core.py
+# Twill: Delta Chat core libraries, built by scripts/build-deltachat-core.sh
 /deltachat/

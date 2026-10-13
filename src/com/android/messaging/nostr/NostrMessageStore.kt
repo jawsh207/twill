@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import androidx.compose.runtime.Immutable
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -108,11 +109,18 @@ internal class NostrMessageStore @Inject constructor(
     private val helper = Helper(context)
     private val changes = MutableStateFlow(0L)
 
+    /** Per-chat counters, so an open chat only re-reads its messages when they change. */
+    private val chatVersions = ConcurrentHashMap<String, MutableStateFlow<Long>>()
+
+    private fun chatVersion(chatKey: String) =
+        chatVersions.getOrPut(chatKey) { MutableStateFlow(0L) }
+
     fun conversations(): Flow<List<NostrConversation>> =
         changes.map { queryConversations() }.flowOn(Dispatchers.IO)
 
-    fun messages(chatKey: String): Flow<List<NostrMessage>> =
-        changes.map { queryMessages(chatKey) }.flowOn(Dispatchers.IO)
+    /** The newest [limit] messages of [chatKey], oldest first. Re-read only when it changes. */
+    fun messages(chatKey: String, limit: Int): Flow<List<NostrMessage>> =
+        chatVersion(chatKey).map { queryMessages(chatKey, limit) }.flowOn(Dispatchers.IO)
 
     fun profile(pubKey: String): Flow<NostrProfile?> =
         changes.map { queryProfile(pubKey) }.flowOn(Dispatchers.IO)
@@ -148,7 +156,7 @@ internal class NostrMessageStore @Inject constructor(
             message.toValues(),
             SQLiteDatabase.CONFLICT_IGNORE,
         )
-        if (rowId != -1L) notifyChanged()
+        if (rowId != -1L) notifyChanged(message.chatKey)
         return rowId != -1L
     }
 
@@ -166,7 +174,7 @@ internal class NostrMessageStore @Inject constructor(
             "id = ?",
             arrayOf(id),
         )
-        notifyChanged()
+        notifyChanged(chatKeyOf(id))
     }
 
     fun setAttachmentLocalPath(id: String, path: String) {
@@ -176,13 +184,14 @@ internal class NostrMessageStore @Inject constructor(
             "id = ?",
             arrayOf(id),
         )
-        notifyChanged()
+        notifyChanged(chatKeyOf(id))
     }
 
     fun deleteMessage(id: String) {
-        message(id)?.attachment?.localPath?.let { File(it).delete() }
+        val message = message(id)
+        message?.attachment?.localPath?.let { File(it).delete() }
         helper.writableDatabase.delete("messages", "id = ?", arrayOf(id))
-        notifyChanged()
+        notifyChanged(message?.chatKey)
     }
 
     fun markConversationRead(chatKey: String) {
@@ -192,7 +201,7 @@ internal class NostrMessageStore @Inject constructor(
             "peer = ? AND is_read = 0",
             arrayOf(chatKey),
         )
-        if (updated > 0) notifyChanged()
+        if (updated > 0) notifyChanged(chatKey)
     }
 
     fun setConversationRead(chatKey: String, isRead: Boolean) {
@@ -207,7 +216,7 @@ internal class NostrMessageStore @Inject constructor(
                 "ORDER BY created_at DESC LIMIT 1)",
             arrayOf(chatKey),
         )
-        notifyChanged()
+        notifyChanged(chatKey)
     }
 
     fun setPinned(chatKey: String, isPinned: Boolean) {
@@ -234,7 +243,7 @@ internal class NostrMessageStore @Inject constructor(
         db.delete("messages", "peer = ?", arrayOf(chatKey))
         db.delete("pinned", "peer = ?", arrayOf(chatKey))
         db.delete("groups", "chat_key = ?", arrayOf(chatKey))
-        notifyChanged()
+        notifyChanged(chatKey)
     }
 
     fun upsertProfile(profile: NostrProfile) {
@@ -350,11 +359,23 @@ internal class NostrMessageStore @Inject constructor(
             db.delete(table, null, null)
         }
         notifyChanged()
+        chatVersions.values.forEach { it.value += 1 }
     }
 
-    private fun notifyChanged() {
+    /**
+     * Tells readers something changed: the conversation list always, and [chatKey]'s messages
+     * when given (null for changes that don't touch messages, like profiles or pins).
+     */
+    private fun notifyChanged(chatKey: String? = null) {
         changes.value = changes.value + 1
+        chatKey?.let { chatVersions[it]?.let { version -> version.value += 1 } }
     }
+
+    private fun chatKeyOf(messageId: String): String? =
+        helper.readableDatabase.rawQuery(
+            "SELECT peer FROM messages WHERE id = ?",
+            arrayOf(messageId),
+        ).use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
 
     private fun queryConversations(): List<NostrConversation> {
         val db = helper.readableDatabase
@@ -405,13 +426,13 @@ internal class NostrMessageStore @Inject constructor(
         }
     }
 
-    private fun queryMessages(chatKey: String): List<NostrMessage> {
+    private fun queryMessages(chatKey: String, limit: Int): List<NostrMessage> {
         return helper.readableDatabase.rawQuery(
-            "SELECT * FROM messages WHERE peer = ? ORDER BY created_at ASC, rowid ASC",
-            arrayOf(chatKey),
+            "SELECT * FROM messages WHERE peer = ? ORDER BY created_at DESC, rowid DESC LIMIT ?",
+            arrayOf(chatKey, limit.toString()),
         ).use { cursor ->
             buildList { while (cursor.moveToNext()) add(cursor.toMessage()) }
-        }
+        }.asReversed()
     }
 
     private fun queryProfile(pubKey: String): NostrProfile? {
