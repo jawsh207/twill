@@ -28,10 +28,10 @@ import com.android.messaging.ui.conversationlist.chats.rememberConversationListE
 import com.android.messaging.ui.navigation.LocalNavigator
 import com.android.messaging.ui.navigation.Navigator
 import com.android.messaging.ui.navigation.paneTitleMetadata
-import com.android.messaging.ui.nostr.inbox.LocalTwillInbox
-import com.android.messaging.ui.nostr.inbox.TwillInbox
-import com.android.messaging.ui.nostr.inbox.TwillInboxViewModel
-import com.android.messaging.ui.nostr.navigation.NostrChatNavKey
+import com.android.messaging.ui.twill.inbox.LocalTwillInbox
+import com.android.messaging.ui.twill.inbox.TwillInbox
+import com.android.messaging.ui.twill.inbox.TwillInboxViewModel
+import com.android.messaging.ui.twill.navigation.TwillChatNavKey
 
 internal fun EntryProviderScope<NavKey>.conversationListEntries() {
     entry<ConversationListNavKey>(
@@ -79,12 +79,14 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
             )
         }
 
-        // Twill: SMS + Nostr sections in the list.
+        // Twill: SMS + protocol sections in the list.
         val inboxViewModel = hiltViewModel<TwillInboxViewModel>()
         val inbox = remember(inboxViewModel, appNavigator) {
             TwillInbox(
                 controller = inboxViewModel,
-                onOpenNostrChat = { peer -> appNavigator.push(NostrChatNavKey(chatKey = peer)) },
+                onOpenChat = { protocol, chatId ->
+                    appNavigator.push(TwillChatNavKey(protocol = protocol.key, chatId = chatId))
+                },
             )
         }
 

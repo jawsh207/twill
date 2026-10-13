@@ -35,7 +35,7 @@ import com.android.messaging.ui.conversationlist.common.support.AppearanceAnimat
 import com.android.messaging.ui.conversationlist.common.support.CONVERSATION_LIST_TEST_TAG
 import com.android.messaging.ui.conversationlist.common.support.rememberAppearanceAnimationTokens
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
-import com.android.messaging.ui.nostr.inbox.ConversationListSections
+import com.android.messaging.ui.twill.inbox.ConversationListSections
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 
@@ -95,7 +95,7 @@ internal fun ConversationListItems(
         ),
         verticalArrangement = Arrangement.spacedBy(ListVerticalSpacing),
     ) {
-        // Twill: collapsible SMS section header when Nostr is on.
+        // Twill: collapsible SMS section header when another protocol is on.
         if (sections != null) {
             item(key = "twill_sms_header", contentType = "twill_section_header") {
                 sections.smsHeader()
@@ -129,7 +129,7 @@ internal fun ConversationListItems(
             )
         }
 
-        // Twill: the Nostr section.
+        // Twill: the other protocols' sections.
         sections?.trailingItems?.invoke(this)
     }
 }

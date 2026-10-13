@@ -46,7 +46,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Scheduled messages are delivered at the exact time the user picked -->
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <!-- Twill: optional "Always connected" Nostr delivery -->
+    <!-- Twill: optional "Always connected" delivery for Nostr and Delta Chat -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -345,15 +345,15 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".nostr.NostrConnectionService"
+        <service android:name=".twill.TwillConnectionService"
             android:exported="false"
             android:foregroundServiceType="remoteMessaging" />
 
-        <service android:name=".nostr.NostrSyncJobService"
+        <service android:name=".twill.TwillSyncJobService"
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
-        <receiver android:name=".nostr.NostrBootReceiver"
+        <receiver android:name=".twill.TwillBootReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>

@@ -1,9 +1,10 @@
-package com.android.messaging.ui.nostr.chat
+package com.android.messaging.ui.twill.chat
 
 import android.content.Context
 import android.net.Uri
 import android.text.format.DateUtils
 import android.text.format.Formatter
+import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -41,6 +42,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -50,6 +52,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -74,67 +77,67 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.messaging.R
-import com.android.messaging.nostr.NostrAttachment
-import com.android.messaging.nostr.NostrChatKey
-import com.android.messaging.nostr.NostrError
-import com.android.messaging.nostr.NostrMedia
-import com.android.messaging.nostr.NostrMessage
-import com.android.messaging.nostr.NostrProfile
-import com.android.messaging.nostr.NostrSignerProvider
-import com.android.messaging.ui.nostr.NostrAvatar
-import com.android.messaging.ui.nostr.NostrSignerForegroundHost
+import com.android.messaging.twill.TwillAttachment
+import com.android.messaging.twill.TwillChatDetails
+import com.android.messaging.twill.TwillError
+import com.android.messaging.twill.TwillImages
+import com.android.messaging.twill.TwillMember
+import com.android.messaging.twill.TwillMessage
+import com.android.messaging.twill.TwillProtocolId
+import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.ui.nostr.NostrForegroundHost
+import com.android.messaging.ui.twill.TwillAvatarImage
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun NostrChatScreen(
-    chatKey: String,
-    viewModel: NostrChatViewModel,
+internal fun TwillChatScreen(
+    protocol: TwillProtocolId,
+    protocolText: TwillProtocolText,
+    chatId: String,
+    viewModel: TwillChatViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val messages by viewModel.messages.collectAsStateWithLifecycle()
-    val profiles by viewModel.profiles.collectAsStateWithLifecycle()
-    val group by viewModel.group.collectAsStateWithLifecycle()
-    val account by viewModel.account.collectAsStateWithLifecycle()
+    val details by viewModel.details.collectAsStateWithLifecycle()
     val downloading by viewModel.downloading.collectAsStateWithLifecycle()
     var draft by rememberSaveable { mutableStateOf("") }
     var isInfoDialogVisible by rememberSaveable { mutableStateOf(false) }
     var viewerPath by remember { mutableStateOf<String?>(null) }
-    var pendingSave by remember { mutableStateOf<NostrMessage?>(null) }
+    var pendingSave by remember { mutableStateOf<TwillMessage?>(null) }
     val listState = rememberLazyListState()
 
-    val isGroup = NostrChatKey.isGroup(chatKey)
-    val members = remember(chatKey) { NostrChatKey.members(chatKey) }
-
-    NostrSignerForegroundHost(signer = remember(account) { viewModel.signer() })
+    if (protocol == TwillProtocolId.Nostr) NostrForegroundHost()
 
     // While this chat is on screen, its messages don't raise notifications.
-    DisposableEffect(chatKey) {
-        viewModel.bind(chatKey)
+    DisposableEffect(protocol, chatId) {
+        viewModel.bind(protocol, chatId)
         viewModel.setActive(true)
         onDispose { viewModel.setActive(false) }
     }
 
     // Viewing the chat marks it read, including messages that arrive while it's open.
     LaunchedEffect(messages.size) {
-        viewModel.markRead()
+        if (details?.isRequest != true) viewModel.markRead()
         if (messages.isNotEmpty()) listState.animateScrollToItem(0)
     }
 
     LaunchedEffect(Unit) {
         viewModel.errors.collect { error ->
             val text = when (error) {
-                NostrError.UploadFailed -> R.string.nostr_upload_failed
-                NostrError.FileTooLarge -> R.string.nostr_file_too_large
-                NostrError.DownloadFailed -> R.string.nostr_download_failed
+                TwillError.UploadFailed -> R.string.nostr_upload_failed
+                TwillError.FileTooLarge -> R.string.nostr_file_too_large
+                TwillError.DownloadFailed -> R.string.nostr_download_failed
+                TwillError.SendFailed -> R.string.twill_send_failed
             }
             Toast.makeText(context, text, Toast.LENGTH_LONG).show()
         }
@@ -154,17 +157,9 @@ internal fun NostrChatScreen(
         if (uri != null && path != null) copyToUri(context, File(path), uri)
     }
 
-    val peerProfile = profiles[chatKey]
-    val title = when {
-        isGroup -> group?.name ?: membersTitle(members, profiles)
-        else -> nameOf(chatKey, profiles)
-    }
-    val verifiedNip05 = peerProfile?.takeIf { !isGroup && it.isNip05Verified }?.nip05
-    val subtitle = when {
-        isGroup -> stringResource(R.string.nostr_group_subtitle, members.size + 1)
-        verifiedNip05 != null -> verifiedNip05.removePrefix("_@")
-        else -> stringResource(R.string.nostr_chat_subtitle, NostrSignerProvider.shortNpub(chatKey))
-    }
+    val info = details
+    val title = info?.title.orEmpty()
+    val isGroup = info?.isGroup == true
 
     Scaffold(
         modifier = modifier,
@@ -179,61 +174,45 @@ internal fun NostrChatScreen(
                     }
                 },
                 title = {
-                    Row(
-                        modifier = Modifier.clickable { isInfoDialogVisible = true },
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        NostrAvatar(
-                            name = title,
-                            pictureUrl = if (isGroup) null else peerProfile?.picture,
-                            isGroup = isGroup,
-                            size = 36.dp,
+                    if (info != null) {
+                        ChatTitle(
+                            details = info,
+                            protocol = protocol,
+                            onClick = { isInfoDialogVisible = true },
                         )
-                        Column {
-                            Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (verifiedNip05 != null) {
-                                    Icon(
-                                        modifier = Modifier
-                                            .padding(end = 4.dp)
-                                            .size(14.dp),
-                                        imageVector = Icons.Rounded.Verified,
-                                        contentDescription = stringResource(
-                                            R.string.nostr_nip05_verified
-                                        ),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                                Text(
-                                    text = subtitle,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
                     }
                 },
             )
         },
         bottomBar = {
-            NostrComposer(
-                text = draft,
-                enabled = account != null,
-                onTextChange = { draft = it },
-                onSend = {
-                    viewModel.send(draft)
-                    draft = ""
-                },
-                onPickPhoto = {
-                    pickPhoto.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                    )
-                },
-                onPickFile = { pickFile.launch(arrayOf("*/*")) },
-            )
+            when {
+                info?.isRequest == true -> RequestBar(
+                    onAccept = viewModel::accept,
+                    onBlock = {
+                        viewModel.block()
+                        onNavigateBack()
+                    },
+                )
+
+                else -> Composer(
+                    text = draft,
+                    enabled = info?.canSend == true,
+                    disabledHint = protocolText.composerSignedOut,
+                    onTextChange = { draft = it },
+                    onSend = {
+                        viewModel.send(draft)
+                        draft = ""
+                    },
+                    onPickPhoto = {
+                        pickPhoto.launch(
+                            PickVisualMediaRequest(
+                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                            ),
+                        )
+                    },
+                    onPickFile = { pickFile.launch(arrayOf("*/*")) },
+                )
+            }
         },
     ) { contentPadding ->
         if (messages.isEmpty()) {
@@ -252,6 +231,7 @@ internal fun NostrChatScreen(
             }
         } else {
             val ordered = messages.asReversed()
+            val members = info?.members.orEmpty()
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 state = listState,
@@ -266,25 +246,28 @@ internal fun NostrChatScreen(
             ) {
                 items(items = ordered.indices.toList(), key = { ordered[it].id }) { index ->
                     val message = ordered[index]
+                    if (message.isInfo) {
+                        InfoMessage(message.text)
+                        return@items
+                    }
                     // Reverse layout: the next item in the list is the earlier message.
                     val earlier = ordered.getOrNull(index + 1)
                     val showSender = isGroup &&
                         !message.isOutgoing &&
-                        earlier?.senderPubKey != message.senderPubKey
-                    NostrMessageBubble(
+                        (earlier == null || earlier.isInfo || earlier.senderId != message.senderId)
+                    val sender = members[message.senderId]
+                    MessageBubble(
                         message = message,
-                        senderName = if (showSender) {
-                            nameOf(
-                                message.senderPubKey,
-                                profiles
+                        protocol = protocol,
+                        sender = if (showSender) {
+                            sender ?: TwillMember(
+                                message.senderId,
+                                "?",
+                                null
                             )
                         } else {
                             null
                         },
-                        senderPicture = profiles[message.senderPubKey]
-                            ?.picture
-                            ?.takeIf { showSender },
-                        media = viewModel.media,
                         isDownloading = message.id in downloading,
                         onRetry = { viewModel.retry(message) },
                         onDownload = { viewModel.download(message) },
@@ -294,10 +277,7 @@ internal fun NostrChatScreen(
                             val attachment = message.attachment
                             saveFile.launch(
                                 attachment?.fileName
-                                    ?: (
-                                        "nostr-file." +
-                                            viewModel.media.mimeExtension(attachment?.mimeType)
-                                        ),
+                                    ?: ("file." + extensionOf(attachment?.mimeType)),
                             )
                         },
                     )
@@ -306,39 +286,56 @@ internal fun NostrChatScreen(
         }
     }
 
-    if (isInfoDialogVisible) {
+    if (isInfoDialogVisible && info != null) {
         ChatInfoDialog(
-            chatKey = chatKey,
-            members = members,
-            profiles = profiles,
-            groupName = group?.name,
+            details = info,
+            protocol = protocol,
+            renameHelp = protocolText.renameHelp,
             onRename = viewModel::rename,
             onDismiss = { isInfoDialogVisible = false },
         )
     }
 
-    viewerPath?.let { path ->
-        ImageViewer(
-            path = path,
-            media = viewModel.media,
-            onDismiss = { viewerPath = null },
-        )
+    viewerPath?.let { path -> ImageViewer(path = path, onDismiss = { viewerPath = null }) }
+}
+
+@Composable
+private fun ChatTitle(details: TwillChatDetails, protocol: TwillProtocolId, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        TwillAvatarImage(avatar = details.avatar, protocol = protocol, size = 36.dp)
+        Column {
+            Text(text = details.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (details.isSubtitleVerified) {
+                    Icon(
+                        modifier = Modifier
+                            .padding(end = 4.dp)
+                            .size(14.dp),
+                        imageVector = Icons.Rounded.Verified,
+                        contentDescription = stringResource(R.string.twill_verified),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Text(
+                    text = details.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
-private fun membersTitle(members: List<String>, profiles: Map<String, NostrProfile>): String {
-    val names = members.map { nameOf(it, profiles) }
-    return if (names.size <= 3) {
-        names.joinToString(", ")
-    } else {
-        names.take(3).joinToString(", ") + " +" + (names.size - 3)
-    }
-}
+private fun extensionOf(mimeType: String?): String =
+    mimeType?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) } ?: "bin"
 
-private fun nameOf(pubKey: String, profiles: Map<String, NostrProfile>): String =
-    profiles[pubKey]?.name ?: NostrSignerProvider.shortNpub(pubKey)
-
-private fun NostrAttachment.aspectRatio(): Float {
+private fun TwillAttachment.aspectRatio(): Float {
     val w = width ?: return DEFAULT_PHOTO_RATIO
     val h = height ?: return DEFAULT_PHOTO_RATIO
     return if (w > 0 && h > 0) w.toFloat() / h else DEFAULT_PHOTO_RATIO
@@ -347,11 +344,29 @@ private fun NostrAttachment.aspectRatio(): Float {
 private const val DEFAULT_PHOTO_RATIO = 4f / 3f
 
 @Composable
-private fun NostrMessageBubble(
-    message: NostrMessage,
-    senderName: String?,
-    senderPicture: String?,
-    media: NostrMedia,
+private fun InfoMessage(text: String) {
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(
+            modifier = Modifier
+                .padding(horizontal = 24.dp, vertical = 4.dp)
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainer,
+                    RoundedCornerShape(12.dp),
+                )
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun MessageBubble(
+    message: TwillMessage,
+    protocol: TwillProtocolId,
+    sender: TwillMember?,
     isDownloading: Boolean,
     onRetry: () -> Unit,
     onDownload: () -> Unit,
@@ -359,28 +374,28 @@ private fun NostrMessageBubble(
     onSaveFile: () -> Unit,
 ) {
     val context = LocalContext.current
-    val isFailed = message.status == NostrMessage.Status.Failed
+    val isFailed = message.status == TwillMessage.Status.Failed
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isOutgoing) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.Bottom,
     ) {
-        if (senderName != null) {
-            NostrAvatar(
+        if (sender != null) {
+            TwillAvatarImage(
                 modifier = Modifier.padding(end = 8.dp, bottom = 20.dp),
-                name = senderName,
-                pictureUrl = senderPicture,
+                avatar = sender.avatar,
+                protocol = protocol,
                 size = 28.dp,
             )
         }
         Column(
             horizontalAlignment = if (message.isOutgoing) Alignment.End else Alignment.Start,
         ) {
-            if (senderName != null) {
+            if (sender != null) {
                 Text(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    text = senderName,
+                    text = sender.name,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -399,56 +414,52 @@ private fun NostrMessageBubble(
                     else -> MaterialTheme.colorScheme.onSurface
                 },
             ) {
-                val attachment = message.attachment
-                when {
-                    attachment == null -> Text(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        text = message.content,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                Column {
+                    val attachment = message.attachment
+                    when {
+                        attachment == null -> Unit
 
-                    attachment.isImage && attachment.isDownloaded -> DownloadedImage(
-                        path = requireNotNull(attachment.localPath),
-                        fallbackRatio = attachment.aspectRatio(),
-                        media = media,
-                        onOpen = onOpenImage,
-                    )
+                        attachment.isImage && attachment.isDownloaded -> DownloadedImage(
+                            path = requireNotNull(attachment.localPath),
+                            fallbackRatio = attachment.aspectRatio(),
+                            onOpen = onOpenImage,
+                        )
 
-                    attachment.isImage -> AttachmentPlaceholder(
-                        icon = Icons.Rounded.Image,
-                        label = stringResource(R.string.nostr_tap_to_load_photo),
-                        detail = attachment.size?.let {
-                            Formatter.formatShortFileSize(context, it)
-                        },
-                        isBusy = isDownloading || message.status == NostrMessage.Status.Sending,
-                        aspectRatio = attachment.aspectRatio(),
-                        onClick = onDownload,
-                    )
+                        attachment.isImage -> AttachmentPlaceholder(
+                            icon = Icons.Rounded.Image,
+                            label = stringResource(R.string.nostr_tap_to_load_photo),
+                            detail = attachment.size?.let {
+                                Formatter.formatShortFileSize(context, it)
+                            },
+                            isBusy = isDownloading || message.status == TwillMessage.Status.Sending,
+                            aspectRatio = attachment.aspectRatio(),
+                            onClick = onDownload,
+                        )
 
-                    else -> FileRow(
-                        name = attachment.fileName
-                            ?: attachment.mimeType
-                            ?: stringResource(R.string.nostr_file),
-                        detail = attachment.size?.let {
-                            Formatter.formatShortFileSize(context, it)
-                        },
-                        isDownloaded = attachment.isDownloaded,
-                        isBusy = isDownloading,
-                        onClick = if (attachment.isDownloaded) onSaveFile else onDownload,
-                    )
+                        else -> FileRow(
+                            name = attachment.fileName
+                                ?: attachment.mimeType
+                                ?: stringResource(R.string.nostr_file),
+                            detail = attachment.size?.let {
+                                Formatter.formatShortFileSize(context, it)
+                            },
+                            isDownloaded = attachment.isDownloaded,
+                            isBusy = isDownloading,
+                            onClick = if (attachment.isDownloaded) onSaveFile else onDownload,
+                        )
+                    }
+                    if (message.text.isNotEmpty()) {
+                        Text(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            text = message.text,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
                 }
             }
             Text(
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                text = when (message.status) {
-                    NostrMessage.Status.Sending -> stringResource(R.string.nostr_status_sending)
-                    NostrMessage.Status.Failed -> stringResource(R.string.nostr_status_failed)
-                    NostrMessage.Status.Sent -> DateUtils.formatDateTime(
-                        context,
-                        message.createdAtSeconds * 1000,
-                        DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_ABBREV_ALL,
-                    )
-                },
+                text = statusLine(context, message),
                 style = MaterialTheme.typography.labelSmall,
                 color = when {
                     isFailed -> MaterialTheme.colorScheme.error
@@ -460,14 +471,29 @@ private fun NostrMessageBubble(
 }
 
 @Composable
+private fun statusLine(context: Context, message: TwillMessage): String {
+    val time = DateUtils.formatDateTime(
+        context,
+        message.timeMillis,
+        DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_ABBREV_ALL,
+    )
+    return when (message.status) {
+        TwillMessage.Status.Sending -> stringResource(R.string.nostr_status_sending)
+        TwillMessage.Status.Failed -> stringResource(R.string.nostr_status_failed)
+        TwillMessage.Status.Sent -> time
+        TwillMessage.Status.Delivered -> "$time ✓"
+        TwillMessage.Status.Read -> "$time ✓✓"
+    }
+}
+
+@Composable
 private fun DownloadedImage(
     path: String,
     fallbackRatio: Float,
-    media: NostrMedia,
     onOpen: (String) -> Unit,
 ) {
     val bitmap by produceState<ImageBitmap?>(null, path) {
-        value = media.loadPreview(path)?.asImageBitmap()
+        value = TwillImages.loadPreview(path)?.asImageBitmap()
     }
     val ratio = bitmap?.let { it.width.toFloat() / it.height } ?: fallbackRatio
     Box(
@@ -570,13 +596,10 @@ private fun FileRow(
 }
 
 @Composable
-private fun ImageViewer(
-    path: String,
-    media: NostrMedia,
-    onDismiss: () -> Unit,
-) {
+private fun ImageViewer(path: String, onDismiss: () -> Unit) {
     val bitmap by produceState<ImageBitmap?>(null, path) {
-        value = media.loadPreview(path, maxSide = 2560)?.asImageBitmap()
+        value = TwillImages.loadPreview(path, maxSide = TwillImages.VIEWER_MAX_SIDE)
+            ?.asImageBitmap()
     }
     Dialog(
         onDismissRequest = onDismiss,
@@ -606,22 +629,21 @@ private fun ImageViewer(
 
 @Composable
 private fun ChatInfoDialog(
-    chatKey: String,
-    members: List<String>,
-    profiles: Map<String, NostrProfile>,
-    groupName: String?,
+    details: TwillChatDetails,
+    protocol: TwillProtocolId,
+    renameHelp: Int?,
     onRename: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val isGroup = NostrChatKey.isGroup(chatKey)
-    var name by rememberSaveable(groupName) { mutableStateOf(groupName.orEmpty()) }
+    val groupName = if (details.isGroup) details.title else ""
+    var name by rememberSaveable(groupName) { mutableStateOf(groupName) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
                 text = stringResource(
-                    if (isGroup) R.string.nostr_group_info else R.string.nostr_contact_info,
+                    if (details.isGroup) R.string.nostr_group_info else R.string.nostr_contact_info,
                 ),
             )
         },
@@ -632,58 +654,54 @@ private fun ChatInfoDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (isGroup) {
+                if (details.canRename) {
                     OutlinedTextField(
                         modifier = Modifier.fillMaxWidth(),
                         value = name,
                         onValueChange = { name = it },
                         singleLine = true,
                         label = { Text(text = stringResource(R.string.inbox_group_name_hint)) },
-                        supportingText = {
-                            Text(text = stringResource(R.string.nostr_group_rename_help))
+                        supportingText = renameHelp?.let { help ->
+                            { Text(text = stringResource(help)) }
                         },
                     )
+                }
+                if (details.isGroup) {
                     HorizontalDivider()
                     Text(
-                        text = stringResource(R.string.nostr_group_members, members.size + 1),
+                        text = stringResource(
+                            R.string.nostr_group_members,
+                            details.members.size + 1,
+                        ),
                         style = MaterialTheme.typography.titleSmall,
                     )
                 }
-                members.forEach { pubKey ->
-                    val profile = profiles[pubKey]
+                details.members.values.forEach { member ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        NostrAvatar(
-                            name = nameOf(pubKey, profiles),
-                            pictureUrl = profile?.picture,
-                            size = 40.dp,
-                        )
+                        TwillAvatarImage(avatar = member.avatar, protocol = protocol, size = 40.dp)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = nameOf(pubKey, profiles),
+                                text = member.name,
                                 style = MaterialTheme.typography.bodyLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            Text(
-                                text = when {
-                                    profile?.nip05 != null && profile.isNip05Verified -> {
-                                        "✓ " + profile.nip05.removePrefix("_@")
-                                    }
-
-                                    else -> NostrSignerProvider.npubOf(pubKey)
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            member.detail?.let { detail ->
+                                Text(
+                                    text = if (member.isVerified) "✓ $detail" else detail,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }
-                if (isGroup) {
+                if (details.isGroup) {
                     Text(
                         text = stringResource(R.string.nostr_group_you),
                         style = MaterialTheme.typography.bodySmall,
@@ -695,7 +713,9 @@ private fun ChatInfoDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (isGroup && name.trim() != groupName.orEmpty()) onRename(name)
+                    if (details.canRename && name.trim() != groupName && name.isNotBlank()) {
+                        onRename(name.trim())
+                    }
                     onDismiss()
                 },
             ) {
@@ -706,9 +726,36 @@ private fun ChatInfoDialog(
 }
 
 @Composable
-private fun NostrComposer(
+private fun RequestBar(onAccept: () -> Unit, onBlock: () -> Unit) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.twill_request_explainer),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(modifier = Modifier.weight(1f), onClick = onBlock) {
+                    Text(text = stringResource(R.string.twill_request_block))
+                }
+                Button(modifier = Modifier.weight(1f), onClick = onAccept) {
+                    Text(text = stringResource(R.string.twill_request_accept))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Composer(
     text: String,
     enabled: Boolean,
+    disabledHint: Int,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
     onPickPhoto: () -> Unit,
@@ -750,7 +797,7 @@ private fun NostrComposer(
                         leadingIcon = {
                             Icon(
                                 Icons.AutoMirrored.Rounded.InsertDriveFile,
-                                contentDescription = null
+                                contentDescription = null,
                             )
                         },
                         onClick = {
@@ -768,10 +815,7 @@ private fun NostrComposer(
                 placeholder = {
                     Text(
                         text = stringResource(
-                            when {
-                                enabled -> R.string.nostr_composer_hint
-                                else -> R.string.nostr_composer_signed_out
-                            },
+                            if (enabled) R.string.nostr_composer_hint else disabledHint,
                         ),
                     )
                 },

@@ -35,6 +35,10 @@ jobs:
           mkdir -p ~/.android
           cp .github/ci/debug.keystore ~/.android/debug.keystore
 
+      # The Delta Chat core (official build, checksum pinned in the script).
+      - name: Fetch Delta Chat core
+        run: python3 scripts/fetch-deltachat-core.py
+
       - name: Assemble optimized test APK (perf)
         run: .github/ci/gradle-report-errors.sh :app:assemblePerf --no-daemon --console=plain
 

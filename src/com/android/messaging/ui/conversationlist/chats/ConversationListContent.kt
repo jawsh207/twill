@@ -30,10 +30,10 @@ import com.android.messaging.ui.conversationlist.common.support.previewConversat
 import com.android.messaging.ui.conversationlist.model.ConversationListContentUiState
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
 import com.android.messaging.ui.core.MessagingPreviewTheme
-import com.android.messaging.ui.nostr.inbox.ConversationListSections
-import com.android.messaging.ui.nostr.inbox.LocalTwillInbox
-import com.android.messaging.ui.nostr.inbox.TwillInboxUiState
-import com.android.messaging.ui.nostr.inbox.rememberConversationListSections
+import com.android.messaging.ui.twill.inbox.ConversationListSections
+import com.android.messaging.ui.twill.inbox.LocalTwillInbox
+import com.android.messaging.ui.twill.inbox.TwillInboxUiState
+import com.android.messaging.ui.twill.inbox.rememberConversationListSections
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 
@@ -53,7 +53,7 @@ internal fun ConversationListContent(
     pinAnimationController: OverlayReorderAnimationController<Model, ConversationId>?,
     modifier: Modifier = Modifier,
 ) {
-    // Twill: SMS and Nostr sections, only when signed in to Nostr.
+    // Twill: SMS and protocol sections, only when another protocol is set up.
     val inbox = LocalTwillInbox.current
     val inboxState = inbox?.controller?.uiState?.collectAsStateWithLifecycle()?.value
         ?: TwillInboxUiState()

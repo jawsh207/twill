@@ -1,11 +1,13 @@
 package com.android.messaging.nostr
 
-import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.net.Uri
-import android.os.Bundle
+import com.android.messaging.R
 import com.android.messaging.di.core.ApplicationCoroutineScope
+import com.android.messaging.twill.TwillAppVisibility
+import com.android.messaging.twill.TwillError
+import com.android.messaging.twill.TwillNotifications
+import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.util.LogUtil
 import com.vitorpamplona.quartz.nip01Core.core.Event
 import com.vitorpamplona.quartz.nip01Core.core.toHexKey
@@ -44,7 +46,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -79,7 +80,7 @@ internal class NostrMessenger @Inject constructor(
     private val signerProvider: NostrSignerProvider,
     private val store: NostrMessageStore,
     private val media: NostrMedia,
-    private val deliveryManager: NostrDeliveryManager,
+    private val visibility: TwillAppVisibility,
     @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
 ) {
     private val okHttp: OkHttpClient by lazy {
@@ -109,58 +110,36 @@ internal class NostrMessenger @Inject constructor(
     val refreshingProfiles = MutableStateFlow<Set<String>>(emptySet())
     private val downloadsInFlight = ConcurrentHashMap.newKeySet<String>()
 
-    private val visibleActivities = MutableStateFlow(0)
-    private val isAppVisible = MutableStateFlow(false)
     private val keepConnectedInBackground = MutableStateFlow(false)
-    private var visibilityJob: Job? = null
     private var isInstalled = false
 
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
-    private val _errors = MutableSharedFlow<NostrError>(extraBufferCapacity = 8)
+    private val _errors = MutableSharedFlow<TwillError>(extraBufferCapacity = 8)
 
     /** Problems worth telling the user about, such as a failed upload. */
-    val errors: SharedFlow<NostrError> = _errors.asSharedFlow()
+    val errors: SharedFlow<TwillError> = _errors.asSharedFlow()
 
     /** Message ids whose attachments are downloading. */
     val downloading = MutableStateFlow<Set<String>>(emptySet())
 
-    @Volatile
-    private var activeChatKey: String? = null
-
     /**
-     * Starts watching app visibility and the account. Safe to call more than once. Screens
-     * call it with [markAppVisible] true; background components pass false.
+     * Starts watching the account and app visibility (see [TwillAppVisibility]). Safe to call
+     * more than once. Background delivery is run by the shared
+     * [com.android.messaging.twill.TwillRuntime].
      */
-    fun install(markAppVisible: Boolean = true) {
+    fun install() {
         synchronized(this) {
-            if (isInstalled) {
-                if (markAppVisible && visibleActivities.value == 0) {
-                    visibleActivities.value = 1
-                    visibilityJob?.cancel()
-                    isAppVisible.value = true
-                }
-                return
-            }
+            if (isInstalled) return
             isInstalled = true
         }
-
-        if (markAppVisible) {
-            visibleActivities.value = 1
-            isAppVisible.value = true
-        }
-        (context.applicationContext as Application).registerActivityLifecycleCallbacks(
-            VisibilityCallbacks(),
-        )
-        NostrNotifications.ensureChannels(context)
-        deliveryManager.start()
 
         appScope.launch {
             combine(
                 accountStore.account,
                 accountStore.relays,
-                isAppVisible,
+                visibility.isRecentlyVisible,
                 keepConnectedInBackground,
             ) { account, relays, visible, keepInBackground ->
                 ConnectionPlan(
@@ -194,12 +173,6 @@ internal class NostrMessenger @Inject constructor(
                 }
             }
         }
-    }
-
-    /** The chat currently on screen, so its messages don't raise notifications. */
-    fun setActiveChat(chatKey: String?) {
-        activeChatKey = chatKey
-        if (chatKey != null) NostrNotifications.cancelConversation(context, chatKey)
     }
 
     fun launchInAppScope(block: suspend CoroutineScope.() -> Unit): Job =
@@ -299,7 +272,7 @@ internal class NostrMessenger @Inject constructor(
                 throw exception
             } catch (exception: Exception) {
                 LogUtil.w(TAG, "Download failed: ${exception.javaClass.simpleName}")
-                _errors.tryEmit(NostrError.DownloadFailed)
+                _errors.tryEmit(TwillError.DownloadFailed)
             } finally {
                 downloadsInFlight.remove(message.id)
                 downloading.value = downloadsInFlight.toSet()
@@ -552,9 +525,9 @@ internal class NostrMessenger @Inject constructor(
                 if (exception.message ==
                     "File is too large"
                 ) {
-                    NostrError.FileTooLarge
+                    TwillError.FileTooLarge
                 } else {
-                    NostrError.UploadFailed
+                    TwillError.UploadFailed
                 },
             )
             return
@@ -612,7 +585,7 @@ internal class NostrMessenger @Inject constructor(
             throw exception
         } catch (exception: Exception) {
             LogUtil.w(TAG, "Upload failed: ${exception.javaClass.simpleName}: ${exception.message}")
-            _errors.tryEmit(NostrError.UploadFailed)
+            _errors.tryEmit(TwillError.UploadFailed)
             store.updateStatus(placeholderId, NostrMessage.Status.Failed)
             return
         }
@@ -921,21 +894,25 @@ internal class NostrMessenger @Inject constructor(
     /** Posts a notification for [message] unless its chat is open on screen. */
     private suspend fun notify(message: NostrMessage) {
         // Uses the real on-screen state, not the delayed one that keeps relays connected.
-        val isViewing = visibleActivities.value > 0 && activeChatKey == message.chatKey
-        if (isViewing) return
-        try {
-            NostrNotifications.showMessage(
-                context = context,
-                title = chatTitle(message.chatKey),
-                senderName = when {
-                    NostrChatKey.isGroup(message.chatKey) -> nameOf(message.senderPubKey)
-                    else -> null
-                },
-                message = message,
-            )
-        } catch (exception: SecurityException) {
-            LogUtil.w(TAG, "Notification permission missing")
-        }
+        if (visibility.isViewing(TwillProtocolId.Nostr, message.chatKey)) return
+        val attachment = message.attachment
+        TwillNotifications.showMessage(
+            context = context,
+            protocol = TwillProtocolId.Nostr,
+            icon = R.drawable.ic_notification_nostr,
+            chatId = message.chatKey,
+            title = chatTitle(message.chatKey),
+            senderName = when {
+                NostrChatKey.isGroup(message.chatKey) -> nameOf(message.senderPubKey)
+                else -> null
+            },
+            body = when {
+                attachment?.isImage == true -> context.getString(R.string.nostr_photo)
+                attachment != null -> context.getString(R.string.nostr_file)
+                else -> message.content
+            },
+            timeMillis = message.createdAtSeconds * 1000,
+        )
     }
 
     private suspend fun nameOf(pubKey: String): String =
@@ -956,36 +933,6 @@ internal class NostrMessenger @Inject constructor(
         val shouldConnect: Boolean,
     )
 
-    private inner class VisibilityCallbacks : Application.ActivityLifecycleCallbacks {
-        override fun onActivityStarted(activity: Activity) {
-            visibleActivities.value += 1
-            visibilityJob?.cancel()
-            isAppVisible.value = true
-        }
-
-        override fun onActivityStopped(activity: Activity) {
-            visibleActivities.value = (visibleActivities.value - 1).coerceAtLeast(0)
-            if (visibleActivities.value == 0) {
-                visibilityJob?.cancel()
-                // Stay connected briefly so quick app switches don't drop the connection.
-                visibilityJob = appScope.launch {
-                    delay(BACKGROUND_GRACE_MILLIS)
-                    isAppVisible.value = false
-                }
-            }
-        }
-
-        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
-
-        override fun onActivityResumed(activity: Activity) = Unit
-
-        override fun onActivityPaused(activity: Activity) = Unit
-
-        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
-
-        override fun onActivityDestroyed(activity: Activity) = Unit
-    }
-
     private companion object {
         const val TAG = "NostrMessenger"
         const val LIVE_SUB_ID = "twill-dms"
@@ -998,17 +945,9 @@ internal class NostrMessenger @Inject constructor(
         const val PING_INTERVAL_SECONDS = 30L
         const val FETCH_TIMEOUT_MILLIS = 8_000L
         const val ONE_SHOT_SYNC_TIMEOUT_MILLIS = 25_000L
-        const val BACKGROUND_GRACE_MILLIS = 30_000L
         const val DM_RELAY_CACHE_MILLIS = 60 * 60 * 1000L
         const val PROFILE_MAX_AGE_MILLIS = 24 * 60 * 60 * 1000L
         const val GIFT_WRAP_TIME_SKEW_SECONDS = 2 * 24 * 60 * 60L + 3600L
         const val FIRST_SYNC_LOOKBACK_SECONDS = 30 * 24 * 60 * 60L
     }
-}
-
-/** User-visible Nostr problems. */
-internal enum class NostrError {
-    UploadFailed,
-    FileTooLarge,
-    DownloadFailed,
 }

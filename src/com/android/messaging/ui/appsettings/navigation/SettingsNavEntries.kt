@@ -26,6 +26,8 @@ import com.android.messaging.ui.appsettings.subscription.rememberSubscriptionSet
 import com.android.messaging.ui.appsettings.subscription.ui.SubscriptionSettingsScreen
 import com.android.messaging.ui.appsettings.twill.TwillSettingsScreen
 import com.android.messaging.ui.core.CollectEvents
+import com.android.messaging.ui.deltachat.settings.DeltaChatSettingsScreen
+import com.android.messaging.ui.deltachat.settings.DeltaChatSettingsViewModel
 import com.android.messaging.ui.license.navigation.LicenseNavKey
 import com.android.messaging.ui.navigation.LocalNavigator
 import com.android.messaging.ui.navigation.Navigator
@@ -47,6 +49,10 @@ internal fun EntryProviderScope<NavKey>.settingsEntries() {
     entry<NostrSettingsNavKey>(
         metadata = paneTitleMetadata(R.string.nostr_settings_title),
         content = nostrSettingsRouteContent(),
+    )
+    entry<DeltaChatSettingsNavKey>(
+        metadata = paneTitleMetadata(R.string.deltachat_settings_title),
+        content = deltaChatSettingsRouteContent(),
     )
     entry<AppSettingsNavKey>(
         metadata = paneTitleMetadata(R.string.general_settings_activity_title),
@@ -75,6 +81,9 @@ private fun twillSettingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
             onNostrSettingsClick = {
                 navigator.push(destination = NostrSettingsNavKey)
             },
+            onDeltaChatSettingsClick = {
+                navigator.push(destination = DeltaChatSettingsNavKey)
+            },
             onLicensesClick = {
                 navigator.push(destination = LicenseNavKey)
             },
@@ -91,6 +100,16 @@ private fun nostrSettingsRouteContent(): @Composable (NostrSettingsNavKey) -> Un
         NostrSettingsScreen(
             uiState = uiState,
             viewModel = viewModel,
+            onNavigateBack = navigator::back,
+        )
+    }
+}
+
+private fun deltaChatSettingsRouteContent(): @Composable (DeltaChatSettingsNavKey) -> Unit {
+    return {
+        val navigator = LocalNavigator.current
+        DeltaChatSettingsScreen(
+            viewModel = hiltViewModel<DeltaChatSettingsViewModel>(),
             onNavigateBack = navigator::back,
         )
     }

@@ -21,6 +21,7 @@ import com.android.messaging.ui.conversationlist.navigation.goToConversationList
 import com.android.messaging.ui.core.AppTheme
 import com.android.messaging.ui.host.AppNavGraph
 import com.android.messaging.ui.onboarding.navigation.OnboardingNavKey
+import com.android.messaging.ui.twill.navigation.twillChatRoute
 import com.android.messaging.util.BugleActivityUtil
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -90,6 +91,11 @@ internal class MainActivity : ComponentActivity() {
                 launchDestinations.trySend(rootDestinations() + SettingsNavKey)
             }
 
+            // Twill: a Nostr or Delta Chat notification opens its chat.
+            twillChatRoute(intent) != null -> {
+                launchDestinations.trySend(rootDestinations() + twillChatRoute(intent)!!)
+            }
+
             else -> {
                 val route = conversationRoute(intent) ?: return
                 launchStore.submitIntent(intent = intent)
@@ -117,6 +123,7 @@ internal class MainActivity : ComponentActivity() {
             shouldShowOnboarding() -> listOf(OnboardingNavKey)
             intent.goToConversationList() -> rootDestinations()
             intent.goToSettings() -> rootDestinations() + SettingsNavKey
+            twillChatRoute(intent) != null -> rootDestinations() + twillChatRoute(intent)!!
             else -> rootDestinations() + conversationRoute(intent).orEmpty()
         }
     }

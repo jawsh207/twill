@@ -20,25 +20,6 @@ internal sealed interface NostrAccount {
     ) : NostrAccount
 }
 
-/** How Twill receives Nostr messages when it isn't on screen. */
-internal enum class NostrDeliveryMode(
-    val key: String,
-) {
-    /** Only while Twill is open. No background network use. */
-    WhileOpen("while_open"),
-
-    /** A short check about every 15 minutes. */
-    Periodic("periodic"),
-
-    /** Stay connected, with a persistent notification. Messages arrive instantly. */
-    AlwaysConnected("always"),
-    ;
-
-    companion object {
-        fun from(key: String?) = entries.firstOrNull { it.key == key } ?: WhileOpen
-    }
-}
-
 internal object NostrDefaults {
     /** Used for sending and receiving DMs until the user changes them. */
     val DEFAULT_RELAYS = listOf(

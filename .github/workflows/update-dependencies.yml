@@ -27,6 +27,9 @@ jobs:
           java-version: 21
           cache: gradle
 
+      - name: Fetch Delta Chat core
+        run: python3 scripts/fetch-deltachat-core.py
+
       - name: Record checksums for all build dependencies
         run: >
           .github/ci/gradle-report-errors.sh --write-verification-metadata sha512 --no-daemon
