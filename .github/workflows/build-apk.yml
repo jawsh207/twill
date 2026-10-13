@@ -51,7 +51,8 @@ jobs:
         run: |
           set -o pipefail
           if ! scripts/build-deltachat-core.sh 2>&1 | tee core-build.log; then
-            tail -n 40 core-build.log | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > core-tail.txt
+            { grep -iE "error|failed|could not|not found" core-build.log | grep -v "warning" | tail -n 40; echo "--- last lines ---"; tail -n 15 core-build.log; } \
+              | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > core-tail.txt
             echo "::error title=Delta Chat core build failed::$(cat core-tail.txt)"
             exit 1
           fi
