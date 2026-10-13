@@ -1017,6 +1017,11 @@
     <string name="nostr_group_members">%d people</string>
     <string name="nostr_group_you">…and you</string>
     <string name="nostr_nip05_verified">Verified Nostr address</string>
+    <string name="nostr_nip05_not_verified">not verified</string>
+    <string name="nostr_profile_not_found">No profile found on your relays yet</string>
+    <string name="nostr_refresh_profile">Refresh profile</string>
+    <string name="nostr_notifications_off">Notifications are off</string>
+    <string name="nostr_notifications_off_summary">Tap to allow notifications, so new Nostr messages can alert you</string>
     <string name="nostr_attach">Attach</string>
     <string name="nostr_attach_photo">Photo</string>
     <string name="nostr_attach_file">File</string>

@@ -7,14 +7,20 @@ import androidx.lifecycle.viewModelScope
 import com.android.messaging.nostr.NostrAccount
 import com.android.messaging.nostr.NostrAccountStore
 import com.android.messaging.nostr.NostrDeliveryMode
+import com.android.messaging.nostr.NostrMessageStore
+import com.android.messaging.nostr.NostrMessenger
+import com.android.messaging.nostr.NostrProfile
 import com.android.messaging.nostr.NostrSignerProvider
 import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -27,13 +33,29 @@ internal data class NostrSettingsUiState(
     val mediaServer: String = "",
     val autoDownloadMedia: Boolean = false,
     val loadProfilePictures: Boolean = false,
+    val ownProfile: NostrProfile? = null,
+    val isRefreshingProfile: Boolean = false,
 )
 
 @HiltViewModel
 internal class NostrSettingsViewModel @Inject constructor(
     private val accountStore: NostrAccountStore,
     private val signerProvider: NostrSignerProvider,
+    private val messenger: NostrMessenger,
+    private val messageStore: NostrMessageStore,
 ) : ViewModel() {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val ownProfile = accountStore.account.flatMapLatest { account ->
+        if (account == null) {
+            flowOf(null to false)
+        } else {
+            combine(
+                messageStore.profile(account.pubKeyHex),
+                messenger.refreshingProfiles,
+            ) { profile, refreshing -> profile to (account.pubKeyHex in refreshing) }
+        }
+    }
 
     private val mediaSettings = combine(
         accountStore.mediaServer,
@@ -46,7 +68,14 @@ internal class NostrSettingsViewModel @Inject constructor(
         accountStore.relays,
         accountStore.deliveryMode,
         mediaSettings,
-    ) { account, relays, deliveryMode, (server, autoDownload, loadPictures) ->
+        ownProfile,
+    ) {
+            account,
+            relays,
+            deliveryMode,
+            (server, autoDownload, loadPictures),
+            (profile, refreshing),
+        ->
         NostrSettingsUiState(
             account = account,
             relays = relays,
@@ -55,12 +84,25 @@ internal class NostrSettingsViewModel @Inject constructor(
             mediaServer = server,
             autoDownloadMedia = autoDownload,
             loadProfilePictures = loadPictures,
+            ownProfile = profile,
+            isRefreshingProfile = refreshing,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = NostrSettingsUiState(),
     )
+
+    init {
+        // Settings can be the first screen opened after sign-in.
+        messenger.install()
+        accountStore.account.value?.let { messenger.refreshProfile(it.pubKeyHex) }
+    }
+
+    /** Fetches the user's own profile again, ignoring the cache. */
+    fun refreshOwnProfile() {
+        accountStore.account.value?.let { messenger.refreshProfile(it.pubKeyHex, force = true) }
+    }
 
     fun externalSignerLoginIntent(): Intent = signerProvider.externalSignerLoginIntent()
 

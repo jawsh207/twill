@@ -201,8 +201,10 @@ internal class NostrMedia @Inject constructor(
                     runCatching {
                         http.newCall(Request.Builder().url(url).get().build()).execute()
                             .use { response ->
+                                // Many hosts label pictures as octet-stream (or not at
+                                // all), so only rule out pages; decoding decides the rest.
                                 val type = response.header("Content-Type").orEmpty()
-                                if (!response.isSuccessful || !type.startsWith("image/")) {
+                                if (!response.isSuccessful || type.startsWith("text/")) {
                                     null
                                 } else {
                                     response.body.byteStream().use {
@@ -304,7 +306,7 @@ internal class NostrMedia @Inject constructor(
     companion object {
         const val MAX_UPLOAD_BYTES = 25 * 1024 * 1024
         private const val MAX_DOWNLOAD_BYTES = 60 * 1024 * 1024
-        private const val MAX_AVATAR_BYTES = 5 * 1024 * 1024
+        private const val MAX_AVATAR_BYTES = 10 * 1024 * 1024
         private const val MAX_SENT_IMAGE_SIDE = 2560
         private const val PREVIEW_MAX_SIDE = 1080
         private const val AVATAR_SIDE = 160
