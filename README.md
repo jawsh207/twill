@@ -19,7 +19,7 @@ Everything from GrapheneOS Messaging, plus the features below. Settings are grou
 
 ## Using Twill without SMS
 
-Twill can be used only for Nostr and Delta Chat, alongside another SMS app. Choose **Use Twill without SMS** on the first screen, or turn off **Use Twill for SMS/MMS** on the main Settings page (if Twill is your default SMS app, it asks you to pick another one first). With SMS off, Twill doesn't ask for SMS permissions, hides the SMS section, isn't offered as an SMS app, and the new-message button starts a Nostr or Delta Chat chat. Turn the switch back on to use Twill for texts again.
+Twill can be used only for Nostr and Delta Chat, alongside another SMS app. Choose **Use Twill without SMS** on the first screen, or turn off **Use Twill for SMS/MMS** at the top of **Settings › SMS Settings** (if Twill is your default SMS app, it asks you to pick another one first). With SMS off, Twill doesn't ask for SMS permissions, hides the SMS section, isn't offered as an SMS app, and the new-message button starts a Nostr or Delta Chat chat. Turn the switch back on to use Twill for texts again.
 
 ## Nostr private messages
 

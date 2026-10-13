@@ -1,6 +1,7 @@
 package com.android.messaging.ui.appsettings.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +39,8 @@ import com.android.messaging.ui.navigation.paneTitleMetadata
 import com.android.messaging.ui.nostr.settings.NostrSettingsScreen
 import com.android.messaging.ui.nostr.settings.NostrSettingsViewModel
 import com.android.messaging.ui.onboarding.navigation.OnboardingNavKey
+import com.android.messaging.ui.twill.LocalSmsSettingsHeader
+import com.android.messaging.ui.twill.SmsOffSettingsScreen
 import com.android.messaging.ui.twill.TwillSmsSwitch
 import kotlinx.collections.immutable.ImmutableList
 
@@ -84,10 +87,6 @@ private fun twillSettingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
         TwillSettingsScreen(
             onNavigateBack = navigator::back,
             isSmsEnabled = isSmsEnabled,
-            smsSwitch = {
-                // Turning SMS on goes through onboarding (default SMS app, permissions).
-                TwillSmsSwitch(onTurnedOn = { navigator.reset(listOf(OnboardingNavKey)) })
-            },
             onSmsSettingsClick = {
                 navigator.push(destination = SmsSettingsNavKey)
             },
@@ -138,17 +137,32 @@ private fun settingsRouteContent(): @Composable (SmsSettingsNavKey) -> Unit {
             viewModel.refreshState()
         }
 
-        when (uiState.isMultiSim) {
-            true -> SettingsMainDestination(
-                subscriptions = uiState.subscriptions,
-            )
+        // Twill: "Use Twill for SMS/MMS" is the first row; with SMS off it's the only one.
+        val navigator = LocalNavigator.current
+        val context = LocalContext.current
+        val sms = remember(context) { context.twillEntryPoint().twillSms() }
+        val isSmsEnabled by sms.isEnabled.collectAsStateWithLifecycle()
+        val smsSwitch: @Composable () -> Unit = {
+            // Turning SMS on goes through onboarding (default SMS app, permissions).
+            TwillSmsSwitch(onTurnedOn = { navigator.reset(listOf(OnboardingNavKey)) })
+        }
+        if (!isSmsEnabled) {
+            SmsOffSettingsScreen(onNavigateBack = navigator::back, header = smsSwitch)
+        } else {
+            CompositionLocalProvider(LocalSmsSettingsHeader provides smsSwitch) {
+                when (uiState.isMultiSim) {
+                    true -> SettingsMainDestination(
+                        subscriptions = uiState.subscriptions,
+                    )
 
-            false -> AppSettingsDestination(
-                isTopLevel = true,
-                advancedSubscription = uiState.subscriptions.firstOrNull(),
-            )
+                    false -> AppSettingsDestination(
+                        isTopLevel = true,
+                        advancedSubscription = uiState.subscriptions.firstOrNull(),
+                    )
 
-            null -> Unit
+                    null -> Unit
+                }
+            }
         }
     }
 }

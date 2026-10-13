@@ -1111,6 +1111,7 @@
     <string name="deltachat_read_receipts_summary">Let people know when you\'ve read their messages, and see when they\'ve read yours</string>
 
     <!-- Twill: turning SMS/MMS off -->
+    <string name="twill_sms_off_summary">Off. Twill isn\'t used for text messages</string>
     <string name="twill_use_without_sms">Use Twill without SMS</string>
     <string name="twill_use_for_sms">Use Twill for SMS/MMS</string>
     <string name="twill_use_for_sms_on">Twill is your text messaging app</string>
