@@ -1063,6 +1063,11 @@
     <string name="deltachat_new_chat_hint">Invite link or email address</string>
     <string name="deltachat_new_chat_invalid">That isn\'t a Delta Chat invite link or an email address</string>
     <string name="deltachat_empty">No Delta Chat chats yet. Share your invite link from Delta Chat Settings, or tap + to open someone else\'s.</string>
+    <string name="deltachat_composer_hint">Delta Chat message</string>
+    <string name="deltachat_chat_empty">Messages in this chat are end-to-end encrypted. Say hello.</string>
+    <string name="deltachat_chat_empty_unencrypted">This chat isn\'t end-to-end encrypted: it\'s plain email, which the email servers can read. Chats started from an invite link are encrypted.</string>
+    <string name="deltachat_upload_failed">Couldn\'t send the attachment</string>
+    <string name="deltachat_group_subtitle">Group · %d people</string>
     <string name="deltachat_cannot_send">You can\'t write in this chat</string>
     <string name="deltachat_saved_subtitle">Notes to yourself, synced to your other devices</string>
     <string name="deltachat_device_subtitle">Messages from the Delta Chat core</string>

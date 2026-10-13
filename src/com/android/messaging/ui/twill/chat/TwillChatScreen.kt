@@ -147,7 +147,7 @@ internal fun TwillChatScreen(
     LaunchedEffect(Unit) {
         viewModel.errors.collect { error ->
             val text = when (error) {
-                TwillError.UploadFailed -> R.string.nostr_upload_failed
+                TwillError.UploadFailed -> protocolText.uploadFailed
                 TwillError.FileTooLarge -> R.string.nostr_file_too_large
                 TwillError.DownloadFailed -> R.string.nostr_download_failed
                 TwillError.SendFailed -> R.string.twill_send_failed
@@ -210,6 +210,7 @@ internal fun TwillChatScreen(
                 else -> Composer(
                     text = draft,
                     enabled = info?.canSend == true,
+                    hint = protocolText.composerHint,
                     disabledHint = protocolText.composerSignedOut,
                     onTextChange = { draft = it },
                     onSend = {
@@ -237,7 +238,12 @@ internal fun TwillChatScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = stringResource(R.string.nostr_chat_empty),
+                    text = stringResource(
+                        when {
+                            info?.isEncrypted == false -> protocolText.emptyChatUnencrypted
+                            else -> protocolText.emptyChat
+                        },
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -771,6 +777,7 @@ private fun RequestBar(onAccept: () -> Unit, onBlock: () -> Unit) {
 private fun Composer(
     text: String,
     enabled: Boolean,
+    hint: Int,
     disabledHint: Int,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
@@ -831,7 +838,7 @@ private fun Composer(
                 placeholder = {
                     Text(
                         text = stringResource(
-                            if (enabled) R.string.nostr_composer_hint else disabledHint,
+                            if (enabled) hint else disabledHint,
                         ),
                     )
                 },
