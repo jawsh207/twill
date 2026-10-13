@@ -2,11 +2,11 @@
 
 Twill is an SMS/MMS app for Android, built on the new [GrapheneOS Messaging](https://github.com/GrapheneOS/Messaging) app (the Jetpack Compose rewrite, v13+).
 
-A twill is a weave of many threads. The name reflects the idea: one inbox that brings several messaging protocols together. Today Twill does SMS/MMS and private Nostr messages.
+A twill is a weave of many threads. The name reflects the idea: one inbox that brings several messaging protocols together. Today Twill does SMS/MMS, private Nostr messages and Delta Chat.
 
 ## Features
 
-Everything from GrapheneOS Messaging, plus the features below. Settings are grouped by protocol: today everything lives under **Settings › SMS Settings**, with app-wide items such as open source licenses on the main Settings page.
+Everything from GrapheneOS Messaging, plus the features below. Settings are grouped by protocol (**SMS Settings**, **Nostr Settings**, **Delta Chat Settings**), with app-wide items such as open source licenses on the main Settings page.
 
 
 | Feature | Where to find it | Default |
@@ -36,6 +36,25 @@ Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: N
 - **Relays:** Twill publishes your DM relay list (kind 10050) and sends to each contact's DM relays. Relays can't read messages but can see your IP address.
 
 
+## Delta Chat
+
+Twill can send and receive [Delta Chat](https://delta.chat) messages: end-to-end encrypted chat that travels over email servers, using the official Delta Chat core (chatmail core) unchanged.
+
+- **Off until you set it up** under **Settings › Delta Chat Settings**. Choose one:
+  - **Create a new profile:** a free, anonymous address on a chatmail server (default `nine.testrun.org`). No phone number or email needed.
+  - **Use a setup code:** a `dcaccount:` or `dclogin:` code from a chatmail server's website.
+  - **Use an existing email address:** works with most providers. Messages to people who don't use Delta Chat aren't encrypted.
+- **Start chats** with the **+** in the Delta Chat section: paste someone's invite link (or an email address). Share your own invite link from Delta Chat Settings.
+- **Contact requests:** a chat from someone new shows **Accept** and **Block** instead of the message box.
+- **Groups, photos and files** work like the other sections; sent messages show ✓ when delivered and ✓✓ when read (read receipts can be turned off).
+- **Message delivery:** the same three choices as Nostr. If both use "Always connected", they share one permanent notification.
+- Delta Chat notifications have their own icon (a speech bubble with a Δ).
+- The core is only included for 64-bit ARM phones (every phone GrapheneOS supports).
+
+## How the protocols fit together
+
+SMS/MMS stays GrapheneOS Messaging's own code. Every other protocol plugs into one shared layer: the collapsible inbox sections, the chat screen, notifications and background delivery are written once, and each protocol only provides its chats and messages. Each protocol keeps its own engine: Nostr uses [Quartz](https://github.com/vitorpamplona/amethyst/tree/main/quartz), Delta Chat uses the [chatmail core](https://github.com/chatmail/core).
+
 ### About website link previews
 
 Previews are off by default because turning them on means Twill contacts the linked website when a message with a link is shown, and that website sees your IP address. Pages are fetched over HTTPS only (plain `http` links are upgraded), page and image sizes are capped, and nothing identifying is sent beyond a generic user agent.
@@ -64,6 +83,7 @@ Requires JDK 17 and the Android SDK (Android Studio is the easiest way to get bo
 ```sh
 git clone --recurse-submodules https://github.com/jawsh207/twill
 cd twill
+python3 scripts/fetch-deltachat-core.py   # optional: Delta Chat core (checksum verified)
 ./gradlew :app:assembleDebug
 ```
 
