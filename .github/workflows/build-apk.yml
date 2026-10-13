@@ -67,6 +67,15 @@ jobs:
       - name: Assemble optimized test APK (perf)
         run: .github/ci/gradle-report-errors.sh :app:assemblePerf --no-daemon --console=plain
 
+      # Shows the APK size and its native libraries (including the Delta Chat core) as a
+      # notice on the run, since artifacts and logs aren't always easy to inspect.
+      - name: Report APK contents
+        run: |
+          apk=$(ls app/build/outputs/apk/perf/*.apk | head -1)
+          size=$(du -h "$apk" | cut -f1)
+          libs=$(unzip -lv "$apk" | awk '/lib\// {printf "%s %s (%s)%%0A", $NF, $1, $2}')
+          echo "::notice title=APK $size::$libs"
+
       - name: Upload optimized APK
         uses: actions/upload-artifact@v4
         with:
