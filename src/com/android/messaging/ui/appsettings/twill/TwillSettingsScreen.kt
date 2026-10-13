@@ -31,7 +31,6 @@ internal fun TwillSettingsScreen(
     onNostrSettingsClick: () -> Unit = {},
     onDeltaChatSettingsClick: () -> Unit = {},
     isSmsEnabled: Boolean = true,
-    smsSwitch: @Composable () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -49,15 +48,14 @@ internal fun TwillSettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            item(key = "sms_switch") { smsSwitch() }
-            if (isSmsEnabled) {
-                item(key = "sms_settings") {
-                    SettingsClickableItem(
-                        title = stringResource(R.string.sms_settings_title),
-                        summary = stringResource(R.string.sms_settings_summary),
-                        onClick = onSmsSettingsClick,
-                    )
-                }
+            item(key = "sms_settings") {
+                SettingsClickableItem(
+                    title = stringResource(R.string.sms_settings_title),
+                    summary = stringResource(
+                        if (isSmsEnabled) R.string.sms_settings_summary else R.string.twill_sms_off_summary,
+                    ),
+                    onClick = onSmsSettingsClick,
+                )
             }
             item(key = "nostr_settings") {
                 SettingsClickableItem(
