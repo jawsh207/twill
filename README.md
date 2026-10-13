@@ -31,6 +31,8 @@ Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: N
 - **NIP-05:** verified addresses show with a check mark in the chat header and member list.
 - **Profile pictures:** off by default (loading them reveals your IP address to whatever server hosts each picture). Turn on in Nostr Settings › Media.
 - **Message delivery:** only while Twill is open (default), check every 15 minutes, or always connected (permanent notification, instant messages).
+- **Notifications:** Twill asks for notification permission when you sign in (it isn't granted automatically unless Twill is your default SMS app). If it's off, Nostr Settings shows a row to turn it on. Notes to yourself sent from another client notify too.
+- **Your profile:** Nostr Settings shows your name, picture and NIP-05 as relays have them; tap refresh after changing your profile elsewhere.
 - **Relays:** Twill publishes your DM relay list (kind 10050) and sends to each contact's DM relays. Relays can't read messages but can see your IP address.
 
 
