@@ -84,8 +84,8 @@ internal class NostrProtocol @Inject constructor(
         }
     }
 
-    override fun messages(chatId: String): Flow<List<TwillMessage>> =
-        store.messages(chatId).map { list -> list.map { it.toTwill() } }
+    override fun messages(chatId: String, limit: Int): Flow<List<TwillMessage>> =
+        store.messages(chatId, limit).map { list -> list.map { it.toTwill() } }
 
     override fun details(chatId: String): Flow<TwillChatDetails> {
         val members = NostrChatKey.members(chatId)

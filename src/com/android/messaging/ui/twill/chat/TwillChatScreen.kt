@@ -62,6 +62,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -125,8 +126,20 @@ internal fun TwillChatScreen(
         onDispose { viewModel.setActive(false) }
     }
 
+    // Near the oldest loaded message (the top, in this reversed list), load an older page.
+    val isNearOldest by remember {
+        derivedStateOf {
+            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val total = listState.layoutInfo.totalItemsCount
+            total > 0 && lastVisible >= total - LOAD_OLDER_THRESHOLD
+        }
+    }
+    LaunchedEffect(isNearOldest) {
+        if (isNearOldest) viewModel.loadOlder()
+    }
+
     // Viewing the chat marks it read, including messages that arrive while it's open.
-    LaunchedEffect(messages.size) {
+    LaunchedEffect(messages.lastOrNull()?.id) {
         if (details?.isRequest != true) viewModel.markRead()
         if (messages.isNotEmpty()) listState.animateScrollToItem(0)
     }
@@ -342,6 +355,9 @@ private fun TwillAttachment.aspectRatio(): Float {
 }
 
 private const val DEFAULT_PHOTO_RATIO = 4f / 3f
+
+/** Load older messages when this close to the oldest one shown. */
+private const val LOAD_OLDER_THRESHOLD = 10
 
 @Composable
 private fun InfoMessage(text: String) {

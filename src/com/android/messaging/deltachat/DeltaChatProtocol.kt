@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.LruCache
 import com.android.messaging.R
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.twill.TwillAppVisibility
@@ -30,6 +31,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,11 +40,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -57,7 +62,7 @@ import org.json.JSONObject
  * encryption, groups, multi-device and its own database; this class maps it onto Twill's
  * shared inbox and chat screen and turns core events into notifications.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @Singleton
 internal class DeltaChatProtocol @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -91,7 +96,32 @@ internal class DeltaChatProtocol @Inject constructor(
     val isAvailable: Boolean
         get() = rpc.isAvailable
 
-    private val changes = MutableStateFlow(0L)
+    /** Bumped when the chat list may have changed. */
+    private val chatListVersion = MutableStateFlow(0L)
+
+    /** A change in one chat ([chatId], or 0 for "any chat"). */
+    private class ChatChange(
+        val chatId: Int,
+        val affectsDetails: Boolean,
+    )
+
+    private val chatChanges = MutableSharedFlow<ChatChange>(extraBufferCapacity = 256)
+
+    /** Bumped when the user's own profile or settings changed. */
+    private val profileVersion = MutableStateFlow(0L)
+
+    /**
+     * Loaded messages by message id, so a refresh only fetches messages that are new or that
+     * an event said changed. Events evict entries; nothing else does, besides size.
+     */
+    private class CachedMessage(
+        val message: TwillMessage,
+        val state: Int,
+        val isDownloading: Boolean,
+    )
+
+    private val messageCache = LruCache<Int, CachedMessage>(MESSAGE_CACHE_SIZE)
+
     private val keepConnectedInBackground = MutableStateFlow(false)
     private val _downloading = MutableStateFlow<Set<String>>(emptySet())
     private val _errors = MutableSharedFlow<TwillError>(extraBufferCapacity = 8)
@@ -106,8 +136,8 @@ internal class DeltaChatProtocol @Inject constructor(
     /** Setup progress from 0 to 1000 while configuring, else null. */
     val configureProgress: StateFlow<Int?> = _configureProgress.asStateFlow()
 
-    /** Bumped whenever anything the UI shows may have changed. */
-    val changeCount: StateFlow<Long> = changes.asStateFlow()
+    /** Bumped when the profile (name, address, settings) may have changed. */
+    val changeCount: StateFlow<Long> = profileVersion.asStateFlow()
 
     override fun install() {
         synchronized(this) {
@@ -119,7 +149,8 @@ internal class DeltaChatProtocol @Inject constructor(
             rpc.events.collect { event -> onEvent(event) }
         }
 
-        // Run the core's network (IO) while Twill is open or "always connected" is on.
+        // Run the core's network (IO) while Twill is open or "always connected" is on. When
+        // neither applies, the core is also released after a minute idle (see DeltaChatRpc).
         appScope.launch {
             combine(
                 accountStore.isConfigured,
@@ -128,9 +159,7 @@ internal class DeltaChatProtocol @Inject constructor(
                 keepConnectedInBackground,
                 rpc.starts,
             ) { configured, accountId, visible, keep, _ ->
-                if (configured && accountId != null &&
-                    rpc.isAvailable
-                ) {
+                if (configured && accountId != null && rpc.isAvailable) {
                     accountId to (visible || keep)
                 } else {
                     null
@@ -138,6 +167,7 @@ internal class DeltaChatProtocol @Inject constructor(
             }
                 .distinctUntilChanged()
                 .collect { plan ->
+                    rpc.keepRunning = plan?.second == true
                     val (accountId, shouldRun) = plan ?: return@collect
                     runCatching {
                         if (shouldRun) {
@@ -156,33 +186,63 @@ internal class DeltaChatProtocol @Inject constructor(
 
     private fun onEvent(event: DeltaChatEvent) {
         if (event.accountId != accountStore.accountId.value) return
-        when (event.kind) {
-            "ConfigureProgress" -> {
-                val progress = event.int("progress") ?: 0
-                _configureProgress.value = if (progress in 1..999) progress else null
+        val chatId = event.data1
+        val msgId = event.data2
+        when (event.id) {
+            DeltaChatEvents.CONFIGURE_PROGRESS -> {
+                _configureProgress.value = event.data1.takeIf { it in 1..999 }
             }
 
-            "IncomingMsg" -> {
-                bump()
-                val chatId = event.int("chatId") ?: return
-                val msgId = event.int("msgId") ?: return
+            DeltaChatEvents.INCOMING_MSG -> {
+                listChanged()
+                chatChanged(chatId, affectsDetails = false)
                 appScope.launch(Dispatchers.IO) { notify(chatId, msgId) }
             }
 
-            "MsgsChanged", "MsgsNoticed", "MsgDelivered", "MsgFailed", "MsgRead",
-            "MsgDeleted", "ChatModified", "ChatDeleted", "ChatlistChanged",
-            "ChatlistItemChanged", "ContactsChanged", "IncomingMsgBunch",
-            "SelfavatarChanged", "ConfigSynced", "ReactionsChanged",
-            -> bump()
-        }
-        // Read on another device: drop the notification here too.
-        if (event.kind == "MsgsNoticed") {
-            event.int("chatId")?.let { TwillNotifications.cancelChat(context, id, it.toString()) }
+            DeltaChatEvents.MSGS_CHANGED, DeltaChatEvents.MSG_DELIVERED,
+            DeltaChatEvents.MSG_FAILED, DeltaChatEvents.MSG_READ,
+            DeltaChatEvents.MSG_DELETED, DeltaChatEvents.REACTIONS_CHANGED,
+            -> {
+                when {
+                    msgId > 0 -> messageCache.remove(msgId)
+                    chatId == 0 -> messageCache.evictAll()
+                }
+                listChanged()
+                chatChanged(chatId, affectsDetails = false)
+            }
+
+            DeltaChatEvents.MSGS_NOTICED -> {
+                listChanged()
+                chatChanged(chatId, affectsDetails = false)
+                // Read on another device: drop the notification here too.
+                TwillNotifications.cancelChat(context, id, chatId.toString())
+            }
+
+            DeltaChatEvents.CHAT_MODIFIED, DeltaChatEvents.CHAT_DELETED -> {
+                listChanged()
+                chatChanged(chatId, affectsDetails = true)
+            }
+
+            DeltaChatEvents.CONTACTS_CHANGED -> {
+                listChanged()
+                chatChanged(0, affectsDetails = true)
+            }
+
+            DeltaChatEvents.CHATLIST_CHANGED, DeltaChatEvents.CHATLIST_ITEM_CHANGED,
+            DeltaChatEvents.INCOMING_MSG_BUNCH,
+            -> listChanged()
+
+            DeltaChatEvents.SELFAVATAR_CHANGED, DeltaChatEvents.CONFIG_SYNCED ->
+                profileVersion.value += 1
         }
     }
 
-    private fun bump() {
-        changes.value += 1
+    private fun listChanged() {
+        chatListVersion.value += 1
+    }
+
+    private fun chatChanged(chatId: Int, affectsDetails: Boolean) {
+        chatChanges.tryEmit(ChatChange(chatId, affectsDetails))
     }
 
     private suspend fun notify(chatId: Int, msgId: Int) {
@@ -211,11 +271,14 @@ internal class DeltaChatProtocol @Inject constructor(
 
     // ---- Shared inbox ----
 
+    // Bursts of events (e.g. a sync) are coalesced into one reload.
     override val chats: Flow<List<TwillChat>> = accountStore.isConfigured.flatMapLatest { on ->
         if (!on) {
             flowOf(emptyList())
         } else {
-            changes.mapLatest { loadChats() }.flowOn(Dispatchers.IO)
+            chatListVersion.debounce(LIST_DEBOUNCE_MILLIS).map {
+                loadChats()
+            }.flowOn(Dispatchers.IO)
         }
     }
 
@@ -268,62 +331,85 @@ internal class DeltaChatProtocol @Inject constructor(
         )
     }
 
-    override fun messages(chatId: String): Flow<List<TwillMessage>> =
-        changes.mapLatest { loadMessages(chatId.toInt()) }.flowOn(Dispatchers.IO)
+    /** Changes that concern [chatId], starting with one that triggers the first load. */
+    private fun changesFor(chatId: Int, detailsOnly: Boolean): Flow<ChatChange> = chatChanges
+        .onSubscription { emit(ChatChange(chatId, affectsDetails = true)) }
+        .filter { (it.chatId == chatId || it.chatId == 0) && (!detailsOnly || it.affectsDetails) }
+        .debounce(CHAT_DEBOUNCE_MILLIS)
 
-    private suspend fun loadMessages(chatId: Int): List<TwillMessage> = try {
+    override fun messages(chatId: String, limit: Int): Flow<List<TwillMessage>> {
+        val id = chatId.toInt()
+        return changesFor(id, detailsOnly = false)
+            .map { loadMessages(id, limit) }
+            .flowOn(Dispatchers.IO)
+    }
+
+    /** The last [limit] messages; only messages missing from the cache are fetched. */
+    private suspend fun loadMessages(chatId: Int, limit: Int): List<TwillMessage> = try {
         val account = account()
         val ids = rpc.callArray("get_message_ids", account, chatId, false, false).ints()
-            .takeLast(MAX_MESSAGES)
-        if (ids.isEmpty()) {
-            emptyList()
-        } else {
-            val loaded = rpc.callObject("get_messages", account, ids)
-            val messages = ids.mapNotNull { msgId ->
-                loaded.optJSONObject(msgId.toString())?.takeIf { it.optString("kind") == "Message" }
+            .takeLast(limit)
+        ids.filter { messageCache.get(it) == null }
+            .chunked(FETCH_CHUNK)
+            .forEach { chunk ->
+                val loaded = rpc.callObject("get_messages", account, chunk)
+                chunk.forEach { msgId ->
+                    loaded.optJSONObject(msgId.toString())
+                        ?.takeIf { it.optString("kind") == "Message" }
+                        ?.let { messageCache.put(msgId, it.toCached()) }
+                }
             }
-            val inProgress = messages.filter { it.optString("downloadState") == "InProgress" }
-                .map { it.optInt("id").toString() }
-            _downloading.value = (_downloading.value - ids.map(Int::toString).toSet()) + inProgress
-            messages.map { it.toMessage() }
-        }
+        val cached = ids.mapNotNull { messageCache.get(it) }
+        val idSet = ids.map(Int::toString).toSet()
+        _downloading.value = (_downloading.value - idSet) +
+            cached.filter { it.isDownloading }.map { it.message.id }
+        cached.map { it.message }
     } catch (exception: CancellationException) {
         throw exception
     } catch (exception: Exception) {
         emptyList()
     }
 
-    private fun JSONObject.toMessage(): TwillMessage {
+    private fun JSONObject.toCached(): CachedMessage {
         val fromId = optInt("fromId")
         val isOutgoing = fromId == DC_CONTACT_ID_SELF
         val file = optStringOrNull("file")
         val downloadState = optString("downloadState")
-        return TwillMessage(
-            id = optInt("id").toString(),
-            chatId = optInt("chatId").toString(),
-            senderId = fromId.toString(),
-            text = optString("text"),
-            timeMillis = optLong("timestamp") * 1000,
-            isOutgoing = isOutgoing,
-            status = stateToStatus(optInt("state"), isOutgoing),
-            isInfo = optBoolean("isInfo"),
-            attachment = when {
-                file != null || downloadState == "Available" -> TwillAttachment(
-                    mimeType = optStringOrNull("fileMime"),
-                    fileName = optStringOrNull("fileName"),
-                    size = optLong("fileBytes").takeIf { it > 0 },
-                    width = optInt("dimensionsWidth").takeIf { it > 0 },
-                    height = optInt("dimensionsHeight").takeIf { it > 0 },
-                    localPath = file.takeIf { downloadState == "Done" },
-                )
+        val state = optInt("state")
+        return CachedMessage(
+            message = TwillMessage(
+                id = optInt("id").toString(),
+                chatId = optInt("chatId").toString(),
+                senderId = fromId.toString(),
+                text = optString("text"),
+                timeMillis = optLong("timestamp") * 1000,
+                isOutgoing = isOutgoing,
+                status = stateToStatus(state, isOutgoing),
+                isInfo = optBoolean("isInfo"),
+                attachment = when {
+                    file != null || downloadState == "Available" -> TwillAttachment(
+                        mimeType = optStringOrNull("fileMime"),
+                        fileName = optStringOrNull("fileName"),
+                        size = optLong("fileBytes").takeIf { it > 0 },
+                        width = optInt("dimensionsWidth").takeIf { it > 0 },
+                        height = optInt("dimensionsHeight").takeIf { it > 0 },
+                        localPath = file.takeIf { downloadState == "Done" },
+                    )
 
-                else -> null
-            },
+                    else -> null
+                },
+            ),
+            state = state,
+            isDownloading = downloadState == "InProgress",
         )
     }
 
-    override fun details(chatId: String): Flow<TwillChatDetails> =
-        changes.mapLatest { loadDetails(chatId.toInt()) }.flowOn(Dispatchers.IO)
+    override fun details(chatId: String): Flow<TwillChatDetails> {
+        val id = chatId.toInt()
+        return changesFor(id, detailsOnly = true)
+            .map { loadDetails(id) }
+            .flowOn(Dispatchers.IO)
+    }
 
     private suspend fun loadDetails(chatId: Int): TwillChatDetails = try {
         val account = account()
@@ -338,12 +424,10 @@ internal class DeltaChatProtocol @Inject constructor(
             chatId = chatId.toString(),
             title = title,
             subtitle = when {
-                chat.optBoolean(
-                    "isSelfTalk"
-                ) -> context.getString(R.string.deltachat_saved_subtitle)
-                chat.optBoolean(
-                    "isDeviceChat"
-                ) -> context.getString(R.string.deltachat_device_subtitle)
+                chat.optBoolean("isSelfTalk") ->
+                    context.getString(R.string.deltachat_saved_subtitle)
+                chat.optBoolean("isDeviceChat") ->
+                    context.getString(R.string.deltachat_device_subtitle)
                 isGroup -> context.getString(R.string.nostr_group_subtitle, members.size + 1)
                 else -> peer?.detail.orEmpty()
             },
@@ -394,12 +478,16 @@ internal class DeltaChatProtocol @Inject constructor(
         )
     }
 
-    override fun send(chatId: String, text: String) = launchCall(TwillError.SendFailed) { account ->
+    override fun send(chatId: String, text: String) = launchCall(
+        TwillError.SendFailed,
+        chatId
+    ) { account ->
         rpc.call("misc_send_text_message", account, chatId.toInt(), text)
     }
 
     override fun sendFile(chatId: String, uri: Uri) = launchCall(
-        TwillError.UploadFailed
+        TwillError.UploadFailed,
+        chatId
     ) { account ->
         val copy = copyToCache(uri)
         try {
@@ -442,30 +530,42 @@ internal class DeltaChatProtocol @Inject constructor(
         return target
     }
 
-    override fun retry(message: TwillMessage) = launchCall(TwillError.SendFailed) { account ->
+    override fun retry(message: TwillMessage) = launchCall(
+        TwillError.SendFailed,
+        message.chatId
+    ) { account ->
         rpc.call("resend_messages", account, listOf(message.id.toInt()))
     }
 
     override fun download(message: TwillMessage) {
         _downloading.value += message.id
-        launchCall(TwillError.DownloadFailed) { account ->
+        launchCall(TwillError.DownloadFailed, message.chatId) { account ->
             rpc.call("download_full_message", account, message.id.toInt())
         }
     }
 
-    override fun markRead(chatId: String) = launchCall(null) { account ->
-        // markseen sends read receipts (if enabled) for what the user has now seen.
-        val ids = rpc.callArray("get_message_ids", account, chatId.toInt(), false, false).ints()
-            .takeLast(MAX_MESSAGES)
-        if (ids.isNotEmpty()) rpc.call("markseen_msgs", account, ids)
-        rpc.call("marknoticed_chat", account, chatId.toInt())
+    override fun markRead(chatId: String) = launchCall(null, chatId = null) { account ->
+        // Only messages not seen yet: markseen sends read receipts (if enabled), and the
+        // core's events refresh what changed.
+        val fresh = messageCache.snapshot().values
+            .filter {
+                it.message.chatId == chatId && !it.message.isOutgoing && it.state < DC_STATE_IN_SEEN
+            }
+            .map { it.message.id.toInt() }
+        if (fresh.isNotEmpty()) {
+            rpc.call("markseen_msgs", account, fresh)
+            rpc.call("marknoticed_chat", account, chatId.toInt())
+        }
     }
 
-    override fun setRead(chatId: String, isRead: Boolean) = launchCall(null) { account ->
+    override fun setRead(chatId: String, isRead: Boolean) = launchCall(null, chatId) { account ->
         rpc.call(if (isRead) "marknoticed_chat" else "markfresh_chat", account, chatId.toInt())
     }
 
-    override fun setPinned(chatId: String, isPinned: Boolean) = launchCall(null) { account ->
+    override fun setPinned(chatId: String, isPinned: Boolean) = launchCall(
+        null,
+        chatId
+    ) { account ->
         rpc.call(
             "set_chat_visibility",
             account,
@@ -474,23 +574,24 @@ internal class DeltaChatProtocol @Inject constructor(
         )
     }
 
-    override fun delete(chatId: String) = launchCall(null) { account ->
+    override fun delete(chatId: String) = launchCall(null, chatId) { account ->
         rpc.call("delete_chat", account, chatId.toInt())
     }
 
-    override fun rename(chatId: String, name: String) = launchCall(null) { account ->
+    override fun rename(chatId: String, name: String) = launchCall(null, chatId) { account ->
         rpc.call("set_chat_name", account, chatId.toInt(), name)
     }
 
-    override fun acceptRequest(chatId: String) = launchCall(null) { account ->
+    override fun acceptRequest(chatId: String) = launchCall(null, chatId) { account ->
         rpc.call("accept_chat", account, chatId.toInt())
     }
 
-    override fun blockRequest(chatId: String) = launchCall(null) { account ->
+    override fun blockRequest(chatId: String) = launchCall(null, chatId) { account ->
         rpc.call("block_chat", account, chatId.toInt())
     }
 
-    private fun launchCall(error: TwillError?, block: suspend (Int) -> Unit) {
+    /** Runs [block] in the background; afterwards refreshes [chatId] and the chat list. */
+    private fun launchCall(error: TwillError?, chatId: String?, block: suspend (Int) -> Unit) {
         appScope.launch(Dispatchers.IO) {
             try {
                 block(account())
@@ -500,7 +601,10 @@ internal class DeltaChatProtocol @Inject constructor(
                 LogUtil.w(TAG, "Call failed: ${exception.message}")
                 error?.let(_errors::tryEmit)
             }
-            bump()
+            chatId?.toIntOrNull()?.let { changed ->
+                listChanged()
+                chatChanged(changed, affectsDetails = true)
+            }
         }
     }
 
@@ -528,7 +632,7 @@ internal class DeltaChatProtocol @Inject constructor(
                     rpc.callInt("create_chat_by_contact_id", account, contactId)
                 }
             }
-            bump()
+            listChanged()
             chatId.toString()
         } catch (exception: CancellationException) {
             throw exception
@@ -564,7 +668,7 @@ internal class DeltaChatProtocol @Inject constructor(
             contactIds.forEach { contactId ->
                 rpc.call("add_contact_to_chat", account, chatId, contactId.toInt())
             }
-            bump()
+            listChanged()
             TwillGroupResult.Created(chatId.toString())
         } catch (exception: CancellationException) {
             throw exception
@@ -635,7 +739,8 @@ internal class DeltaChatProtocol @Inject constructor(
                     _configureProgress.value = null
                 }
                 accountStore.setConfigured(true)
-                bump()
+                listChanged()
+                profileVersion.value += 1
             }
         }
 
@@ -645,7 +750,7 @@ internal class DeltaChatProtocol @Inject constructor(
 
     suspend fun setConfig(key: String, value: String?) = withContext(Dispatchers.IO) {
         runCatching { rpc.call("set_config", account(), key, value) }
-        bump()
+        profileVersion.value += 1
     }
 
     /** The user's invite link, which others open or paste to start an encrypted chat. */
@@ -664,8 +769,9 @@ internal class DeltaChatProtocol @Inject constructor(
             runCatching { rpc.call("remove_account", account) }
         }
         accountStore.setAccountId(null)
+        messageCache.evictAll()
         rpc.stop()
-        bump()
+        listChanged()
     }
 
     private fun stateToStatus(state: Int, isOutgoing: Boolean): TwillMessage.Status = when {
@@ -692,8 +798,12 @@ internal class DeltaChatProtocol @Inject constructor(
         const val DC_STATE_OUT_FAILED = 24
         const val DC_STATE_OUT_DELIVERED = 26
         const val DC_STATE_OUT_MDN_RCVD = 28
+        const val DC_STATE_IN_SEEN = 16
         val OUTGOING_STATES = 18..28
-        const val MAX_MESSAGES = 500
+        const val MESSAGE_CACHE_SIZE = 5_000
+        const val FETCH_CHUNK = 200
+        const val LIST_DEBOUNCE_MILLIS = 150L
+        const val CHAT_DEBOUNCE_MILLIS = 60L
         const val BACKGROUND_FETCH_SECONDS = 20.0
         const val SYNC_TIMEOUT_MILLIS = 30_000L
         val EMAIL = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")

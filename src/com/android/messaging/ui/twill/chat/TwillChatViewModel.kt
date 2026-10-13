@@ -17,6 +17,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -38,8 +39,15 @@ internal class TwillChatViewModel @Inject constructor(
 
     private val target = MutableStateFlow<Target?>(null)
 
-    val messages: StateFlow<List<TwillMessage>> = target
-        .flatMapLatest { it?.protocol?.messages(it.chatId) ?: flowOf(emptyList()) }
+    /** How many of the newest messages to show; grows as the user scrolls up. */
+    private val limit = MutableStateFlow(PAGE_SIZE)
+
+    val messages: StateFlow<List<TwillMessage>> = combine(target, limit) { current, count ->
+        current to count
+    }
+        .flatMapLatest { (current, count) ->
+            current?.protocol?.messages(current.chatId, count) ?: flowOf(emptyList())
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val details: StateFlow<TwillChatDetails?> = target
@@ -57,6 +65,7 @@ internal class TwillChatViewModel @Inject constructor(
         if (current?.protocol?.id == protocolId && current.chatId == chatId) return
         runtime.start(markVisible = true)
         val protocol = protocols[protocolId]
+        limit.value = PAGE_SIZE
         target.value = Target(protocol, chatId)
         protocol.onChatOpened(chatId)
     }
@@ -84,9 +93,18 @@ internal class TwillChatViewModel @Inject constructor(
 
     fun rename(name: String) = withTarget { protocol, chatId -> protocol.rename(chatId, name) }
 
+    /** Shows older messages, if the current page is full (so there may be more). */
+    fun loadOlder() {
+        if (messages.value.size >= limit.value) limit.value += PAGE_SIZE
+    }
+
     fun markRead() = withTarget { protocol, chatId -> protocol.markRead(chatId) }
 
     fun accept() = withTarget { protocol, chatId -> protocol.acceptRequest(chatId) }
 
     fun block() = withTarget { protocol, chatId -> protocol.blockRequest(chatId) }
+
+    private companion object {
+        const val PAGE_SIZE = 100
+    }
 }

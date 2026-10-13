@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -89,9 +90,22 @@ internal class NostrMessenger @Inject constructor(
             .build()
     }
 
+    /**
+     * For relay connections opened while Twill is in the background ("always connected"):
+     * pinging less often keeps the radio asleep longer. Shares [okHttp]'s connection pool.
+     */
+    private val backgroundOkHttp: OkHttpClient by lazy {
+        okHttp.newBuilder()
+            .pingInterval(BACKGROUND_PING_INTERVAL_SECONDS, TimeUnit.SECONDS)
+            .build()
+    }
+
     private val client: NostrClient by lazy {
         NostrClient(
-            websocketBuilder = BasicOkHttpWebSocket.Builder { okHttp },
+            // Chosen each time a relay connection is opened.
+            websocketBuilder = BasicOkHttpWebSocket.Builder {
+                if (visibility.isRecentlyVisible.value) okHttp else backgroundOkHttp
+            },
             parentScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
         )
     }
@@ -150,6 +164,16 @@ internal class NostrMessenger @Inject constructor(
             }
                 .distinctUntilChanged()
                 .collectLatest { plan -> applyPlan(plan) }
+        }
+
+        // Leaving Twill with "always connected" on: reopen the relay connections once, so
+        // they use the slower background ping. Subscriptions carry over.
+        appScope.launch {
+            visibility.isRecentlyVisible.drop(1).collect { visible ->
+                if (!visible && keepConnectedInBackground.value && _isConnected.value) {
+                    client.reconnect(onlyIfChanged = false, ignoreRetryDelays = true)
+                }
+            }
         }
 
         appScope.launch {
@@ -943,6 +967,7 @@ internal class NostrMessenger @Inject constructor(
         const val NIP05_MAX_BYTES = 512 * 1024
         const val PUBKEY_HEX_LENGTH = 64
         const val PING_INTERVAL_SECONDS = 30L
+        const val BACKGROUND_PING_INTERVAL_SECONDS = 180L
         const val FETCH_TIMEOUT_MILLIS = 8_000L
         const val ONE_SHOT_SYNC_TIMEOUT_MILLIS = 25_000L
         const val DM_RELAY_CACHE_MILLIS = 60 * 60 * 1000L
