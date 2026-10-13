@@ -16,3 +16,6 @@ local.properties
 .kotlin
 
 *.log
+
+# Twill: Delta Chat core binary, downloaded by scripts/fetch-deltachat-core.py
+/deltachat/

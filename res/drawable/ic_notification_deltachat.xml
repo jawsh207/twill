@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill: small notification icon for Delta Chat messages: a speech bubble with a Greek
+     capital delta cut out of it, matching ic_notification_nostr. Original artwork. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M6,2 H18 C20.2,2 22,3.8 22,6 V13.5 C22,15.7 20.2,17.5 18,17.5 H10 L5.6,21.4 C5.3,21.7 4.8,21.5 4.8,21.1 V17.3 C3.1,16.9 2,15.4 2,13.5 V6 C2,3.8 3.8,2 6,2 Z M12,4.0 L6.2,14.6 L17.8,14.6 Z M12.0,7.958 L9.405,12.7 L14.595,12.7 Z" />
+</vector>

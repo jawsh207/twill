@@ -12,9 +12,9 @@ import com.android.messaging.ui.conversationlist.navigation.conversationListEntr
 import com.android.messaging.ui.conversationpicker.navigation.forwardMessageEntries
 import com.android.messaging.ui.conversationsettings.navigation.conversationSettingsEntries
 import com.android.messaging.ui.license.navigation.licenseEntries
-import com.android.messaging.ui.nostr.navigation.nostrEntries
 import com.android.messaging.ui.onboarding.navigation.onboardingEntries
 import com.android.messaging.ui.photoviewer.navigation.photoViewerEntries
+import com.android.messaging.ui.twill.navigation.twillEntries
 import com.android.messaging.ui.vcarddetail.navigation.vCardDetailEntries
 
 internal fun appNavEntryProvider(): (NavKey) -> NavEntry<NavKey> {
@@ -30,6 +30,6 @@ internal fun appNavEntryProvider(): (NavKey) -> NavEntry<NavKey> {
         blockedParticipantsEntries()
         settingsEntries()
         licenseEntries()
-        nostrEntries()
+        twillEntries()
     }
 }

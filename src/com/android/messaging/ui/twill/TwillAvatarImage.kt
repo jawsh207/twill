@@ -1,4 +1,4 @@
-package com.android.messaging.ui.nostr
+package com.android.messaging.ui.twill
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,32 +23,25 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.android.messaging.nostr.nostrEntryPoint
+import com.android.messaging.twill.TwillAvatar
+import com.android.messaging.twill.TwillProtocolId
+import com.android.messaging.twill.twillEntryPoint
 
 /**
- * A round avatar for a Nostr contact or group. Shows the profile picture only when
- * "Show profile pictures" is on; otherwise (and while loading) the first letter of the name.
+ * A round avatar: the protocol's picture for [avatar] when it has one (each protocol decides,
+ * e.g. Nostr only with "Show profile pictures" on), otherwise the first letter of the name.
  */
 @Composable
-internal fun NostrAvatar(
-    name: String,
-    pictureUrl: String?,
+internal fun TwillAvatarImage(
+    avatar: TwillAvatar,
+    protocol: TwillProtocolId,
     modifier: Modifier = Modifier,
-    isGroup: Boolean = false,
     size: Dp = 48.dp,
 ) {
     val context = LocalContext.current
-    val entryPoint = remember(context) { context.nostrEntryPoint() }
-    val loadPictures by entryPoint.nostrAccountStore().loadProfilePictures
-        .collectAsStateWithLifecycle()
-
-    val picture by produceState<ImageBitmap?>(initialValue = null, pictureUrl, loadPictures) {
-        value = if (loadPictures && pictureUrl != null && !isGroup) {
-            entryPoint.nostrMedia().loadAvatar(pictureUrl)?.asImageBitmap()
-        } else {
-            null
-        }
+    val protocols = remember(context) { context.twillEntryPoint().twillProtocols() }
+    val picture by produceState<ImageBitmap?>(initialValue = null, avatar.ref, protocol) {
+        value = avatar.ref?.let { ref -> protocols[protocol].loadAvatar(ref)?.asImageBitmap() }
     }
 
     Box(
@@ -67,14 +60,14 @@ internal fun NostrAvatar(
                 modifier = Modifier.size(size),
             )
 
-            isGroup -> Icon(
+            avatar.isGroup -> Icon(
                 imageVector = Icons.Rounded.Group,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onTertiaryContainer,
             )
 
             else -> Text(
-                text = name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?",
+                text = avatar.name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "?",
                 style = if (size >= 40.dp) {
                     MaterialTheme.typography.titleMedium
                 } else {

@@ -2,6 +2,7 @@ package com.android.messaging.nostr
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.android.messaging.twill.TwillDeliveryMode
 import com.vitorpamplona.quartz.nip01Core.core.toHexKey
 import com.vitorpamplona.quartz.nip01Core.crypto.KeyPair
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,7 +27,7 @@ internal class NostrAccountStore @Inject constructor(
 
     private val _account = MutableStateFlow<NostrAccount?>(null)
     private val _relays = MutableStateFlow<List<String>>(emptyList())
-    private val _deliveryMode = MutableStateFlow(NostrDeliveryMode.WhileOpen)
+    private val _deliveryMode = MutableStateFlow(TwillDeliveryMode.WhileOpen)
     private val _mediaServer = MutableStateFlow(NostrDefaults.DEFAULT_MEDIA_SERVER)
     private val _autoDownloadMedia = MutableStateFlow(false)
     private val _loadProfilePictures = MutableStateFlow(false)
@@ -45,13 +46,13 @@ internal class NostrAccountStore @Inject constructor(
             return _relays.asStateFlow()
         }
 
-    val deliveryMode: StateFlow<NostrDeliveryMode>
+    val deliveryMode: StateFlow<TwillDeliveryMode>
         get() {
             ensureLoaded()
             return _deliveryMode.asStateFlow()
         }
 
-    fun setDeliveryMode(mode: NostrDeliveryMode) {
+    fun setDeliveryMode(mode: TwillDeliveryMode) {
         synchronized(lock) {
             ensureLoaded()
             prefs.edit().putString(KEY_DELIVERY_MODE, mode.key).commit()
@@ -179,7 +180,7 @@ internal class NostrAccountStore @Inject constructor(
                 ?.split(RELAY_SEPARATOR)
                 ?.filter { it.isNotBlank() }
                 ?: NostrDefaults.DEFAULT_RELAYS
-            _deliveryMode.value = NostrDeliveryMode.from(prefs.getString(KEY_DELIVERY_MODE, null))
+            _deliveryMode.value = TwillDeliveryMode.from(prefs.getString(KEY_DELIVERY_MODE, null))
             _mediaServer.value = prefs.getString(KEY_MEDIA_SERVER, null)
                 ?: NostrDefaults.DEFAULT_MEDIA_SERVER
             _autoDownloadMedia.value = prefs.getBoolean(KEY_AUTO_DOWNLOAD, false)

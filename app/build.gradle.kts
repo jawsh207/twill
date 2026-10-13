@@ -94,6 +94,16 @@ android {
         java.srcDirs("../src")
         kotlin.srcDirs("../src")
         res.srcDir("../res")
+        // Twill: the Delta Chat core, fetched by scripts/fetch-deltachat-core.py (not in git).
+        jniLibs.srcDir("../deltachat/jniLibs")
+    }
+
+    // Twill: Android only lets apps run programs from their extracted native library
+    // directory, so native libraries (the Delta Chat core) must be extracted on install.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 
     sourceSets.getByName("test") {

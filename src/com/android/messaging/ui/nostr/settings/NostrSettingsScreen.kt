@@ -61,14 +61,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.android.messaging.R
 import com.android.messaging.nostr.NostrAccount
-import com.android.messaging.nostr.NostrDeliveryMode
 import com.android.messaging.nostr.NostrProfile
 import com.android.messaging.nostr.NostrSignerProvider
+import com.android.messaging.twill.TwillAvatar
+import com.android.messaging.twill.TwillDeliveryMode
+import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
-import com.android.messaging.ui.nostr.NostrAvatar
+import com.android.messaging.ui.twill.TwillAvatarImage
 import com.android.messaging.util.UiUtils
 
 private enum class NostrSettingsDialog { None, PrivateKey, SignOut, AddRelay, MediaServer }
@@ -245,7 +247,7 @@ internal fun NostrSettingsScreen(
             item(key = "delivery_header") {
                 SettingsCategoryHeader(title = stringResource(R.string.nostr_delivery_header))
             }
-            items(items = NostrDeliveryMode.entries, key = { "delivery:" + it.key }) { mode ->
+            items(items = TwillDeliveryMode.entries, key = { "delivery:" + it.key }) { mode ->
                 DeliveryModeRow(
                     mode = mode,
                     isSelected = uiState.deliveryMode == mode,
@@ -388,7 +390,10 @@ private fun OwnProfileRow(
     ListItem(
         modifier = Modifier.clickable(onClick = onCopyNpub),
         leadingContent = {
-            NostrAvatar(name = name ?: shortNpub, pictureUrl = profile?.picture)
+            TwillAvatarImage(
+                avatar = TwillAvatar(name = name ?: shortNpub, ref = profile?.picture),
+                protocol = TwillProtocolId.Nostr,
+            )
         },
         overlineContent = { Text(text = stringResource(R.string.nostr_signed_in_as)) },
         headlineContent = {
@@ -456,20 +461,20 @@ private fun openNotificationSettings(context: Context) {
 
 @Composable
 private fun DeliveryModeRow(
-    mode: NostrDeliveryMode,
+    mode: TwillDeliveryMode,
     isSelected: Boolean,
     onSelect: () -> Unit,
 ) {
     val (title, summary) = when (mode) {
-        NostrDeliveryMode.WhileOpen -> {
+        TwillDeliveryMode.WhileOpen -> {
             R.string.nostr_delivery_while_open to R.string.nostr_delivery_while_open_summary
         }
 
-        NostrDeliveryMode.Periodic -> {
+        TwillDeliveryMode.Periodic -> {
             R.string.nostr_delivery_periodic to R.string.nostr_delivery_periodic_summary
         }
 
-        NostrDeliveryMode.AlwaysConnected -> {
+        TwillDeliveryMode.AlwaysConnected -> {
             R.string.nostr_delivery_always to R.string.nostr_delivery_always_summary
         }
     }

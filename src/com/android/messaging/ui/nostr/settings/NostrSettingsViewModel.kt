@@ -6,11 +6,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.messaging.nostr.NostrAccount
 import com.android.messaging.nostr.NostrAccountStore
-import com.android.messaging.nostr.NostrDeliveryMode
 import com.android.messaging.nostr.NostrMessageStore
 import com.android.messaging.nostr.NostrMessenger
 import com.android.messaging.nostr.NostrProfile
 import com.android.messaging.nostr.NostrSignerProvider
+import com.android.messaging.twill.TwillDeliveryMode
+import com.android.messaging.twill.TwillRuntime
 import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -29,7 +30,7 @@ internal data class NostrSettingsUiState(
     val account: NostrAccount? = null,
     val relays: List<String> = emptyList(),
     val isExternalSignerInstalled: Boolean = false,
-    val deliveryMode: NostrDeliveryMode = NostrDeliveryMode.WhileOpen,
+    val deliveryMode: TwillDeliveryMode = TwillDeliveryMode.WhileOpen,
     val mediaServer: String = "",
     val autoDownloadMedia: Boolean = false,
     val loadProfilePictures: Boolean = false,
@@ -42,6 +43,7 @@ internal class NostrSettingsViewModel @Inject constructor(
     private val accountStore: NostrAccountStore,
     private val signerProvider: NostrSignerProvider,
     private val messenger: NostrMessenger,
+    private val runtime: TwillRuntime,
     private val messageStore: NostrMessageStore,
 ) : ViewModel() {
 
@@ -95,7 +97,7 @@ internal class NostrSettingsViewModel @Inject constructor(
 
     init {
         // Settings can be the first screen opened after sign-in.
-        messenger.install()
+        runtime.start(markVisible = true)
         accountStore.account.value?.let { messenger.refreshProfile(it.pubKeyHex) }
     }
 
@@ -134,7 +136,7 @@ internal class NostrSettingsViewModel @Inject constructor(
         return true
     }
 
-    fun setDeliveryMode(mode: NostrDeliveryMode) {
+    fun setDeliveryMode(mode: TwillDeliveryMode) {
         viewModelScope.launch(Dispatchers.IO) { accountStore.setDeliveryMode(mode) }
     }
 

@@ -18,8 +18,8 @@ import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.core.MessagingPreviewTheme
 
 /**
- * Twill's top-level Settings: one entry per messaging protocol (SMS today), then app-wide
- * items such as open source licenses. Protocol-specific settings live one level down.
+ * Twill's top-level Settings: one entry per messaging protocol (SMS, Nostr, Delta Chat),
+ * then app-wide items such as open source licenses. Protocol-specific settings live one level down.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +29,7 @@ internal fun TwillSettingsScreen(
     onLicensesClick: () -> Unit,
     modifier: Modifier = Modifier,
     onNostrSettingsClick: () -> Unit = {},
+    onDeltaChatSettingsClick: () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -58,6 +59,13 @@ internal fun TwillSettingsScreen(
                     title = stringResource(R.string.nostr_settings_title),
                     summary = stringResource(R.string.nostr_settings_summary),
                     onClick = onNostrSettingsClick,
+                )
+            }
+            item(key = "deltachat_settings") {
+                SettingsClickableItem(
+                    title = stringResource(R.string.deltachat_settings_title),
+                    summary = stringResource(R.string.deltachat_settings_summary),
+                    onClick = onDeltaChatSettingsClick,
                 )
             }
             item(key = "licenses_divider") {
