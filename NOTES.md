@@ -4,7 +4,7 @@ Twill is an SMS/MMS app forked from GrapheneOS Messaging (Compose rewrite, v13+)
 
 ## Rules
 
-- **Every build type must install alongside the system Messaging app, never replace it.** `applicationId` is `app.twill` (debug and perf: `app.twill.debug`). Never set it back to `com.android.messaging`, and never add anything that only works under that package name.
+- **Every build type must install alongside the system Messaging app, never replace it.** Release builds are `app.twill.messages` (set in `androidComponents` in `app/build.gradle.kts`); `defaultConfig.applicationId` stays `app.twill`, so perf is `app.twill.perf` and debug `app.twill.debug`. Never set it back to `com.android.messaging`, and never add anything that only works under that package name.
 - The Kotlin/Java source package and Gradle `namespace` stay `com.android.messaging`. Renaming them would make every upstream merge conflict.
 - The app's display name is "Twill" (`app_name` in `res/values/strings.xml`); debug builds are "Twill d" (set in `app/build.gradle.kts`).
 - Privacy-affecting options (anything that contacts a third party) default to **off**, like the YouTube and website link previews.
@@ -16,7 +16,7 @@ Twill is an SMS/MMS app forked from GrapheneOS Messaging (Compose rewrite, v13+)
 - `origin` = github.com/jawsh207/twill, `upstream` = github.com/GrapheneOS/Messaging.
 - `.github/workflows/build-apk.yml` runs on every push and on manual dispatch. From a cloud session: `gh workflow run build-apk.yml -R jawsh207/twill --ref main`, then poll `gh run view <id> -R jawsh207/twill --json status,conclusion`.
 - CI uploads `twill-apk` (perf build: release config with R8, `app.twill.perf`, label "Twill") for everyday use and `twill-debug-apk` (`app.twill.debug`, "Twill d"). Debug builds are unoptimized and coverage-instrumented, so they stutter; judge performance only on the perf build. Test builds are signed with the committed `.github/ci/debug.keystore` (force-added; `*.keystore` is gitignored) so they update each other.
-- Real releases: `.github/workflows/release.yml` (manual dispatch only) builds `assembleRelease` (`app.twill`) signed with the private key from repository secrets (`TWILL_KEYSTORE_BASE64`, `TWILL_KEYSTORE_PASSWORD`, `TWILL_KEY_ALIAS`, `TWILL_KEY_PASSWORD`), verifies it isn't debug-signed, and publishes GitHub release `v<versionName>` with the APK and its SHA-256. It refuses to reuse a version, so bump `versionCode`/`versionName` first. Never commit or print the key.
+- Real releases: `.github/workflows/release.yml` (manual dispatch only) builds `assembleRelease` (`app.twill.messages`) signed with the private key from repository secrets (`TWILL_KEYSTORE_BASE64`, `TWILL_KEYSTORE_PASSWORD`, `TWILL_KEY_ALIAS`, `TWILL_KEY_PASSWORD`), verifies it isn't debug-signed, and publishes GitHub release `v<versionName>` with the APK and its SHA-256. It refuses to reuse a version, so bump `versionCode`/`versionName` first. Never commit or print the key.
 - Cloud sessions usually can't reach Google's Maven repo, so they can't compile locally. Use the workflow to verify builds, and run `ktlint` on changed Kotlin files before pushing.
 
 ## Where Twill's features live

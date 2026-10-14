@@ -1,6 +1,6 @@
 name: Release
 
-# Builds the real release APK (app.twill), signed with the private release key, and publishes
+# Builds the real release APK (app.twill.messages), signed with the private release key, and publishes
 # it as a GitHub release tagged v<versionName>. Run it from the Actions tab (Run workflow).
 #
 # The key lives only in these repository secrets (Settings > Secrets and variables > Actions):
@@ -114,7 +114,10 @@ jobs:
         id: apk
         run: |
           apk=$(ls app/build/outputs/apk/release/*.apk | head -1)
-          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner
+          tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          apksigner="$tools/apksigner"
+          package=$("$tools/aapt2" dump packagename "$apk")
+          [ "$package" = app.twill.messages ] || { echo "::error::Package is $package, expected app.twill.messages"; exit 1; }
           "$apksigner" verify --print-certs "$apk" | tee certs.txt
           grep -q "CN=Android Debug" certs.txt && { echo "::error::Signed with a debug key"; exit 1; }
           sha=$(sed -n 's/.*certificate SHA-256 digest: //p' certs.txt | head -1)
@@ -131,7 +134,7 @@ jobs:
           file="${{ steps.apk.outputs.file }}"
           sha256sum "$file" > "$file.sha256"
           cat > notes.md <<EOF
-          Twill ${{ steps.version.outputs.name }} (\`app.twill\`, arm64). Installs alongside the system Messaging app.
+          Twill ${{ steps.version.outputs.name }} (\`app.twill.messages\`, arm64). Installs alongside the system Messaging app.
 
           Signing certificate SHA-256: \`${{ steps.apk.outputs.sha }}\`
           EOF

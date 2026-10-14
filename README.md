@@ -65,7 +65,7 @@ Previews are off by default because turning them on means Twill contacts the lin
 
 ## Installing
 
-Twill uses its own package ID (`app.twill`), so every build installs **alongside** the system Messaging app rather than replacing it.
+Twill uses its own package IDs (releases `app.twill.messages`), so every build installs **alongside** the system Messaging app rather than replacing it.
 
 1. Open the [Actions tab](../../actions), pick the latest successful **Build installable APK** run, and download the `twill-apk` artifact.
 2. Unzip it and install the APK on your phone. Later builds install as updates over it.
@@ -95,7 +95,7 @@ The APK is written to `app/build/outputs/apk/debug/`. Every push also builds an 
 
 Release builds need a signing key. Locally, put a `keystore.properties` next to `settings.gradle.kts` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`; see `app/build.gradle.kts`) and run `./gradlew :app:assembleRelease`.
 
-On GitHub, the **Release** workflow (Actions tab, **Run workflow**) builds `app.twill` signed with the private key stored in the repository secrets `TWILL_KEYSTORE_BASE64`, `TWILL_KEYSTORE_PASSWORD`, `TWILL_KEY_ALIAS` and `TWILL_KEY_PASSWORD`, and publishes it as a GitHub release tagged `v<versionName>`. Bump `versionCode` and `versionName` in `app/build.gradle.kts` before each release. Keep a backup of the keystore: without it, released installs can't be updated.
+On GitHub, the **Release** workflow (Actions tab, **Run workflow**) builds `app.twill.messages` signed with the private key stored in the repository secrets `TWILL_KEYSTORE_BASE64`, `TWILL_KEYSTORE_PASSWORD`, `TWILL_KEY_ALIAS` and `TWILL_KEY_PASSWORD`, and publishes it as a GitHub release tagged `v<versionName>`. Bump `versionCode` and `versionName` in `app/build.gradle.kts` before each release. Keep a backup of the keystore: without it, released installs can't be updated.
 
 ## Staying in sync with GrapheneOS
 
