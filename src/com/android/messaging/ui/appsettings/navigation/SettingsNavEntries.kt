@@ -127,17 +127,11 @@ private fun deltaChatSettingsRouteContent(): @Composable (DeltaChatSettingsNavKe
     }
 }
 
-// What upstream shows as top-level Settings, now under "SMS Settings".
 private fun settingsRouteContent(): @Composable (SmsSettingsNavKey) -> Unit {
     return {
-        val viewModel = hiltViewModel<SettingsMainViewModel>()
-        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-        LifecycleEventEffect(event = Lifecycle.Event.ON_RESUME) {
-            viewModel.refreshState()
-        }
-
         // Twill: "Use Twill for SMS/MMS" is the first row; with SMS off it's the only one.
+        // Checked before anything upstream loads: upstream's SMS settings read SIM details,
+        // which needs phone permissions Twill doesn't have once SMS is off.
         val navigator = LocalNavigator.current
         val context = LocalContext.current
         val sms = remember(context) { context.twillEntryPoint().twillSms() }
@@ -150,20 +144,33 @@ private fun settingsRouteContent(): @Composable (SmsSettingsNavKey) -> Unit {
             SmsOffSettingsScreen(onNavigateBack = navigator::back, header = smsSwitch)
         } else {
             CompositionLocalProvider(LocalSmsSettingsHeader provides smsSwitch) {
-                when (uiState.isMultiSim) {
-                    true -> SettingsMainDestination(
-                        subscriptions = uiState.subscriptions,
-                    )
-
-                    false -> AppSettingsDestination(
-                        isTopLevel = true,
-                        advancedSubscription = uiState.subscriptions.firstOrNull(),
-                    )
-
-                    null -> Unit
-                }
+                SmsSettingsContent()
             }
         }
+    }
+}
+
+// What upstream shows as top-level Settings, now under "SMS Settings".
+@Composable
+private fun SmsSettingsContent() {
+    val viewModel = hiltViewModel<SettingsMainViewModel>()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LifecycleEventEffect(event = Lifecycle.Event.ON_RESUME) {
+        viewModel.refreshState()
+    }
+
+    when (uiState.isMultiSim) {
+        true -> SettingsMainDestination(
+            subscriptions = uiState.subscriptions,
+        )
+
+        false -> AppSettingsDestination(
+            isTopLevel = true,
+            advancedSubscription = uiState.subscriptions.firstOrNull(),
+        )
+
+        null -> Unit
     }
 }
 
