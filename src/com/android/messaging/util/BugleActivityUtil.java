@@ -25,6 +25,7 @@ import android.os.UserManager;
 import com.android.messaging.Factory;
 import com.android.messaging.R;
 import com.android.messaging.datamodel.DataModel;
+import com.android.messaging.twill.TwillSms;
 
 /**
  * Utility class including logic to verify requirements to run Bugle and other activity startup
@@ -43,6 +44,11 @@ public class BugleActivityUtil {
      * are not met.
      */
     public static boolean onActivityResume(Context context, Activity activity) {
+        // Twill: with SMS off, Twill has no SMS permissions (Android revokes them when another
+        // app becomes the default SMS app), so skip the SMS sync that runs on resume.
+        if (!TwillSms.Companion.isEnabled(context)) {
+            return true;
+        }
         DataModel.get().onActivityResume();
         Factory.get().onActivityResume();
 
