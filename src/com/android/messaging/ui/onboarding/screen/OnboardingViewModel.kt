@@ -66,13 +66,8 @@ internal class OnboardingViewModel @Inject constructor(
             }
 
             Action.WithoutSmsClicked -> {
-                emitEffect(
-                    if (twillSms.disable()) {
-                        Effect.ContinueWithoutSms
-                    } else {
-                        Effect.OpenDefaultAppsSettings
-                    },
-                )
+                twillSms.disable()
+                emitEffect(Effect.ContinueWithoutSms)
             }
         }
     }

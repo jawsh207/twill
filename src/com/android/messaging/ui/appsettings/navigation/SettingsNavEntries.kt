@@ -42,6 +42,7 @@ import com.android.messaging.ui.onboarding.navigation.OnboardingNavKey
 import com.android.messaging.ui.twill.LocalSmsSettingsHeader
 import com.android.messaging.ui.twill.SmsOffSettingsScreen
 import com.android.messaging.ui.twill.TwillSmsSwitch
+import com.android.messaging.util.OsUtil
 import kotlinx.collections.immutable.ImmutableList
 
 internal fun EntryProviderScope<NavKey>.settingsEntries() {
@@ -140,7 +141,9 @@ private fun settingsRouteContent(): @Composable (SmsSettingsNavKey) -> Unit {
             // Turning SMS on goes through onboarding (default SMS app, permissions).
             TwillSmsSwitch(onTurnedOn = { navigator.reset(listOf(OnboardingNavKey)) })
         }
-        if (!isSmsEnabled) {
+        // Upstream's page also needs SMS permissions, which Twill only has again after the
+        // onboarding that turning SMS on starts.
+        if (!isSmsEnabled || !OsUtil.hasRequiredPermissions()) {
             SmsOffSettingsScreen(onNavigateBack = navigator::back, header = smsSwitch)
         } else {
             CompositionLocalProvider(LocalSmsSettingsHeader provides smsSwitch) {

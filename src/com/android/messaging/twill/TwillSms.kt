@@ -16,8 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * onboarding doesn't ask to become the default SMS app, the inbox has no SMS section, and
  * Twill's SMS components are disabled so Android doesn't offer it as an SMS app.
  *
- * SMS can only be off while another app is the default SMS app: the default SMS app receives
- * every text, so turning SMS off while Twill holds that role would lose messages.
+ * Turning SMS off takes effect immediately in Twill. Twill's SMS components are only
+ * disabled once another app is the default SMS app (disabling them while Twill holds the role
+ * would make Android revoke it abruptly), which is re-checked every time Twill opens.
  */
 @Singleton
 internal class TwillSms @Inject constructor(
@@ -30,28 +31,23 @@ internal class TwillSms @Inject constructor(
     fun isDefaultSmsApp(): Boolean =
         context.getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_SMS) == true
 
-    /** Turns SMS off. Returns false (and changes nothing) while Twill is the default SMS app. */
-    fun disable(): Boolean {
-        if (isDefaultSmsApp()) return false
+    /**
+     * Turns SMS off. If Twill is still the default SMS app, the user should pick another one
+     * (see [isDefaultSmsApp]); until then Twill keeps its SMS components so no text is lost.
+     */
+    fun disable() {
         save(enabled = false)
-        applyComponents()
-        return true
+        applyComponents(context)
     }
 
     /** Turns SMS back on; the user then goes through onboarding to become the default again. */
     fun enable() {
         save(enabled = true)
-        applyComponents()
+        applyComponents(context)
     }
 
-    /**
-     * Brings the SMS components in line with the setting. Called at startup. If the user made
-     * Twill the default SMS app again from system settings, SMS turns back on.
-     */
-    fun sync() {
-        if (!_isEnabled.value && isDefaultSmsApp()) save(enabled = true)
-        applyComponents()
-    }
+    /** Brings the SMS components in line with the setting. Called at startup and on resume. */
+    fun sync() = applyComponents(context)
 
     private fun save(enabled: Boolean) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -59,29 +55,6 @@ internal class TwillSms @Inject constructor(
             .putBoolean(KEY_ENABLED, enabled)
             .commit()
         _isEnabled.value = enabled
-    }
-
-    private fun applyComponents() {
-        // Never disable them while Twill holds the SMS role: Android would revoke it abruptly.
-        val enabled = _isEnabled.value || isDefaultSmsApp()
-        val state = if (enabled) {
-            PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
-        } else {
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-        }
-        val packageManager = context.packageManager
-        SMS_COMPONENTS.forEach { className ->
-            val component = ComponentName(context.packageName, className)
-            if (packageManager.getComponentEnabledSetting(component) != state) {
-                runCatching {
-                    packageManager.setComponentEnabledSetting(
-                        component,
-                        state,
-                        PackageManager.DONT_KILL_APP,
-                    )
-                }
-            }
-        }
     }
 
     companion object {
@@ -101,5 +74,33 @@ internal class TwillSms @Inject constructor(
         fun isEnabled(context: Context): Boolean =
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .getBoolean(KEY_ENABLED, true)
+
+        /**
+         * Enables or disables the SMS components to match the setting. They are never disabled
+         * while Twill holds the SMS role: Android would revoke it abruptly.
+         */
+        fun applyComponents(context: Context) {
+            val isDefault = context.getSystemService(RoleManager::class.java)
+                ?.isRoleHeld(RoleManager.ROLE_SMS) == true
+            val enabled = isEnabled(context) || isDefault
+            val state = if (enabled) {
+                PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+            } else {
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            }
+            val packageManager = context.packageManager
+            SMS_COMPONENTS.forEach { className ->
+                val component = ComponentName(context.packageName, className)
+                if (packageManager.getComponentEnabledSetting(component) != state) {
+                    runCatching {
+                        packageManager.setComponentEnabledSetting(
+                            component,
+                            state,
+                            PackageManager.DONT_KILL_APP,
+                        )
+                    }
+                }
+            }
+        }
     }
 }

@@ -47,6 +47,8 @@ public class BugleActivityUtil {
         // Twill: with SMS off, Twill has no SMS permissions (Android revokes them when another
         // app becomes the default SMS app), so skip the SMS sync that runs on resume.
         if (!TwillSms.Companion.isEnabled(context)) {
+            // Once another app is the default SMS app, stop being offered as one.
+            TwillSms.Companion.applyComponents(context);
             return true;
         }
         DataModel.get().onActivityResume();

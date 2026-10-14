@@ -98,7 +98,10 @@ internal fun OnboardingScreen(
                     onComplete()
                 }
 
-                Effect.ContinueWithoutSms -> onComplete()
+                Effect.ContinueWithoutSms -> {
+                    currentEffectHandler.handle(effect)
+                    onComplete()
+                }
 
                 else -> currentEffectHandler.handle(effect)
             }
