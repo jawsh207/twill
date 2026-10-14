@@ -22,8 +22,8 @@ import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 private enum class SmsSwitchDialog { None, ChooseOtherApp, ConfirmOff }
 
 /**
- * "Use Twill for SMS/MMS". Turning it off needs another default SMS app first; this sends the
- * user to pick one and finishes turning SMS off when they come back. Turning it on calls
+ * "Use Twill for SMS/MMS". Turning it off takes effect right away; if Twill is still the
+ * default SMS app, it also opens Android's screen to choose another one. Turning it on calls
  * [onTurnedOn], which should start onboarding (default SMS app and permissions).
  */
 @Composable
@@ -32,14 +32,10 @@ internal fun TwillSmsSwitch(onTurnedOn: () -> Unit) {
     val sms = remember(context) { context.twillEntryPoint().twillSms() }
     val isEnabled by sms.isEnabled.collectAsStateWithLifecycle()
     var dialog by rememberSaveable { mutableStateOf(SmsSwitchDialog.None) }
-    var isWaitingForOtherApp by rememberSaveable { mutableStateOf(false) }
 
-    // Back from the default-apps screen: finish if another app is now the SMS app.
+    // Back from the default-apps screen: stop being offered as an SMS app.
     LifecycleResumeEffect(Unit) {
-        if (isWaitingForOtherApp && !sms.isDefaultSmsApp()) {
-            isWaitingForOtherApp = false
-            sms.disable()
-        }
+        sms.sync()
         onPauseOrDispose {}
     }
 
@@ -73,7 +69,7 @@ internal fun TwillSmsSwitch(onTurnedOn: () -> Unit) {
                 TextButton(
                     onClick = {
                         dialog = SmsSwitchDialog.None
-                        isWaitingForOtherApp = true
+                        sms.disable()
                         runCatching {
                             context.startActivity(
                                 Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)

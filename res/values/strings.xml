@@ -1119,8 +1119,8 @@
     <string name="twill_turn_off_sms">Turn off SMS/MMS?</string>
     <string name="twill_turn_off_sms_explainer">Twill will stop showing text messages and won\'t be offered as an SMS app. Your texts stay on the phone, where your default SMS app can see them. You can turn this back on in Settings.</string>
     <string name="twill_turn_off">Turn off</string>
-    <string name="twill_sms_choose_other_app">Twill is your default SMS app, which receives every text. Choose a different SMS app first, then come back.</string>
-    <string name="twill_choose_sms_app">Choose SMS app</string>
+    <string name="twill_sms_choose_other_app">Twill is still your default SMS app, which receives every text. Choose a different SMS app so your texts keep arriving there.</string>
+    <string name="twill_choose_sms_app">Turn off and choose SMS app</string>
     <string name="twill_setup_hint">SMS is off in Twill. Set up Nostr or Delta Chat in Settings to start chatting.</string>
     <string name="twill_open_settings">Open Settings</string>
     <string name="inbox_new_protocol_chat">New %s chat</string>

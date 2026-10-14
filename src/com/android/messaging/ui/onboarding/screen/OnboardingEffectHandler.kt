@@ -56,13 +56,13 @@ internal class OnboardingEffectHandlerImpl(
                 Factory.get().onRequiredPermissionsAcquired()
             }
 
-            Effect.OpenDefaultAppsSettings -> {
-                Toast.makeText(activity, R.string.twill_sms_choose_other_app, Toast.LENGTH_LONG)
-                    .show()
-                activity.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            Effect.ContinueWithoutSms -> {
+                if (roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
+                    Toast.makeText(activity, R.string.twill_sms_choose_other_app, Toast.LENGTH_LONG)
+                        .show()
+                    activity.startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+                }
             }
-
-            Effect.ContinueWithoutSms -> Unit
 
             is Effect.RequestRuntimePermissions -> Unit
             is Effect.RequestSmsRole -> Unit

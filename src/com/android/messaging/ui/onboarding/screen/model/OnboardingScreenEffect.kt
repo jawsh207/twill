@@ -14,9 +14,9 @@ internal sealed interface OnboardingScreenEffect {
 
     data object Redirect : OnboardingScreenEffect
 
-    /** Twill: SMS is off; continue to the app without the SMS setup. */
+    /**
+     * Twill: SMS is off; continue to the app without the SMS setup (and, if Twill is still
+     * the default SMS app, open the screen to choose another).
+     */
     data object ContinueWithoutSms : OnboardingScreenEffect
-
-    /** Twill: SMS can't be turned off while Twill is the default SMS app. */
-    data object OpenDefaultAppsSettings : OnboardingScreenEffect
 }
