@@ -4,8 +4,8 @@
 // events through an event emitter, so this file stays tiny. Strings cross the boundary as
 // UTF-8 byte arrays, because JNI's NewStringUTF expects "modified UTF-8" and mangles emoji.
 //
-// Built by scripts/build-deltachat-core.sh into libtwill_deltachat.so, which links against
-// libdeltachat.so from the same directory.
+// Built by scripts/build-deltachat-core.sh into libtwill_deltachat.so, which includes the
+// core itself (linked statically; only these Java_* functions are exported).
 
 #include <jni.h>
 #include <stdint.h>

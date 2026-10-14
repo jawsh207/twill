@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Builds the Delta Chat core (chatmail core's deltachat-ffi) from source for Android, plus
-# Twill's small JNI bridge (native/deltachat/twill_deltachat_jni.c), into
-#   deltachat/jniLibs/arm64-v8a/libdeltachat.so
+# Builds the Delta Chat core (chatmail core's deltachat-ffi) from source for Android and links
+# it, with Twill's small JNI bridge (native/deltachat/twill_deltachat_jni.c), into one library:
 #   deltachat/jniLibs/arm64-v8a/libtwill_deltachat.so
-# where Gradle packages them. Twill loads them in-process and talks JSON-RPC through them.
+# where Gradle packages it. Twill loads it in-process and talks JSON-RPC through it.
+#
+# The core is linked statically and only the bridge's functions are exported, so the linker
+# drops the parts of the core Twill never calls (most of its C API). Relocations are packed
+# (RELR, Android 9+). Together that saves about 2 MB over shipping the core's own library.
 #
 # Needs: git, a Rust toolchain (rustup) and the Android NDK (found through
 # ANDROID_NDK_LATEST_HOME, ANDROID_NDK_HOME, ANDROID_NDK_ROOT or $ANDROID_HOME/ndk/*).
@@ -30,7 +33,7 @@ stamp_value() {
     { echo "$VERSION $COMMIT"; cat "$0" "$BRIDGE"; } | sha256sum | cut -d' ' -f1
 }
 
-if [[ -f "$OUT/libdeltachat.so" && -f "$OUT/libtwill_deltachat.so" && -f "$STAMP" \
+if [[ -f "$OUT/libtwill_deltachat.so" && -f "$STAMP" \
     && "$(cat "$STAMP")" == "$(stamp_value)" ]]; then
     echo "Delta Chat core $VERSION already built"
     exit 0
@@ -55,7 +58,7 @@ if [[ "$actual" != "$COMMIT" ]]; then
     exit 1
 fi
 
-# Core library. 16 KB page alignment keeps it loadable on 16 KB page-size devices.
+# Core library, as a static library. Symbols are kept until the final link strips them.
 rustup target add "$RUST_TARGET"
 # OpenSSL's Android build (vendored by the core) finds the NDK through these.
 export ANDROID_NDK_ROOT="$NDK" ANDROID_NDK_HOME="$NDK"
@@ -63,18 +66,33 @@ export PATH="$TOOLCHAIN:$PATH"
 export CC_aarch64_linux_android="$CLANG"
 export AR_aarch64_linux_android="$TOOLCHAIN/llvm-ar"
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$CLANG"
-export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"
-(cd "$SRC" && cargo build --release --locked -p deltachat_ffi --target "$RUST_TARGET")
+# 16 KB page alignment keeps it loadable on 16 KB page-size devices.
+export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384 --print native-static-libs"
+export CARGO_PROFILE_RELEASE_STRIP=false
+LOG="$(mktemp)"
+(cd "$SRC" && cargo build --release --locked -p deltachat_ffi --target "$RUST_TARGET") 2>&1 \
+    | tee "$LOG"
+# The system libraries the static library needs (libc, liblog, ...).
+NATIVE_LIBS="$(grep -o 'native-static-libs: .*' "$LOG" | head -1 | cut -d: -f2-)"
+rm -f "$LOG"
+[[ -n "$NATIVE_LIBS" ]] || { echo "native-static-libs not reported" >&2; exit 1; }
 
+# The bridge with the core linked in. Only Java_* functions are exported; everything they
+# don't reach is dropped (--gc-sections) and relocations are packed (RELR).
 mkdir -p "$OUT"
-cp "$SRC/target/$RUST_TARGET/release/libdeltachat.so" "$OUT/libdeltachat.so"
-
-# Twill's JNI bridge, linked against the core.
+rm -f "$OUT/libdeltachat.so"
+EXPORTS="$(mktemp)"
+printf '{ global: Java_*; local: *; };\n' > "$EXPORTS"
+# shellcheck disable=SC2086
 "$CLANG" -shared -fPIC -O2 -s -Wall -Werror -Wno-unused-parameter \
-    -Wl,-z,max-page-size=16384 \
+    -ffunction-sections -fdata-sections \
+    -Wl,-z,max-page-size=16384 -Wl,--gc-sections -Wl,--exclude-libs,ALL \
+    -Wl,--version-script="$EXPORTS" -Wl,--no-undefined \
+    -Wl,--pack-dyn-relocs=relr -Wl,--use-android-relr-tags \
     -I "$SRC/deltachat-ffi" \
     -o "$OUT/libtwill_deltachat.so" "$BRIDGE" \
-    -L "$OUT" -ldeltachat
+    "$SRC/target/$RUST_TARGET/release/libdeltachat.a" $NATIVE_LIBS
+rm -f "$EXPORTS"
 
 stamp_value > "$STAMP"
 ls -l "$OUT"
