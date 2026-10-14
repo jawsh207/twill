@@ -52,7 +52,10 @@ internal fun TwillSettingsScreen(
                 SettingsClickableItem(
                     title = stringResource(R.string.sms_settings_title),
                     summary = stringResource(
-                        if (isSmsEnabled) R.string.sms_settings_summary else R.string.twill_sms_off_summary,
+                        when {
+                            isSmsEnabled -> R.string.sms_settings_summary
+                            else -> R.string.twill_sms_off_summary
+                        },
                     ),
                     onClick = onSmsSettingsClick,
                 )
