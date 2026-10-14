@@ -319,8 +319,14 @@ public class SyncManager {
             }
         }
         if (mNotifyOnChanges || mSyncOnChanges) {
-            context.getContentResolver().registerContentObserver(Telephony.MmsSms.CONTENT_URI,
-                    true, mMmsSmsObserver);
+            try {
+                context.getContentResolver().registerContentObserver(Telephony.MmsSms.CONTENT_URI,
+                        true, mMmsSmsObserver);
+            } catch (SecurityException e) {
+                // Twill: without SMS permissions (e.g. SMS turned off in Twill and another app
+                // is the default SMS app) there is nothing to observe; don't crash.
+                LogUtil.w(TAG, "Can't observe SMS changes without permission");
+            }
         } else {
             context.getContentResolver().unregisterContentObserver(mMmsSmsObserver);
         }
