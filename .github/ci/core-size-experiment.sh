@@ -27,8 +27,9 @@ export AR_aarch64_linux_android="$TOOLCHAIN/llvm-ar"
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$CLANG"
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384 --print native-static-libs"
 export CARGO_PROFILE_RELEASE_STRIP=false
-if [[ "$VARIANT" == cflags ]]; then
-    export CFLAGS_aarch64_linux_android="-Os -ffunction-sections -fdata-sections"
+if [[ "$VARIANT" == nounwind ]]; then
+    CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS+=" -C force-unwind-tables=no"
+    export CFLAGS_aarch64_linux_android="-fno-asynchronous-unwind-tables -fno-unwind-tables"
 fi
 (cd "$SRC" && cargo build --release --locked -p deltachat_ffi --target "$RUST_TARGET") 2>&1 \
     | tee "$WORK/build.log"
@@ -51,12 +52,24 @@ printf '{ global: Java_*; local: *; };\n' > "$WORK/exports.map"
     -Wl,--version-script="$WORK/exports.map" -Wl,--no-undefined -Wl,--icf=all \
     -I "$SRC/deltachat-ffi" -o "$WORK/merged.so" \
     "$ROOT/native/deltachat/twill_deltachat_jni.c" "$OUTDIR/libdeltachat.a" $NATIVE_LIBS
+# shellcheck disable=SC2086
+"$CLANG" -shared -fPIC -O2 -s -ffunction-sections -fdata-sections \
+    -Wl,-z,max-page-size=16384 -Wl,--gc-sections -Wl,--exclude-libs,ALL \
+    -Wl,--version-script="$WORK/exports.map" -Wl,--no-undefined -Wl,--icf=all \
+    -Wl,--pack-dyn-relocs=relr -Wl,--use-android-relr-tags \
+    -I "$SRC/deltachat-ffi" -o "$WORK/merged-relr.so" \
+    "$ROOT/native/deltachat/twill_deltachat_jni.c" "$OUTDIR/libdeltachat.a" $NATIVE_LIBS
 
 gz() { gzip -9 -c "$1" | wc -c; }
 {
     echo "variant $VARIANT"
     echo "today: libdeltachat.so $(stat -c%s "$WORK/libdeltachat.so") (gz $(gz "$WORK/libdeltachat.so")) + bridge $(stat -c%s "$WORK/libtwill_deltachat.so")"
     echo "merged: $(stat -c%s "$WORK/merged.so") (gz $(gz "$WORK/merged.so"))"
+    echo "merged+relr: $(stat -c%s "$WORK/merged-relr.so") (gz $(gz "$WORK/merged-relr.so"))"
+    echo "--- sections, today's library ---"
+    llvm-size -A "$WORK/libdeltachat.so" | awk '$2 > 50000 {print $1, $2}'
+    echo "--- sections, merged+relr ---"
+    llvm-size -A "$WORK/merged-relr.so" | awk '$2 > 50000 {print $1, $2}'
     echo "merged exports: $(llvm-nm -D --defined-only "$WORK/merged.so" | wc -l), needed: $(llvm-readelf -d "$WORK/merged.so" | grep NEEDED | grep -o '\[.*\]' | tr '\n' ' ')"
     echo "--- crates (unstripped symbol bytes, today's library) ---"
     python3 "$ROOT/.github/ci/core-size-breakdown.py" llvm-nm "$OUTDIR/libdeltachat.so"
