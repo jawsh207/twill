@@ -1,0 +1,31 @@
+name: Delta Chat core size experiment
+
+on:
+  push:
+    branches:
+      - experiment/core-size
+
+permissions:
+  contents: read
+
+jobs:
+  size:
+    name: Core size (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [base]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build and measure
+        run: |
+          set -o pipefail
+          if ! .github/ci/core-size-experiment.sh ${{ matrix.variant }} > run.log 2>&1; then
+            tail -n 30 run.log | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > tail.txt
+            echo "::error title=Experiment failed::$(cat tail.txt)"
+            exit 1
+          fi
+          sed 's/%/%25/g' build/size/report.txt | awk 'BEGIN{ORS="%0A"} {print}' > report.txt
+          echo "::notice title=Core size ${{ matrix.variant }}::$(cat report.txt)"
