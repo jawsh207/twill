@@ -56,9 +56,11 @@ android {
     defaultConfig {
         // Twill's own package ID, so every build type installs alongside the system
         // Messaging app (com.android.messaging) instead of replacing it.
+        // Releases are renamed to app.twill.messages below; test builds keep app.twill.perf
+        // and app.twill.debug.
         applicationId = "app.twill"
-        versionCode = 20000000 + 16
-        versionName = "16"
+        versionCode = 20000000 + 17
+        versionName = "17"
         minSdk = 36
         targetSdk = 37
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -190,6 +192,13 @@ android {
 
     lint {
         abortOnError = false
+    }
+}
+
+// Twill: release builds are app.twill.messages (installs alongside the system Messaging app).
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.applicationId.set("app.twill.messages")
     }
 }
 
