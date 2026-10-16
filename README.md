@@ -45,8 +45,8 @@ Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: N
 Twill can send and receive [Delta Chat](https://delta.chat) messages: end-to-end encrypted chat that travels over email servers, using the official Delta Chat core (chatmail core) unchanged.
 
 - **Off until you set it up** under **Settings › Delta Chat Settings**. Choose one:
-  - **Create a new profile:** a free, anonymous address on a chatmail server (default `nine.testrun.org`). No phone number or email needed.
-  - **Use a setup code:** a `dcaccount:` or `dclogin:` code from a chatmail server's website.
+  - **Create a new profile:** a free, anonymous address on a relay (default `nine.testrun.org`). No phone number or email needed.
+  - **Use a setup code:** a `dcaccount:` or `dclogin:` code from a relay's website.
   - **Use an existing email address:** works with most providers. Messages to people who don't use Delta Chat aren't encrypted.
 - **Start chats** with the **+** in the Delta Chat section: paste someone's invite link (or an email address). Share your own invite link from Delta Chat Settings.
 - **Contact requests:** a chat from someone new shows **Accept** and **Block** instead of the message box.
