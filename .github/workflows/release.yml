@@ -54,6 +54,13 @@ jobs:
           [ -n "$name" ] || { echo "::error::versionName not found"; exit 1; }
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "tag=v$name" >> "$GITHUB_OUTPUT"
+          # What's new: this version's section of CHANGELOG.md ("## <version>" up to the next "## ").
+          awk -v v="$name" '$0 == "## " v {found=1; next} found && /^## / {exit} found {print}' CHANGELOG.md \
+            | sed -e '/./,$!d' > changelog-section.md
+          if ! grep -q '[^[:space:]]' changelog-section.md; then
+            echo "::error title=No changelog::Add a '## $name' section to CHANGELOG.md before releasing."
+            exit 1
+          fi
           if gh release view "v$name" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error title=Version already released::v$name exists. Bump versionCode and versionName in app/build.gradle.kts first."
             exit 1
@@ -133,11 +140,17 @@ jobs:
         run: |
           file="${{ steps.apk.outputs.file }}"
           sha256sum "$file" > "$file.sha256"
-          cat > notes.md <<EOF
-          Twill ${{ steps.version.outputs.name }} (\`app.twill.messages\`, arm64). Installs alongside the system Messaging app.
-
-          Signing certificate SHA-256: \`${{ steps.apk.outputs.sha }}\`
-          EOF
+          {
+            echo "## What's new"
+            echo
+            cat changelog-section.md
+            echo
+            echo "---"
+            echo
+            echo "Twill ${{ steps.version.outputs.name }} (\`app.twill.messages\`, arm64). Installs alongside the system Messaging app."
+            echo
+            echo "Signing certificate SHA-256: \`${{ steps.apk.outputs.sha }}\`"
+          } > notes.md
           gh release create "${{ steps.version.outputs.tag }}" "$file" "$file.sha256" \
             -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Twill ${{ steps.version.outputs.name }}" --notes-file notes.md

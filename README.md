@@ -95,7 +95,7 @@ The APK is written to `app/build/outputs/apk/debug/`. Every push also builds an 
 
 Release builds need a signing key. Locally, put a `keystore.properties` next to `settings.gradle.kts` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`; see `app/build.gradle.kts`) and run `./gradlew :app:assembleRelease`.
 
-On GitHub, the **Release** workflow (Actions tab, **Run workflow**) builds `app.twill.messages` signed with the private key stored in the repository secrets `TWILL_KEYSTORE_BASE64`, `TWILL_KEYSTORE_PASSWORD`, `TWILL_KEY_ALIAS` and `TWILL_KEY_PASSWORD`, and publishes it as a GitHub release tagged `v<versionName>`. Bump `versionCode` and `versionName` in `app/build.gradle.kts` before each release. Keep a backup of the keystore: without it, released installs can't be updated.
+On GitHub, the **Release** workflow (Actions tab, **Run workflow**) builds `app.twill.messages` signed with the private key stored in the repository secrets `TWILL_KEYSTORE_BASE64`, `TWILL_KEYSTORE_PASSWORD`, `TWILL_KEY_ALIAS` and `TWILL_KEY_PASSWORD`, and publishes it as a GitHub release tagged `v<versionName>`. Before each release, bump `versionCode` and `versionName` in `app/build.gradle.kts` and add a `## <versionName>` section to [CHANGELOG.md](CHANGELOG.md); the workflow puts that section on the release page and won't release without it. Keep a backup of the keystore: without it, released installs can't be updated.
 
 ## Staying in sync with GrapheneOS
 
