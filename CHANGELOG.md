@@ -4,6 +4,11 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.3
+
+- The long-press "Start chat" menu groups each service's options under its name, with the
+  service's own icon (the same one its notifications use).
+
 ## 1.0.2
 
 - Long press the "Start chat" button to choose where to start a chat: SMS/MMS, Nostr or
