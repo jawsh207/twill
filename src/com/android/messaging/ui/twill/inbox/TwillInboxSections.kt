@@ -1,7 +1,6 @@
 package com.android.messaging.ui.twill.inbox
 
 import android.text.format.DateUtils
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -50,14 +49,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.messaging.R
 import com.android.messaging.twill.TwillChat
@@ -212,8 +211,8 @@ private fun SetupHint(onOpenSettings: () -> Unit) {
 }
 
 /**
- * Where to start a new chat: SMS/MMS (when on), then one "chat" and one "group" choice per
- * set-up protocol.
+ * Where to start a new chat: SMS/MMS (when on) and each set-up service. Picking a service
+ * then asks what kind of chat to start (one-to-one or group).
  */
 @Composable
 private fun NewChatPicker(
@@ -224,103 +223,94 @@ private fun NewChatPicker(
     onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var picked by remember { mutableStateOf<TwillInboxSection?>(null) }
+    val service = picked
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.inbox_new_chat)) },
+        title = {
+            Text(
+                text = when (service) {
+                    null -> stringResource(R.string.inbox_new_chat)
+                    else -> stringResource(
+                        R.string.inbox_new_conversation,
+                        stringResource(service.text.sectionTitle),
+                    )
+                },
+            )
+        },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                if (sections.isEmpty()) {
-                    Text(text = stringResource(R.string.twill_setup_hint))
-                }
-                if (isSmsEnabled) {
+                if (service != null) {
                     PickerRow(
-                        icon = Icons.Rounded.Sms,
-                        label = stringResource(R.string.inbox_new_sms),
-                        onClick = onNewSms,
-                    )
-                }
-                // One group per service: its name and notification icon, then chat and group.
-                sections.forEach { section ->
-                    PickerHeader(
-                        icon = section.text.notificationIcon,
-                        title = stringResource(section.text.sectionTitle),
-                    )
-                    PickerRow(
-                        icon = Icons.Rounded.Person,
+                        icon = rememberVectorPainter(Icons.Rounded.Person),
                         label = stringResource(R.string.inbox_new_chat),
-                        onClick = { onPick(section, false) },
-                        indent = PickerIndent,
+                        onClick = { onPick(service, false) },
                     )
                     PickerRow(
-                        icon = Icons.Rounded.Group,
+                        icon = rememberVectorPainter(Icons.Rounded.Group),
                         label = stringResource(R.string.inbox_new_group),
-                        onClick = { onPick(section, true) },
-                        indent = PickerIndent,
+                        onClick = { onPick(service, true) },
                     )
+                } else {
+                    if (sections.isEmpty()) {
+                        Text(text = stringResource(R.string.twill_setup_hint))
+                    }
+                    if (isSmsEnabled) {
+                        PickerRow(
+                            icon = rememberVectorPainter(Icons.Rounded.Sms),
+                            label = stringResource(R.string.inbox_new_sms),
+                            onClick = onNewSms,
+                        )
+                    }
+                    // Each service with its notification icon.
+                    sections.forEach { section ->
+                        PickerRow(
+                            icon = painterResource(id = section.text.notificationIcon),
+                            label = stringResource(section.text.sectionTitle),
+                            onClick = { picked = section },
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            if (sections.isEmpty()) {
+            if (service == null && sections.isEmpty()) {
                 TextButton(onClick = onOpenSettings) {
                     Text(text = stringResource(R.string.twill_open_settings))
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(android.R.string.cancel))
+            if (service != null) {
+                TextButton(onClick = { picked = null }) {
+                    Text(text = stringResource(R.string.back))
+                }
+            } else {
+                TextButton(onClick = onDismiss) {
+                    Text(text = stringResource(android.R.string.cancel))
+                }
             }
         },
     )
 }
 
-/** Lines a service's options up under its name, past the service icon. */
-private val PickerIndent = 40.dp
-
-/** A service's name and notification icon, heading its options in [NewChatPicker]. */
-@Composable
-private fun PickerHeader(
-    @DrawableRes icon: Int,
-    title: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(
-            painter = painterResource(id = icon),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
-}
-
+/** One choice in [NewChatPicker]; icons use the text colour, like the SMS one. */
 @Composable
 private fun PickerRow(
-    icon: ImageVector,
+    icon: Painter,
     label: String,
     onClick: () -> Unit,
-    indent: Dp = 0.dp,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(start = indent)
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Icon(imageVector = icon, contentDescription = null)
+        Icon(painter = icon, contentDescription = null)
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }
