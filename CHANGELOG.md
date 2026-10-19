@@ -4,6 +4,11 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.2
+
+- Long press the "Start chat" button to choose where to start a chat: SMS/MMS, Nostr or
+  Delta Chat. A normal press still starts an SMS/MMS conversation.
+
 ## 1.0.1
 
 - Delta Chat Settings now say "relay" instead of "chatmail", matching Delta Chat's own app.

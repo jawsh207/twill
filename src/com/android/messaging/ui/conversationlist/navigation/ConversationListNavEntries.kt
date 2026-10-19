@@ -57,13 +57,14 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
 
         // Twill: SMS + protocol sections in the list.
         val inboxViewModel = hiltViewModel<TwillInboxViewModel>()
-        val inbox = remember(inboxViewModel, appNavigator) {
+        val inbox = remember(inboxViewModel, appNavigator, navigator) {
             TwillInbox(
                 controller = inboxViewModel,
                 onOpenChat = { protocol, chatId ->
                     appNavigator.push(TwillChatNavKey(protocol = protocol.key, chatId = chatId))
                 },
                 onOpenSettings = { appNavigator.push(destination = SettingsNavKey) },
+                onNewSms = { navigator.navigateToNewChat() },
             )
         }
 

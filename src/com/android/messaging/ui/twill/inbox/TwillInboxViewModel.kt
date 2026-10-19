@@ -75,8 +75,13 @@ internal class TwillInbox(
     val controller: TwillInboxController,
     val onOpenChat: (protocol: TwillProtocolId, chatId: String) -> Unit,
     val onOpenSettings: () -> Unit,
+    /** Upstream's new SMS/MMS conversation screen. */
+    val onNewSms: () -> Unit,
 ) {
-    /** Set by the new-message button when SMS is off: pick a protocol to start a chat in. */
+    /**
+     * Shows the "where to start a chat" picker: set by the new-message button when SMS is off,
+     * and by a long press on it otherwise.
+     */
     val isNewChatPickerVisible = mutableStateOf(false)
 }
 

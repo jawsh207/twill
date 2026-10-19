@@ -23,6 +23,7 @@ import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.Sms
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -104,10 +105,15 @@ internal fun rememberConversationListSections(
     var dialog by remember { mutableStateOf<NewChatDialog>(NewChatDialog.None) }
     val controller = inbox.controller
 
-    // The new-message button, with SMS off: choose where to start the chat.
+    // The new-message button (with SMS off, or long pressed): choose where to start the chat.
     if (inbox.isNewChatPickerVisible.value) {
         NewChatPicker(
+            isSmsEnabled = state.isSmsEnabled,
             sections = state.sections,
+            onNewSms = {
+                inbox.isNewChatPickerVisible.value = false
+                inbox.onNewSms()
+            },
             onPick = { section, isGroup ->
                 inbox.isNewChatPickerVisible.value = false
                 dialog = if (isGroup) NewChatDialog.Group(section) else NewChatDialog.Chat(section)
@@ -202,10 +208,15 @@ private fun SetupHint(onOpenSettings: () -> Unit) {
     }
 }
 
-/** Where to start a new chat: one "chat" and one "group" choice per set-up protocol. */
+/**
+ * Where to start a new chat: SMS/MMS (when on), then one "chat" and one "group" choice per
+ * set-up protocol.
+ */
 @Composable
 private fun NewChatPicker(
+    isSmsEnabled: Boolean,
     sections: List<TwillInboxSection>,
+    onNewSms: () -> Unit,
     onPick: (TwillInboxSection, isGroup: Boolean) -> Unit,
     onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
@@ -217,6 +228,13 @@ private fun NewChatPicker(
             Column {
                 if (sections.isEmpty()) {
                     Text(text = stringResource(R.string.twill_setup_hint))
+                }
+                if (isSmsEnabled) {
+                    PickerRow(
+                        icon = Icons.Rounded.Sms,
+                        label = stringResource(R.string.inbox_new_sms),
+                        onClick = onNewSms,
+                    )
                 }
                 sections.forEach { section ->
                     val name = stringResource(section.text.sectionTitle)

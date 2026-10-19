@@ -73,6 +73,8 @@ import com.android.messaging.ui.conversationlist.common.support.previewConversat
 import com.android.messaging.ui.conversationlist.model.ConversationListContentUiState
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
 import com.android.messaging.ui.core.MessagingPreviewTheme
+import com.android.messaging.ui.twill.inbox.rememberStartChatLongClick
+import com.android.messaging.ui.twill.inbox.twillLongPress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -482,6 +484,8 @@ private fun BoxScope.ConversationListFabs(
         visible = hasItems && !isSelectionMode,
         expanded = !uiState.isScrollToTopVisible,
         onClick = { onAction(Action.StartChatClicked) },
+        // Twill: long press chooses the service (SMS/MMS, Nostr, Delta Chat...).
+        onLongClick = rememberStartChatLongClick(),
         modifier = Modifier
             .align(Alignment.BottomEnd)
             .windowInsetsPadding(fabWindowInsets)
@@ -576,6 +580,7 @@ private fun StartChatFab(
     expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     AnimatedVisibility(
         modifier = modifier,
@@ -586,7 +591,12 @@ private fun StartChatFab(
         PrimaryActionButton(
             text = stringResource(R.string.conversation_list_start_chat),
             onClick = onClick,
-            modifier = Modifier.height(height = ComposeBarControlHeight),
+            modifier = Modifier
+                .height(height = ComposeBarControlHeight)
+                .twillLongPress(
+                    label = stringResource(R.string.inbox_start_chat_choose),
+                    onLongClick = onLongClick,
+                ),
             expanded = expanded,
             leadingIcon = Icons.AutoMirrored.Rounded.Chat,
         )
