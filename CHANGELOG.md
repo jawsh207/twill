@@ -10,6 +10,7 @@ section here. Write entries for people using the app, newest version first.
   chat or group".
 - SMS/MMS has a new icon in the same speech-bubble style as Nostr and Delta Chat, in its
   notifications and in the "Start chat" menu.
+- The "Start chat" button uses the same speech-bubble icon, with a plus.
 
 ## 1.0.4
 
