@@ -267,7 +267,10 @@ private fun NewChatPicker(
                     sections.forEach { section ->
                         PickerRow(
                             icon = painterResource(id = section.text.notificationIcon),
-                            label = stringResource(section.text.sectionTitle),
+                            label = stringResource(
+                                R.string.inbox_picker_service,
+                                stringResource(section.text.sectionTitle),
+                            ),
                             onClick = { picked = section },
                         )
                     }

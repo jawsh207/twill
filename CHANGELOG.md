@@ -4,6 +4,11 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.5
+
+- Clearer "Start chat" menu: "SMS/MMS conversation", "Nostr chat or group" and "Delta Chat
+  chat or group".
+
 ## 1.0.4
 
 - The long-press "Start chat" menu lists each service with its icon in the same colour as
