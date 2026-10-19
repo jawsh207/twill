@@ -4,6 +4,11 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.4
+
+- The long-press "Start chat" menu lists each service with its icon in the same colour as
+  SMS/MMS. Picking Nostr or Delta Chat then asks whether to start a chat or a group.
+
 ## 1.0.3
 
 - The long-press "Start chat" menu groups each service's options under its name, with the
