@@ -1123,8 +1123,6 @@
     <string name="twill_choose_sms_app">Turn off and choose SMS app</string>
     <string name="twill_setup_hint">SMS is off in Twill. Set up Nostr or Delta Chat in Settings to start chatting.</string>
     <string name="twill_open_settings">Open Settings</string>
-    <string name="inbox_new_protocol_chat">New %s chat</string>
-    <string name="inbox_new_protocol_group">New %s group</string>
     <string name="inbox_new_sms">New SMS/MMS conversation</string>
     <string name="inbox_start_chat_choose">Choose where to start a chat</string>
 </resources>

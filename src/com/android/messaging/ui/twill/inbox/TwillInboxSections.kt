@@ -1,6 +1,7 @@
 package com.android.messaging.ui.twill.inbox
 
 import android.text.format.DateUtils
+import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -50,11 +51,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.android.messaging.R
 import com.android.messaging.twill.TwillChat
@@ -225,7 +228,7 @@ private fun NewChatPicker(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.inbox_new_chat)) },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 if (sections.isEmpty()) {
                     Text(text = stringResource(R.string.twill_setup_hint))
                 }
@@ -236,17 +239,23 @@ private fun NewChatPicker(
                         onClick = onNewSms,
                     )
                 }
+                // One group per service: its name and notification icon, then chat and group.
                 sections.forEach { section ->
-                    val name = stringResource(section.text.sectionTitle)
+                    PickerHeader(
+                        icon = section.text.notificationIcon,
+                        title = stringResource(section.text.sectionTitle),
+                    )
                     PickerRow(
                         icon = Icons.Rounded.Person,
-                        label = stringResource(R.string.inbox_new_protocol_chat, name),
+                        label = stringResource(R.string.inbox_new_chat),
                         onClick = { onPick(section, false) },
+                        indent = PickerIndent,
                     )
                     PickerRow(
                         icon = Icons.Rounded.Group,
-                        label = stringResource(R.string.inbox_new_protocol_group, name),
+                        label = stringResource(R.string.inbox_new_group),
                         onClick = { onPick(section, true) },
+                        indent = PickerIndent,
                     )
                 }
             }
@@ -266,16 +275,47 @@ private fun NewChatPicker(
     )
 }
 
+/** Lines a service's options up under its name, past the service icon. */
+private val PickerIndent = 40.dp
+
+/** A service's name and notification icon, heading its options in [NewChatPicker]. */
+@Composable
+private fun PickerHeader(
+    @DrawableRes icon: Int,
+    title: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(
+            painter = painterResource(id = icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
 @Composable
 private fun PickerRow(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
+    indent: Dp = 0.dp,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .padding(start = indent)
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
