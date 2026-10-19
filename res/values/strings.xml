@@ -1125,4 +1125,6 @@
     <string name="twill_open_settings">Open Settings</string>
     <string name="inbox_new_protocol_chat">New %s chat</string>
     <string name="inbox_new_protocol_group">New %s group</string>
+    <string name="inbox_new_sms">New SMS/MMS conversation</string>
+    <string name="inbox_start_chat_choose">Choose where to start a chat</string>
 </resources>
