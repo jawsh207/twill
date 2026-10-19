@@ -62,7 +62,7 @@ internal object TwillNotifications {
         ensureChannels(context)
         val names = protocols.joinToString(", ") { context.getString(it.text.sectionTitle) }
         val icon = protocols.singleOrNull()?.text?.notificationIcon
-            ?: R.drawable.ic_sms_light
+            ?: R.drawable.ic_notification_sms
         return Notification.Builder(context, CONNECTION_CHANNEL_ID)
             .setSmallIcon(icon)
             .setContentTitle(context.getString(R.string.twill_connection_title, names))

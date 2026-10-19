@@ -8,6 +8,8 @@ section here. Write entries for people using the app, newest version first.
 
 - Clearer "Start chat" menu: "SMS/MMS conversation", "Nostr chat or group" and "Delta Chat
   chat or group".
+- SMS/MMS has a new icon in the same speech-bubble style as Nostr and Delta Chat, in its
+  notifications and in the "Start chat" menu.
 
 ## 1.0.4
 
