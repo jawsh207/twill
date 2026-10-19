@@ -140,7 +140,7 @@ internal class ScheduledMessageScheduler @Inject constructor(
         )
 
         val notification = android.app.Notification.Builder(context, FAILURE_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_sms_light)
+            .setSmallIcon(R.drawable.ic_notification_sms)
             .setContentTitle(context.getString(R.string.schedule_message_send_failed))
             .setContentText(message.messageText)
             .setStyle(android.app.Notification.BigTextStyle().bigText(message.messageText))

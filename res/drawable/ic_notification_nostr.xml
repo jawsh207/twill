@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Twill: small notification icon for Nostr messages: a speech bubble with an ostrich
-     (the Nostr mascot animal) cut out of it. Original artwork. SMS notifications keep
-     ic_sms_light. -->
+     (the Nostr mascot animal) cut out of it. Original artwork. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

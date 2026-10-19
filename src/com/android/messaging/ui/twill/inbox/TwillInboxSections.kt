@@ -23,7 +23,6 @@ import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PushPin
-import androidx.compose.material.icons.rounded.Sms
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -258,7 +257,7 @@ private fun NewChatPicker(
                     }
                     if (isSmsEnabled) {
                         PickerRow(
-                            icon = rememberVectorPainter(Icons.Rounded.Sms),
+                            icon = painterResource(id = R.drawable.ic_notification_sms),
                             label = stringResource(R.string.inbox_new_sms),
                             onClick = onNewSms,
                         )

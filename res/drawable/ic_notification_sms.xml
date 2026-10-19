@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill: small notification icon for SMS/MMS: the same speech bubble as
+     ic_notification_nostr and ic_notification_deltachat, with three dots cut out of it.
+     Original artwork. Used for SMS/MMS notifications and the new-chat menu. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M6,2 H18 C20.2,2 22,3.8 22,6 V13.5 C22,15.7 20.2,17.5 18,17.5 H10 L5.6,21.4 C5.3,21.7 4.8,21.5 4.8,21.1 V17.3 C3.1,16.9 2,15.4 2,13.5 V6 C2,3.8 3.8,2 6,2 Z M6.1,9.75 A1.5,1.5 0 1,0 9.1,9.75 A1.5,1.5 0 1,0 6.1,9.75 Z M10.5,9.75 A1.5,1.5 0 1,0 13.5,9.75 A1.5,1.5 0 1,0 10.5,9.75 Z M14.9,9.75 A1.5,1.5 0 1,0 17.9,9.75 A1.5,1.5 0 1,0 14.9,9.75 Z" />
+</vector>
