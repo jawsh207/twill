@@ -11,6 +11,7 @@ import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocols
 import com.android.messaging.twill.TwillRuntime
+import com.android.messaging.twill.TwillSearchHit
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -96,6 +97,17 @@ internal class TwillChatViewModel @Inject constructor(
     /** Shows older messages, if the current page is full (so there may be more). */
     fun loadOlder() {
         if (messages.value.size >= limit.value) limit.value += PAGE_SIZE
+    }
+
+    /** Messages of this chat containing [query], newest first. */
+    suspend fun search(query: String): List<TwillSearchHit> {
+        val current = target.value ?: return emptyList()
+        return current.protocol.searchMessages(current.chatId, query)
+    }
+
+    /** Loads at least the [count] newest messages (to show a search match). */
+    fun ensureLoaded(count: Int) {
+        if (count > limit.value) limit.value = count + PAGE_SIZE / 2
     }
 
     fun markRead() = withTarget { protocol, chatId -> protocol.markRead(chatId) }

@@ -6,6 +6,8 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import androidx.compose.runtime.Immutable
+import com.android.messaging.twill.TwillSearchHit
+import com.android.messaging.twill.escapeLike
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -16,6 +18,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /** An encrypted file sent with NIP-17 (kind 15). */
 @Immutable
@@ -426,6 +429,33 @@ internal class NostrMessageStore @Inject constructor(
         }
     }
 
+    /**
+     * Messages of [chatKey] whose text contains [query] (ignoring ASCII case), newest first, each
+     * with how many of the chat's newest messages must be loaded to include it.
+     */
+    suspend fun search(chatKey: String, query: String): List<TwillSearchHit> =
+        withContext(Dispatchers.IO) {
+            helper.readableDatabase.rawQuery(
+                """
+                SELECT m.id,
+                    (SELECT COUNT(*) FROM messages n WHERE n.peer = m.peer AND
+                        (n.created_at > m.created_at OR
+                            (n.created_at = m.created_at AND n.rowid >= m.rowid)))
+                FROM messages m
+                WHERE m.peer = ? AND m.content LIKE ? ESCAPE '\'
+                ORDER BY m.created_at DESC, m.rowid DESC
+                LIMIT $MAX_SEARCH_HITS
+                """.trimIndent(),
+                arrayOf(chatKey, "%" + escapeLike(query) + "%"),
+            ).use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) {
+                        add(TwillSearchHit(cursor.getString(0), cursor.getInt(1)))
+                    }
+                }
+            }
+        }
+
     private fun queryMessages(chatKey: String, limit: Int): List<NostrMessage> {
         return helper.readableDatabase.rawQuery(
             "SELECT * FROM messages WHERE peer = ? ORDER BY created_at DESC, rowid DESC LIMIT ?",
@@ -589,6 +619,7 @@ internal class NostrMessageStore @Inject constructor(
     private companion object {
         const val DATABASE_NAME = "nostr.db"
         const val DATABASE_VERSION = 2
+        const val MAX_SEARCH_HITS = 500
         const val KIND_TEXT = 14
         const val KIND_FILE = 15
     }

@@ -24,6 +24,7 @@ import com.android.messaging.data.conversation.model.ConversationId
 import com.android.messaging.data.conversation.model.MessageId
 import com.android.messaging.data.conversation.model.ParticipantId
 import com.android.messaging.data.conversation.model.draft.ConversationDraft
+import com.android.messaging.twill.SmsMessageSearch
 import com.android.messaging.ui.common.components.snackbar.MessagingSnackbarHost
 import com.android.messaging.ui.contact.model.AddContactRequest
 import com.android.messaging.ui.conversation.composer.ui.ConversationComposerSection
@@ -44,6 +45,10 @@ import com.android.messaging.ui.conversation.scheduled.rememberScheduledMessages
 import com.android.messaging.ui.conversation.screen.model.ConversationPendingLaunchPayload
 import com.android.messaging.ui.conversation.screen.model.ConversationScreenScaffoldUiState
 import com.android.messaging.ui.photoviewer.model.PhotoViewerLaunchRequest
+import com.android.messaging.ui.twill.search.LocalTwillSearch
+import com.android.messaging.ui.twill.search.TwillSearchAction
+import com.android.messaging.ui.twill.search.TwillSearchTopBar
+import com.android.messaging.ui.twill.search.rememberTwillConversationSearch
 import com.android.messaging.util.UiUtils
 
 @Composable
@@ -222,9 +227,14 @@ internal fun ConversationScreenScaffold(
         else -> emptyList()
     }
     val scheduledCount = scheduledHere.size
+    // Twill: search this conversation (real app route only, like scheduling).
+    val search = rememberTwillConversationSearch(key = conversationId) { query ->
+        conversationId?.let { SmsMessageSearch.search(it.value, query) }.orEmpty()
+    }
     val topBarExtraActions: (@Composable () -> Unit)? =
         if (scheduledMessagesController != null) {
             {
+                TwillSearchAction(onClick = search::open)
                 ScheduledMessagesTopBarAction(
                     count = scheduledCount,
                     onClick = { isScheduledListVisible = true },
@@ -238,19 +248,24 @@ internal fun ConversationScreenScaffold(
         LocalSendLongPressActions provides sendLongPressActions,
         LocalDelayedSendUi provides delayedSendUi,
         LocalConversationTopBarExtraActions provides topBarExtraActions,
+        LocalTwillSearch provides search.takeIf { it.isActive },
     ) {
         Scaffold(
             modifier = modifier,
             snackbarHost = { MessagingSnackbarHost(hostState = snackbarHostState) },
             topBar = {
-                ConversationScreenTopBar(
-                    uiState = uiState,
-                    onAddPeopleClick = onAddPeopleClick,
-                    onConversationDetailsClick = onConversationDetailsClick,
-                    onNavigateBack = onNavigateBack,
-                    onSimSelectorClick = showSimSelectorSheet,
-                    screenModel = screenModel,
-                )
+                if (search.isActive && !uiState.selection.isSelectionMode) {
+                    TwillSearchTopBar(search = search)
+                } else {
+                    ConversationScreenTopBar(
+                        uiState = uiState,
+                        onAddPeopleClick = onAddPeopleClick,
+                        onConversationDetailsClick = onConversationDetailsClick,
+                        onNavigateBack = onNavigateBack,
+                        onSimSelectorClick = showSimSelectorSheet,
+                        screenModel = screenModel,
+                    )
+                }
             },
             bottomBar = {
                 ConversationScreenBottomBar(

@@ -17,6 +17,7 @@ import com.android.messaging.twill.TwillMessage
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.twill.TwillSearchHit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -90,6 +91,9 @@ internal class NostrProtocol @Inject constructor(
 
     override fun messages(chatId: String, limit: Int): Flow<List<TwillMessage>> =
         store.messages(chatId, limit).map { list -> list.map { it.toTwill() } }
+
+    override suspend fun searchMessages(chatId: String, query: String): List<TwillSearchHit> =
+        store.search(chatId, query)
 
     override fun details(chatId: String): Flow<TwillChatDetails> {
         val members = NostrChatKey.members(chatId)

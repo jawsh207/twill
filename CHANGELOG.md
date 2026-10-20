@@ -6,6 +6,9 @@ section here. Write entries for people using the app, newest version first.
 
 ## 1.0.6
 
+- Search inside a conversation: tap the search button at the top of any SMS/MMS, Nostr or
+  Delta Chat conversation. Matches are highlighted, and the arrows step through older and
+  newer ones, loading earlier messages as needed.
 - New app icon: the same two overlapping speech bubbles, now in the bubble shape used by
   Twill's notification icons.
 

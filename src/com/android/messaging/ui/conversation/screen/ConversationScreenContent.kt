@@ -48,6 +48,7 @@ import com.android.messaging.ui.conversation.metadata.model.ConversationMetadata
 import com.android.messaging.ui.conversation.screen.model.ConversationMessageAction
 import com.android.messaging.ui.conversation.screen.model.ConversationScreenScaffoldUiState
 import com.android.messaging.ui.subscription.mapper.resolveDisplayName
+import com.android.messaging.ui.twill.search.TwillSearchScrollEffect
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.filter
 
@@ -243,6 +244,14 @@ private fun ConversationScreenPresentContent(
         conversationId = conversationId,
         listState = messagesListState,
         onLoadOlderMessages = onLoadOlderMessages,
+    )
+
+    // Twill: scroll to the current search match, loading older messages until it's there.
+    TwillSearchScrollEffect(
+        messageIds = messagesState.messages.map { it.messageId.value },
+        listState = messagesListState,
+        onLoadOlder = { onLoadOlderMessages() },
+        indexOffset = if (currentSendSimDisplayName.isNullOrBlank()) 0 else 1,
     )
 
     CompositionLocalProvider(

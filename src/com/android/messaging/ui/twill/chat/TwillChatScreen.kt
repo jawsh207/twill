@@ -60,6 +60,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -95,6 +96,12 @@ import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
 import com.android.messaging.ui.nostr.NostrForegroundHost
 import com.android.messaging.ui.twill.TwillAvatarImage
+import com.android.messaging.ui.twill.search.LocalTwillSearch
+import com.android.messaging.ui.twill.search.TwillSearchAction
+import com.android.messaging.ui.twill.search.TwillSearchScrollEffect
+import com.android.messaging.ui.twill.search.TwillSearchTopBar
+import com.android.messaging.ui.twill.search.rememberTwillConversationSearch
+import com.android.messaging.ui.twill.search.withTwillSearchHighlight
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,6 +123,9 @@ internal fun TwillChatScreen(
     var viewerPath by remember { mutableStateOf<String?>(null) }
     var pendingSave by remember { mutableStateOf<TwillMessage?>(null) }
     val listState = rememberLazyListState()
+    val search = rememberTwillConversationSearch(key = protocol to chatId) { query ->
+        viewModel.search(query)
+    }
 
     if (protocol == TwillProtocolId.Nostr) NostrForegroundHost()
 
@@ -174,132 +184,150 @@ internal fun TwillChatScreen(
     val title = info?.title.orEmpty()
     val isGroup = info?.isGroup == true
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(R.string.back),
-                        )
-                    }
-                },
-                title = {
-                    if (info != null) {
-                        ChatTitle(
-                            details = info,
-                            protocol = protocol,
-                            onClick = { isInfoDialogVisible = true },
-                        )
-                    }
-                },
-            )
-        },
-        bottomBar = {
-            when {
-                info?.isRequest == true -> RequestBar(
-                    onAccept = viewModel::accept,
-                    onBlock = {
-                        viewModel.block()
-                        onNavigateBack()
-                    },
-                )
-
-                else -> Composer(
-                    text = draft,
-                    enabled = info?.canSend == true,
-                    hint = protocolText.composerHint,
-                    disabledHint = protocolText.composerSignedOut,
-                    onTextChange = { draft = it },
-                    onSend = {
-                        viewModel.send(draft)
-                        draft = ""
-                    },
-                    onPickPhoto = {
-                        pickPhoto.launch(
-                            PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
-                            ),
-                        )
-                    },
-                    onPickFile = { pickFile.launch(arrayOf("*/*")) },
-                )
-            }
-        },
-    ) { contentPadding ->
-        if (messages.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding)
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(
-                        when {
-                            info?.isEncrypted == false -> protocolText.emptyChatUnencrypted
-                            else -> protocolText.emptyChat
+    CompositionLocalProvider(LocalTwillSearch provides search.takeIf { it.isActive }) {
+        Scaffold(
+            modifier = modifier,
+            topBar = {
+                if (search.isActive) {
+                    TwillSearchTopBar(search = search)
+                } else {
+                    TopAppBar(
+                        navigationIcon = {
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                                    contentDescription = stringResource(R.string.back),
+                                )
+                            }
                         },
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            val ordered = messages.asReversed()
-            val members = info?.members.orEmpty()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = listState,
-                reverseLayout = true,
-                contentPadding = PaddingValues(
-                    start = 12.dp,
-                    end = 12.dp,
-                    top = contentPadding.calculateTopPadding() + 8.dp,
-                    bottom = contentPadding.calculateBottomPadding() + 8.dp,
-                ),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                items(items = ordered.indices.toList(), key = { ordered[it].id }) { index ->
-                    val message = ordered[index]
-                    if (message.isInfo) {
-                        InfoMessage(message.text)
-                        return@items
-                    }
-                    // Reverse layout: the next item in the list is the earlier message.
-                    val earlier = ordered.getOrNull(index + 1)
-                    val showSender = isGroup &&
-                        !message.isOutgoing &&
-                        (earlier == null || earlier.isInfo || earlier.senderId != message.senderId)
-                    val sender = members[message.senderId]
-                    MessageBubble(
-                        message = message,
-                        protocol = protocol,
-                        sender = if (showSender) {
-                            sender ?: TwillMember(
-                                message.senderId,
-                                "?",
-                                null
-                            )
-                        } else {
-                            null
+                        title = {
+                            if (info != null) {
+                                ChatTitle(
+                                    details = info,
+                                    protocol = protocol,
+                                    onClick = { isInfoDialogVisible = true },
+                                )
+                            }
                         },
-                        isDownloading = message.id in downloading,
-                        onRetry = { viewModel.retry(message) },
-                        onDownload = { viewModel.download(message) },
-                        onOpenImage = { path -> viewerPath = path },
-                        onSaveFile = {
-                            pendingSave = message
-                            val attachment = message.attachment
-                            saveFile.launch(
-                                attachment?.fileName
-                                    ?: ("file." + extensionOf(attachment?.mimeType)),
-                            )
+                        actions = {
+                            if (messages.isNotEmpty()) TwillSearchAction(onClick = search::open)
                         },
                     )
+                }
+            },
+            bottomBar = {
+                when {
+                    info?.isRequest == true -> RequestBar(
+                        onAccept = viewModel::accept,
+                        onBlock = {
+                            viewModel.block()
+                            onNavigateBack()
+                        },
+                    )
+
+                    else -> Composer(
+                        text = draft,
+                        enabled = info?.canSend == true,
+                        hint = protocolText.composerHint,
+                        disabledHint = protocolText.composerSignedOut,
+                        onTextChange = { draft = it },
+                        onSend = {
+                            viewModel.send(draft)
+                            draft = ""
+                        },
+                        onPickPhoto = {
+                            pickPhoto.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                ),
+                            )
+                        },
+                        onPickFile = { pickFile.launch(arrayOf("*/*")) },
+                    )
+                }
+            },
+        ) { contentPadding ->
+            if (messages.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding)
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(
+                            when {
+                                info?.isEncrypted == false -> protocolText.emptyChatUnencrypted
+                                else -> protocolText.emptyChat
+                            },
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                val ordered = messages.asReversed()
+                val members = info?.members.orEmpty()
+                TwillSearchScrollEffect(
+                    messageIds = messages.map { it.id },
+                    listState = listState,
+                    onLoadOlder = viewModel::ensureLoaded,
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    reverseLayout = true,
+                    contentPadding = PaddingValues(
+                        start = 12.dp,
+                        end = 12.dp,
+                        top = contentPadding.calculateTopPadding() + 8.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 8.dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(items = ordered.indices.toList(), key = { ordered[it].id }) { index ->
+                        val message = ordered[index]
+                        if (message.isInfo) {
+                            InfoMessage(message.text)
+                            return@items
+                        }
+                        // Reverse layout: the next item in the list is the earlier message.
+                        val earlier = ordered.getOrNull(index + 1)
+                        val showSender = isGroup &&
+                            !message.isOutgoing &&
+                            (
+                                earlier == null ||
+                                    earlier.isInfo ||
+                                    earlier.senderId != message.senderId
+                                )
+                        val sender = members[message.senderId]
+                        MessageBubble(
+                            message = message,
+                            protocol = protocol,
+                            sender = if (showSender) {
+                                sender ?: TwillMember(
+                                    message.senderId,
+                                    "?",
+                                    null
+                                )
+                            } else {
+                                null
+                            },
+                            isDownloading = message.id in downloading,
+                            onRetry = { viewModel.retry(message) },
+                            onDownload = { viewModel.download(message) },
+                            onOpenImage = { path -> viewerPath = path },
+                            onSaveFile = {
+                                pendingSave = message
+                                val attachment = message.attachment
+                                saveFile.launch(
+                                    attachment?.fileName
+                                        ?: ("file." + extensionOf(attachment?.mimeType)),
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -473,7 +501,7 @@ private fun MessageBubble(
                     if (message.text.isNotEmpty()) {
                         Text(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            text = message.text,
+                            text = message.text.withTwillSearchHighlight(),
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
