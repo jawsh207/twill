@@ -48,6 +48,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.android.messaging.ui.conversation.messages.model.text.ConversationTextLink
 import com.android.messaging.ui.core.MessagingPreviewColumn
+import com.android.messaging.ui.twill.search.withTwillSearchHighlight
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -167,7 +168,8 @@ private fun ConversationMessageTextContent(
     }
 
     Text(
-        text = text,
+        // Twill: highlight the conversation search query.
+        text = text.withTwillSearchHighlight(),
         style = style,
         modifier = modifier.then(other = textLongPressModifier),
         onTextLayout = { result ->

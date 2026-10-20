@@ -134,6 +134,15 @@ internal data class TwillChatDetails(
 /** Problems worth a toast. */
 internal enum class TwillError { UploadFailed, FileTooLarge, DownloadFailed, SendFailed }
 
+/**
+ * A message matching a search in one conversation. [rank] is how many of the conversation's
+ * newest messages must be loaded for it to be among them (1 = the newest message).
+ */
+internal data class TwillSearchHit(
+    val messageId: String,
+    val rank: Int,
+)
+
 /** Strings and options that differ between protocols in shared screens. */
 @Immutable
 internal data class TwillProtocolText(
@@ -190,6 +199,9 @@ internal interface TwillProtocol {
      * re-read what changed: open chats stay subscribed while new messages arrive.
      */
     fun messages(chatId: String, limit: Int): Flow<List<TwillMessage>>
+
+    /** Messages of [chatId] whose text contains [query], newest first. */
+    suspend fun searchMessages(chatId: String, query: String): List<TwillSearchHit>
 
     fun details(chatId: String): Flow<TwillChatDetails>
 

@@ -1124,6 +1124,13 @@
     <string name="twill_setup_hint">SMS is off in Twill. Set up Nostr or Delta Chat in Settings to start chatting.</string>
     <string name="twill_open_settings">Open Settings</string>
     <string name="inbox_new_sms">SMS/MMS conversation</string>
+    <string name="twill_search">Search</string>
+    <string name="twill_search_hint">Search this conversation</string>
+    <string name="twill_search_close">Close search</string>
+    <string name="twill_search_count">%1$d of %2$d</string>
+    <string name="twill_search_no_results">No results</string>
+    <string name="twill_search_older">Older match</string>
+    <string name="twill_search_newer">Newer match</string>
     <string name="inbox_picker_service">%s chat or group</string>
     <string name="inbox_start_chat_choose">Choose where to start a chat</string>
 </resources>

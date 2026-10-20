@@ -22,6 +22,7 @@ import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.twill.TwillSearchHit
 import com.android.messaging.util.LogUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -347,6 +348,26 @@ internal class DeltaChatProtocol @Inject constructor(
             .map { loadMessages(id, limit) }
             .flowOn(Dispatchers.IO)
     }
+
+    /** The core's own chat search; ranks come from the chat's message order (newest last). */
+    override suspend fun searchMessages(chatId: String, query: String): List<TwillSearchHit> =
+        withContext(Dispatchers.IO) {
+            try {
+                val account = account()
+                val chat = chatId.toInt()
+                val found = rpc.callArray("search_messages", account, query, chat).ints().toSet()
+                if (found.isEmpty()) return@withContext emptyList()
+                val ids = rpc.callArray("get_message_ids", account, chat, false, false).ints()
+                ids.withIndex()
+                    .filter { it.value in found }
+                    .asReversed()
+                    .map { TwillSearchHit(it.value.toString(), ids.size - it.index) }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                emptyList()
+            }
+        }
 
     /** The last [limit] messages; only messages missing from the cache are fetched. */
     private suspend fun loadMessages(chatId: Int, limit: Int): List<TwillMessage> = try {
