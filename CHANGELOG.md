@@ -4,6 +4,11 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.6
+
+- New app icon: the same two overlapping speech bubbles, now in the bubble shape used by
+  Twill's notification icons.
+
 ## 1.0.5
 
 - Clearer "Start chat" menu: "SMS/MMS conversation", "Nostr chat or group" and "Delta Chat
