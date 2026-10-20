@@ -1,17 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill launcher icon (monochrome, for themed icons): two overlapping speech bubbles in the same shape as the
+     notification icons (ic_notification_*). The back bubble is mirrored; the clip path (a
+     counter-clockwise square plus the front bubble grown by the gap, clockwise) leaves a gap
+     around the front bubble, so the themed icon gets a real cut-out too. Original artwork. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="18"
-    android:viewportHeight="16">
-  <group android:scaleX="0.37"
-      android:scaleY="0.3288889"
-      android:translateX="5.67"
-      android:translateY="5.368889">
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group>
+        <clip-path android:pathData="M0,0 V108 H108 V0 Z M38.06,33.64L58.94,33.64C62.77,33.64 65.9,36.77 65.9,40.6L65.9,53.65C65.9,57.48 62.77,60.61 58.94,60.61L45.02,60.61L37.36,67.4C36.84,67.92 35.97,67.57 35.97,66.87L35.97,60.26C33.01,59.57 31.1,56.96 31.1,53.65L31.1,40.6C31.1,36.77 34.23,33.64 38.06,33.64Z" />
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M69.8,46.5L54.2,46.5C51.34,46.5 49,48.84 49,51.7L49,61.45C49,64.31 51.34,66.65 54.2,66.65L64.6,66.65L70.32,71.72C70.71,72.11 71.36,71.85 71.36,71.33L71.36,66.39C73.57,65.87 75,63.92 75,61.45L75,51.7C75,48.84 72.66,46.5 69.8,46.5Z" />
+    </group>
     <path
-        android:pathData="M14.771,6.564C16.69,7.399 18,9.071 18,11C18,11.945 17.685,12.829 17.139,13.583L17.621,15.326C17.68,15.54 17.494,15.742 17.275,15.7L15.1,15.281C14.195,15.737 13.134,16 12,16C9.437,16 7.252,14.66 6.392,12.776C6.593,12.79 6.795,12.8 7,12.8C10.981,12.8 14.439,10.149 14.771,6.564Z"
-        android:fillColor="#000000"/>
-    <path
-        android:pathData="M7,0C10.866,0 14,2.686 14,6C14,9.314 10.866,12 7,12C5.693,12 4.47,11.692 3.423,11.157L0.724,11.692C0.506,11.736 0.317,11.534 0.375,11.319L0.982,9.064C0.359,8.167 0,7.12 0,6C0,2.686 3.134,0 7,0Z"
-        android:fillColor="#000000"/>
-  </group>
+        android:fillColor="#FF000000"
+        android:pathData="M39.5,35.5L57.5,35.5C60.8,35.5 63.5,38.2 63.5,41.5L63.5,52.75C63.5,56.05 60.8,58.75 57.5,58.75L45.5,58.75L38.9,64.6C38.45,65.05 37.7,64.75 37.7,64.15L37.7,58.45C35.15,57.85 33.5,55.6 33.5,52.75L33.5,41.5C33.5,38.2 36.2,35.5 39.5,35.5Z" />
 </vector>
