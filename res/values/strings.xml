@@ -19,7 +19,7 @@
     <string name="app_name">Twill</string>
 
     <!-- The name of the application as it appears in external share intent dialogs -->
-    <string name="share_intent_label">Messaging</string>
+    <string name="share_intent_label">Twill</string>
     <!-- The title when selecting a conversation to share to -->
     <string name="share_intent_activity_label">Select conversation</string>
     <!-- Shown when a tapped contact cannot be resolved to a conversation -->
@@ -36,7 +36,7 @@
     <string name="sms_warning_title">SMS isn\'t private</string>
     <string name="sms_warning_description">Text messages aren\'t encrypted. Use an app with end-to-end encryption for anything sensitive.</string>
     <!-- Inform user of the names of permissions that are required to use the app -->
-    <string name="required_permissions_promo">Messaging needs permission to SMS, Phone and Contacts.</string>
+    <string name="required_permissions_promo">Twill needs permission to SMS, Phone and Contacts.</string>
     <!-- Guidance shown when the app is not the default SMS app and the role request was permanently dismissed -->
     <string name="set_default_sms_app_procedure">Set <xliff:g id="app_name" example="Messaging">%1$s</xliff:g> as your default SMS app in Settings > Apps > <xliff:g id="app_name" example="Messaging">%1$s</xliff:g> > SMS app.</string>
     <string name="set_default_sms_app_procedure_description">Set <xliff:g id="app_name" example="Messaging">%1$s</xliff:g> as your default SMS app in Settings, Apps, <xliff:g id="app_name" example="Messaging">%1$s</xliff:g>, SMS app.</string>
@@ -97,7 +97,7 @@
     <!-- Title for SMS storage low notification and dialog. Must match the framework's notification title, i.e. //frameworks/base/core/res/res/values/strings.xml#low_internal_storage_view_title -->
     <string name="sms_storage_low_title">Storage space running out</string>
     <!-- Text for SMS storage low notification and dialog -->
-    <string name="sms_storage_low_text">Messaging might not send or receive messages until more space is available on your device.</string>
+    <string name="sms_storage_low_text">Twill might not send or receive messages until more space is available on your device.</string>
     <!-- Ticker for SMS storage low notification -->
     <string name="sms_storage_low_notification_ticker">Low SMS storage. You may need to delete messages.</string>
 
@@ -151,7 +151,7 @@
     <!-- notification line 1 for "there are some failed messages" -->
     <string name="notification_send_failures_line1_singular">Message not sent</string>
     <!-- notification line 1 for "there are some failed messages" -->
-    <string name="notification_send_failures_line1_plural">Some messages not sent in Messaging</string>
+    <string name="notification_send_failures_line1_plural">Some messages not sent in Twill</string>
     <plurals name="notification_send_failures">
         <item quantity="one"><xliff:g id="messages">%d</xliff:g> messages in one conversation</item>
         <item quantity="other"><xliff:g id="messages">%d</xliff:g> messages in <xliff:g id="conversations">%d</xliff:g> conversations</item>
@@ -159,7 +159,7 @@
     <!-- notification line 1 for download failed -->
     <string name="notification_download_failures_line1_singular">Message not downloaded</string>
     <!-- notification line 1 for multiple downloads failed -->
-    <string name="notification_download_failures_line1_plural">Some messages not downloaded in Messaging</string>
+    <string name="notification_download_failures_line1_plural">Some messages not downloaded in Twill</string>
     <plurals name="notification_download_failures">
         <item quantity="one"><xliff:g id="messages">%d</xliff:g> messages in one conversation</item>
         <item quantity="other"><xliff:g id="messages">%d</xliff:g> messages in <xliff:g id="conversations">%d</xliff:g> conversations</item>
@@ -279,7 +279,7 @@
     <string name="unarchived_toast_message"><xliff:g id="count">%d</xliff:g> unarchived</string>
 
     <!-- Toast shown when the user successfully sets Bugle as the default SMS app. -->
-    <string name="toast_after_setting_default_sms_app">Messaging successfully set as the default SMS app.</string>
+    <string name="toast_after_setting_default_sms_app">Twill successfully set as the default SMS app.</string>
 
     <!-- Accessibility : Content descriptinon for ImageButtons and ImageViews -->
     <plurals name="attachment_preview_close_content_description">
@@ -314,7 +314,7 @@
 
     <string name="camera_switch_camera_facing">Switch between front and back camera</string>
 
-    <string name="photo_view_activity_title">Messaging photos</string>
+    <string name="photo_view_activity_title">Twill photos</string>
     <string name="photo_viewer_image_content_description">Image attachment</string>
     <string name="photo_viewer_load_error">Couldn\'t load image</string>
     <string name="photo_viewer_empty">No images</string>
@@ -533,10 +533,10 @@
 
     <!-- Snackbar message that indicates users must set Messaging as their
          default SMS application in order to send messages -->
-    <string name="requires_default_sms_app_to_send">To send, set Messaging as the default SMS app</string>
+    <string name="requires_default_sms_app_to_send">To send, set Twill as the default SMS app</string>
 
     <!-- Snackbar message that indicates users must set Messaging as their default SMS application in order to perform the requested action. -->
-    <string name="requires_default_sms_app">Set Messaging as the default SMS app</string>
+    <string name="requires_default_sms_app">Set Twill as the default SMS app</string>
 
     <!-- Snackbar button text to switch default SMS apps shown in snackbar. -->
     <string name="requires_default_sms_change_button">Change</string>
@@ -848,9 +848,9 @@
     <!-- Content description for new conversation button in desktop widget -->
     <string name="widget_new_conversation_content_description">Start new conversation</string>
     <!-- Content description for widget title -->
-    <string name="widget_title_content_description">Messaging</string>
+    <string name="widget_title_content_description">Twill</string>
     <!-- Displayed name of the desktop widget that shows a single conversation-->
-    <string name="widget_conversation_name">Messaging</string>
+    <string name="widget_conversation_name">Twill</string>
     <!-- Content description for conversation list button in desktop widget -->
     <string name="widget_conversation_list_content_description">Conversation list</string>
     <!-- Text shown when no contacts are available while picking a conversation for the widget -->
@@ -875,7 +875,7 @@
     </plurals>
     <!-- Displayed when user adds a new conversation widget. Tapping on the widget in this
           mode will bring user to the conversation selection screen -->
-    <string name="tap_to_configure">Conversation deleted. Tap to show a different Messaging conversation</string>
+    <string name="tap_to_configure">Conversation deleted. Tap to show a different Twill conversation</string>
 
     <!-- Toast message telling the user that someone was blocked -->
     <string name="update_destination_blocked">Blocked</string>

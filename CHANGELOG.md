@@ -7,6 +7,8 @@ section here. Write entries for people using the app, newest version first.
 ## 1.0.7
 
 - The app icon's background is now blue instead of green.
+- Setup and the rest of the app call the app "Twill" instead of "Messaging" (permissions
+  screen, share sheet, widgets, notifications and default-SMS-app prompts).
 
 ## 1.0.6
 
