@@ -382,6 +382,10 @@
         <receiver android:name=".receiver.ConversationReadReceiver"
             android:exported="false" />
 
+        <!-- Twill: "Delete" on SMS/MMS message notifications -->
+        <receiver android:name=".twill.TwillSmsNotificationDeleteReceiver"
+            android:exported="false" />
+
         <!-- Broadcast receiver that will be notified for ActionService alarms. -->
         <receiver
             android:name=".datamodel.action.ActionServiceImpl$PendingActionReceiver"

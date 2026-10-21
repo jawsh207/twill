@@ -55,6 +55,7 @@ import com.android.messaging.datamodel.media.MediaResourceManager;
 import com.android.messaging.datamodel.media.UriImageRequestDescriptor;
 import com.android.messaging.sms.MmsSmsUtils;
 import com.android.messaging.sms.MmsUtils;
+import com.android.messaging.twill.TwillSmsNotificationDelete;
 import com.android.messaging.ui.UIIntents;
 import com.android.messaging.util.Assert;
 import com.android.messaging.util.AvatarUriUtil;
@@ -574,6 +575,20 @@ public class BugleNotifications {
                             downloadPendingIntent);
             final NotificationCompat.Action downloadAction = actionBuilder.build();
             notifBuilder.addAction(downloadAction);
+        }
+
+        // Twill: "Delete" deletes the messages this notification shows. Android shows three
+        // actions, so it gives way to "Download" when an MMS needs downloading.
+        final List<String> notifiedMessageIds = new ArrayList<>();
+        for (final MessageNotificationState.MessageLineInfo line : conversation.mLineInfos) {
+            if (line.mMessageId != null) {
+                notifiedMessageIds.add(line.mMessageId);
+            }
+        }
+        final NotificationCompat.Action deleteAction = TwillSmsNotificationDelete.action(
+                context, conversationId, notifiedMessageIds);
+        if (deleteAction != null) {
+            notifBuilder.addAction(deleteAction);
         }
 
         notifBuilder
