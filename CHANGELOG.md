@@ -4,6 +4,10 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.7
+
+- The app icon's background is now blue instead of green.
+
 ## 1.0.6
 
 - Search inside a conversation: tap the search button at the top of any SMS/MMS, Nostr or
