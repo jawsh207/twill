@@ -9,6 +9,9 @@ section here. Write entries for people using the app, newest version first.
 - The app icon's background is now blue instead of green.
 - Setup and the rest of the app call the app "Twill" instead of "Messaging" (permissions
   screen, share sheet, widgets, notifications and default-SMS-app prompts).
+- SMS/MMS notifications have a "Delete" button next to "Mark as read" and "Reply". It deletes
+  the messages shown in the notification. (When an MMS needs downloading, "Download" takes its
+  place, since Android shows at most three buttons.)
 
 ## 1.0.6
 
