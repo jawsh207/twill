@@ -4,6 +4,15 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.8
+
+- New look that follows your system colours exactly like Settings: grey with "Other colors",
+  tinted with "Wallpaper colors", light and dark. Pages use the same background as Settings,
+  and rows, cards, incoming bubbles, menus and dialogs the same lighter surface; your accent
+  colour is only used for highlights such as buttons, switches and your own bubbles.
+- Material 3 Expressive motion.
+- Settings screens group their options into rounded cards, like Android's Settings app.
+
 ## 1.0.7
 
 - The app icon's background is now blue instead of green.

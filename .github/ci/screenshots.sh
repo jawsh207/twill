@@ -84,7 +84,7 @@ for style in MONOCHROMATIC TONAL_SPOT; do
         back
         back
 
-        $UI tapcontains "dessert"
+        $UI tap "555-1234"
         shot "$tag-07-conversation"
         adb shell am force-stop "$PKG"
     done
