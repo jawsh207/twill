@@ -402,10 +402,10 @@
             </intent-filter>
         </receiver>
 
-        <!-- Widget that displays the conversation list -->
+        <!-- Widget that displays the conversation list (Twill: every protocol) -->
         <receiver android:name=".widget.BugleWidgetProvider"
                 android:exported="false"
-                android:label="@string/widget_conversation_name">
+                android:label="@string/twill_widget_list_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -416,21 +416,13 @@
         <!-- Widget that displays the messages of a single conversation -->
         <receiver android:name=".widget.WidgetConversationProvider"
                 android:exported="false"
-                android:label="@string/widget_conversation_name">
+                android:label="@string/twill_widget_conversation_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data android:name="android.appwidget.provider"
                        android:resource="@xml/widget_conversation" />
         </receiver>
-
-        <service android:name=".widget.WidgetConversationListService"
-                 android:permission="android.permission.BIND_REMOTEVIEWS"
-                 android:exported="false" />
-
-        <service android:name=".widget.WidgetConversationService"
-                 android:permission="android.permission.BIND_REMOTEVIEWS"
-                 android:exported="false" />
 
         <activity android:name=".ui.conversationpicker.host.widget.WidgetPickConversationActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"

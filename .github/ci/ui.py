@@ -3,6 +3,8 @@
 
   ui.py tap <text>           tap the first view whose text or content-desc equals <text>
   ui.py tapcontains <text>   ... contains <text>
+  ui.py longpress <text>     long-press the first view whose text or content-desc equals <text>
+  ui.py dump <file>          save the current view hierarchy (for debugging taps)
   ui.py palette <style>      set the system colour style (MONOCHROMATIC or TONAL_SPOT)
   ui.py report <dir>         sample colours of every PNG in <dir> into <dir>/report.md
 """
@@ -33,14 +35,18 @@ def nodes():
     return list(root.iter("node"))
 
 
-def tap(label, contains=False):
+def tap(label, contains=False, hold_ms=0):
     for _ in range(6):
         for node in nodes():
             for attr in ("text", "content-desc"):
                 value = node.get(attr) or ""
                 if (contains and label in value) or (not contains and value == label):
                     x1, y1, x2, y2 = map(int, re.findall(r"\d+", node.get("bounds")))
-                    adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
+                    x, y = str((x1 + x2) // 2), str((y1 + y2) // 2)
+                    if hold_ms:
+                        adb("shell", "input", "swipe", x, y, x, y, str(hold_ms))
+                    else:
+                        adb("shell", "input", "tap", x, y)
                     print(f"tapped {label!r}")
                     return True
         time.sleep(2)
@@ -103,6 +109,12 @@ if __name__ == "__main__":
         sys.exit(0 if tap(argument) else 1)
     elif command == "tapcontains":
         sys.exit(0 if tap(argument, contains=True) else 1)
+    elif command == "longpress":
+        sys.exit(0 if tap(argument, hold_ms=1500) else 1)
+    elif command == "dump":
+        adb("shell", "uiautomator", "dump", "/sdcard/ui.xml")
+        with open(argument, "w") as out:
+            out.write(adb("shell", "cat", "/sdcard/ui.xml"))
     elif command == "palette":
         palette(argument)
     elif command == "report":

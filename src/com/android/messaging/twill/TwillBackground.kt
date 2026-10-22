@@ -14,6 +14,7 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.util.LogUtil
+import com.android.messaging.widget.TwillWidgets
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -84,6 +85,8 @@ internal class TwillRuntime @Inject constructor(
                 TwillNotifications.ensureChannels(context)
                 sms.sync()
                 protocols.installAll()
+                // Home screen widgets follow the protocols' chats while any are placed.
+                TwillWidgets.watch(context)
                 // Known right away, so the service and job never act on an empty plan.
                 _plan.value = currentPlan()
                 planJob = appScope.launch { planFlow().distinctUntilChanged().collect(::apply) }

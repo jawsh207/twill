@@ -4,6 +4,14 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.9
+
+- New home screen widgets in the same system colours as the app. "Conversations" lists your
+  SMS, Nostr and Delta Chat conversations together, newest first, with a button to start a
+  chat. "Conversation" shows the latest messages of any one conversation (SMS, Nostr or
+  Delta Chat); long-press it to pick a different one. Previews in the widget picker show
+  the real look instead of old screenshots, and the app is slightly smaller.
+
 ## 1.0.8
 
 - New look that follows your system colours exactly like Settings: grey with "Other colors",

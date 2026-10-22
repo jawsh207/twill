@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill: home screen widget colours, the same system roles as the app (see ui/core/Theme.kt):
+     page = surface container, rows and incoming bubbles = surface bright, accent only for
+     highlights. The launcher inflates widgets, so these follow its light/dark setting. -->
+<resources>
+    <color name="twill_widget_page">@android:color/system_surface_container_light</color>
+    <color name="twill_widget_card">@android:color/system_surface_bright_light</color>
+    <color name="twill_widget_on_surface">@android:color/system_on_surface_light</color>
+    <color name="twill_widget_on_surface_variant">@android:color/system_on_surface_variant_light</color>
+    <color name="twill_widget_accent">@android:color/system_primary_light</color>
+    <color name="twill_widget_accent_container">@android:color/system_primary_container_light</color>
+    <color name="twill_widget_on_accent_container">@android:color/system_on_primary_container_light</color>
+    <color name="twill_widget_avatar">@android:color/system_tertiary_container_light</color>
+    <color name="twill_widget_on_avatar">@android:color/system_on_tertiary_container_light</color>
+</resources>

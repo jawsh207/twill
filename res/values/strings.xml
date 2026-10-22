@@ -1133,4 +1133,27 @@
     <string name="twill_search_newer">Newer match</string>
     <string name="inbox_picker_service">%s chat or group</string>
     <string name="inbox_start_chat_choose">Choose where to start a chat</string>
+    <!-- Twill: home screen widgets -->
+    <string name="twill_widget_list_name">Conversations</string>
+    <string name="twill_widget_list_description">Your latest SMS, Nostr and Delta Chat conversations</string>
+    <string name="twill_widget_conversation_name">Conversation</string>
+    <string name="twill_widget_conversation_description">Recent messages from one conversation</string>
+    <string name="twill_widget_empty">No conversations yet</string>
+    <string name="twill_widget_needs_setup">Open Twill to finish setting up</string>
+    <string name="twill_widget_choose">Tap to choose a conversation</string>
+    <string name="twill_widget_no_messages">No messages yet</string>
+    <string name="twill_widget_compose">Send message</string>
+    <string name="twill_widget_pick_title">Choose a conversation</string>
+    <string name="twill_widget_pick_empty">No conversations to show</string>
+    <string name="twill_widget_preview_name_1">Alex</string>
+    <string name="twill_widget_preview_name_2">Sam</string>
+    <string name="twill_widget_preview_name_3">Book club</string>
+    <string name="twill_widget_preview_text_1">See you at 7!</string>
+    <string name="twill_widget_preview_text_2">You: Sounds good</string>
+    <string name="twill_widget_preview_text_3">Jordan: Chapter 4 for next week</string>
+    <string name="twill_widget_preview_time_1">Now</string>
+    <string name="twill_widget_preview_time_2">12 min</string>
+    <string name="twill_widget_preview_time_3">Tue</string>
+    <string name="twill_widget_preview_message_1">Are we still on for tonight?</string>
+    <string name="twill_widget_preview_message_2">Yes! I\'ll bring dessert</string>
 </resources>

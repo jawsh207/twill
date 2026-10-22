@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill widget: touch feedback, on-surface at the usual pressed opacity. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:alpha="0.12" android:color="@color/twill_widget_on_surface" />
+</selector>
