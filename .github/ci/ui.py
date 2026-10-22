@@ -55,8 +55,8 @@ def palette(style):
         value = {
             "android.theme.customization.theme_style": "MONOCHROMATIC",
             "android.theme.customization.color_source": "preset",
-            "android.theme.customization.system_palette": "FF808080",
-            "android.theme.customization.accent_color": "FF808080",
+            "android.theme.customization.system_palette": "808080",
+            "android.theme.customization.accent_color": "808080",
         }
     else:
         value = {

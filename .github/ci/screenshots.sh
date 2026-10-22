@@ -10,10 +10,15 @@ PKG=app.twill.debug
 UI="python3 .github/ci/ui.py"
 mkdir -p "$OUT"
 
-shot() { sleep 2; adb exec-out screencap -p > "$OUT/$1.png"; echo "shot $1"; }
+shot() {
+    sleep 2
+    adb exec-out screencap -p > "$OUT/$1.png"
+    echo "$1: $(adb shell dumpsys activity activities | grep -m1 -o 'topResumedActivity=[^ ]* [^ ]* [^ ]*')" >> "$OUT/log.txt"
+}
 back() { adb shell input keyevent KEYCODE_BACK; sleep 1; }
 
-adb install -r -g "$APK"
+adb logcat -c
+adb install -r -g "$APK" 2>&1 | tee -a "$OUT/log.txt"
 adb shell cmd role add-role-holder android.app.role.SMS "$PKG" 0
 for permission in READ_SMS SEND_SMS RECEIVE_SMS RECEIVE_MMS READ_CONTACTS READ_PHONE_STATE \
     READ_PHONE_NUMBERS POST_NOTIFICATIONS; do
@@ -44,7 +49,7 @@ for style in MONOCHROMATIC TONAL_SPOT; do
         adb shell am force-stop com.android.settings
 
         adb shell am force-stop "$PKG"
-        adb shell am start -n "$PKG/com.android.messaging.ui.MainActivity"
+        adb shell am start -W -n "$PKG/com.android.messaging.ui.MainActivity" >> "$OUT/log.txt" 2>&1
         shot "$tag-01-conversation-list"
 
         $UI tap "More options"
@@ -68,4 +73,7 @@ for style in MONOCHROMATIC TONAL_SPOT; do
     done
 done
 
+adb shell settings get secure theme_customization_overlay_packages >> "$OUT/log.txt"
+adb logcat -d -b crash > "$OUT/crash.txt"
+adb logcat -d | grep -iE "AndroidRuntime|twill|FATAL" | tail -200 > "$OUT/logcat.txt"
 python3 .github/ci/ui.py report "$OUT"
