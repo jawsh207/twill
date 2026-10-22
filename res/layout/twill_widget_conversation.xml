@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill: "Conversation" widget. One conversation's latest messages, with bubbles coloured
+     like the app's (others' surface bright, yours the accent container). -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/twill_widget_background"
+    android:clipToOutline="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/twill_widget_header"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/twill_widget_header_ripple"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <include
+                android:id="@+id/twill_widget_header_avatar"
+                layout="@layout/twill_widget_avatar"
+                android:layout_width="32dp"
+                android:layout_height="32dp" />
+
+            <TextView
+                android:id="@+id/twill_widget_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:fontFamily="sans-serif-medium"
+                android:singleLine="true"
+                android:text="@string/app_name"
+                android:textColor="@color/twill_widget_on_surface"
+                android:textSize="18sp" />
+
+            <ImageView
+                android:id="@+id/twill_widget_protocol"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="8dp"
+                android:importantForAccessibility="no"
+                android:tint="@color/twill_widget_on_surface_variant" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ListView
+                android:id="@+id/twill_widget_list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@android:color/transparent"
+                android:dividerHeight="6dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:scrollbars="none"
+                android:stackFromBottom="true"
+                android:transcriptMode="alwaysScroll" />
+
+            <TextView
+                android:id="@+id/twill_widget_empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:padding="24dp"
+                android:text="@string/twill_widget_no_messages"
+                android:textColor="@color/twill_widget_on_surface_variant"
+                android:textSize="14sp" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/twill_widget_compose"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_margin="8dp"
+            android:background="@drawable/twill_widget_pill"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:singleLine="true"
+            android:text="@string/twill_widget_compose"
+            android:textColor="@color/twill_widget_on_surface_variant"
+            android:textSize="15sp" />
+    </LinearLayout>
+</FrameLayout>

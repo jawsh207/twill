@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill: Your message in the "Conversation" widget. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/twill_widget_message"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="end"
+    android:orientation="vertical"
+    android:paddingStart="40dp"
+    android:paddingEnd="0dp">
+
+    <TextView
+        android:id="@+id/twill_widget_message_sender"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginBottom="2dp"
+        android:singleLine="true"
+        android:textColor="@color/twill_widget_on_surface_variant"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/twill_widget_message_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/twill_widget_bubble_out"
+        android:maxLines="8"
+        android:ellipsize="end"
+        android:paddingStart="14dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="8dp"
+        android:textColor="@color/twill_widget_on_accent_container"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/twill_widget_message_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="12dp"
+        android:singleLine="true"
+        android:textColor="@color/twill_widget_on_surface_variant"
+        android:textSize="11sp" />
+</LinearLayout>

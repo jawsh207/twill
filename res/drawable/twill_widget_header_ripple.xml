@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill widget: touch feedback for the conversation widget's header. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/twill_widget_ripple" />

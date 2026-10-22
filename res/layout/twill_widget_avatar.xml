@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill widget avatar, drawn like the app's: a picture when there is one, otherwise a
+     tertiary-container circle with the first letter, or a person or group glyph. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="40dp"
+    android:layout_height="40dp">
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:src="@drawable/twill_widget_avatar_circle" />
+
+    <TextView
+        android:id="@+id/twill_widget_avatar_letter"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:importantForAccessibility="no"
+        android:textColor="@color/twill_widget_on_avatar"
+        android:textSize="16sp" />
+
+    <ImageView
+        android:id="@+id/twill_widget_avatar_glyph"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:padding="8dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_twill_widget_person"
+        android:tint="@color/twill_widget_on_avatar"
+        android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/twill_widget_avatar_photo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+</FrameLayout>
