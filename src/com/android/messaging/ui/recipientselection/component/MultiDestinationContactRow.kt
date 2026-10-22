@@ -94,7 +94,7 @@ internal fun MultiDestinationContactRow(
             .fillMaxWidth()
             .testTag(rowDecorators.recipientRowTestTag(item))
             .background(
-                color = MaterialTheme.colorScheme.background,
+                color = MaterialTheme.colorScheme.surfaceBright,
                 shape = shape,
             )
             .padding(

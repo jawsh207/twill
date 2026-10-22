@@ -54,6 +54,7 @@ internal fun ConversationSimSelectorSheet(
         modifier = Modifier.testTag(tag = CONVERSATION_SIM_SELECTOR_SHEET_TEST_TAG),
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
     ) {
         ConversationSimSelectorSheetContent(
             uiState = uiState,

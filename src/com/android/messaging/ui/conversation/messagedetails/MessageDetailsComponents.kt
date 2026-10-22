@@ -49,7 +49,7 @@ internal fun MessageDetailsPreviewCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.surfaceBright,
     ) {
         ConversationMessage(
             modifier = Modifier.padding(all = 12.dp),
@@ -179,7 +179,7 @@ internal fun MessageDetailsDebugSection(
             onClick = { isExpanded = !isExpanded },
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainer,
+            color = MaterialTheme.colorScheme.surfaceBright,
         ) {
             Row(
                 modifier = Modifier.padding(
@@ -242,7 +242,7 @@ private fun MessageDetailsCard(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surfaceContainer,
+            color = MaterialTheme.colorScheme.surfaceBright,
         ) {
             Column {
                 content()

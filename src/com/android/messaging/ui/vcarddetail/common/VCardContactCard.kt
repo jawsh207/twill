@@ -66,7 +66,7 @@ internal fun VCardContactCard(
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = RowHorizontalPadding),
                 thickness = 1.dp,
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                color = MaterialTheme.colorScheme.surfaceContainer,
             )
 
             VCardFieldRow(

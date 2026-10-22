@@ -419,6 +419,7 @@ private fun InboxSectionHeader(
                     )
                 }
                 DropdownMenu(
+                    containerColor = MaterialTheme.colorScheme.surfaceBright,
                     expanded = isMenuExpanded,
                     onDismissRequest = { isMenuExpanded = false },
                 ) {
@@ -525,6 +526,7 @@ private fun ChatRow(
         }
 
         DropdownMenu(
+            containerColor = MaterialTheme.colorScheme.surfaceBright,
             expanded = isMenuExpanded,
             onDismissRequest = { isMenuExpanded = false },
         ) {

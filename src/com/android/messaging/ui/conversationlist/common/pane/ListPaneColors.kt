@@ -8,7 +8,7 @@ import com.android.messaging.ui.common.components.LocalIsListDetailPane
 @Composable
 internal fun listPaneContentColor(): Color {
     return when {
-        LocalIsListDetailPane.current -> MaterialTheme.colorScheme.surfaceContainerLow
-        else -> MaterialTheme.colorScheme.background
+        LocalIsListDetailPane.current -> MaterialTheme.colorScheme.surfaceBright
+        else -> MaterialTheme.colorScheme.surfaceBright
     }
 }

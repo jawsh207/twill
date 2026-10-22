@@ -92,8 +92,8 @@ private fun BlockedParticipantRow(
     modifier: Modifier = Modifier,
 ) {
     val backgroundColor = when {
-        isSelected -> MaterialTheme.colorScheme.surfaceContainerLow
-        else -> MaterialTheme.colorScheme.background
+        isSelected -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.surfaceBright
     }
     val displayName = participant.displayName.asLtrText()
     val details = participant.details?.asLtrText()

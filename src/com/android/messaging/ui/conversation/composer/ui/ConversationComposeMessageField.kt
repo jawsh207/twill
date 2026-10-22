@@ -113,7 +113,7 @@ internal fun ConversationComposeAttachmentMenu(
                 isExpanded = false
             },
             shape = MaterialTheme.shapes.large,
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceBright,
             tonalElevation = 3.dp,
             shadowElevation = 6.dp,
             offset = DpOffset(

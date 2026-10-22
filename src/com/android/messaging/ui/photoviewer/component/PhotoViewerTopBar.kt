@@ -239,6 +239,7 @@ private fun PhotoViewerOverflowMenu(
         )
 
         DropdownMenu(
+            containerColor = MaterialTheme.colorScheme.surfaceBright,
             expanded = isExpanded,
             onDismissRequest = {
                 isExpanded = false

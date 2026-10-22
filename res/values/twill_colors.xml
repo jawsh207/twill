@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Twill: window colours from the system's dynamic colour roles, like GrapheneOS Settings
+     (page = surface container). Dark versions in values-night/twill_colors.xml. minSdk is 36,
+     so the API 34 system colours are always there and no -v34 copies are needed. -->
+<resources>
+    <color name="twill_window_background">@android:color/system_surface_container_light</color>
+</resources>

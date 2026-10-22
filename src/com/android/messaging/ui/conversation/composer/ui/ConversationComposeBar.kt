@@ -749,6 +749,7 @@ private fun SendLongPressMenu(
     onDismiss: () -> Unit,
 ) {
     DropdownMenu(
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
         expanded = expanded && actions.isNotEmpty(),
         onDismissRequest = onDismiss,
     ) {

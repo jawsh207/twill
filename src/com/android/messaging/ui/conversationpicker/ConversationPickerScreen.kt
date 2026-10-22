@@ -319,7 +319,7 @@ private fun PickerScaffold(
                     .fillMaxSize()
                     .padding(top = contentPadding.calculateTopPadding())
                     .clip(MaterialTheme.contentSurfaceShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                    .background(MaterialTheme.colorScheme.surfaceBright),
             ) {
                 when {
                     uiState.isLoading -> {
@@ -565,7 +565,7 @@ private fun PickerReviewScaffold(
                 .fillMaxSize()
                 .padding(top = contentPadding.calculateTopPadding())
                 .clip(MaterialTheme.contentSurfaceShape)
-                .background(MaterialTheme.colorScheme.background),
+                .background(MaterialTheme.colorScheme.surfaceBright),
         )
     }
 }

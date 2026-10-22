@@ -188,6 +188,7 @@ private fun ConversationSelectionOverflowMenu(
     onActionClick: (ConversationMessageAction) -> Unit,
 ) {
     DropdownMenu(
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
         expanded = expanded,
         onDismissRequest = onDismissRequest,
     ) {

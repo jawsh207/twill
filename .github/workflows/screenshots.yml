@@ -1,0 +1,74 @@
+name: Screenshots
+
+# Manual check of Twill's colours against system Settings: boots an Android 16 emulator,
+# installs the debug build as the default SMS app, screenshots Settings and Twill's screens
+# with "Other colors" (monochrome) and wallpaper colours, in light and dark, samples their
+# colours (report.md) and pushes everything to the `screenshots` branch.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Restore Delta Chat core
+        uses: actions/cache/restore@v4
+        with:
+          path: deltachat
+          key: deltachat-core-${{ hashFiles('scripts/build-deltachat-core.sh', 'native/deltachat/**') }}
+
+      - name: Assemble debug APK
+        run: .github/ci/gradle-report-errors.sh :app:assembleDebug --no-daemon --console=plain
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install Pillow
+        run: pip install --quiet pillow
+
+      - name: Take screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash .github/ci/screenshots.sh "$(ls app/build/outputs/apk/debug/*.apk | head -1)" shots
+
+      - name: Publish to the screenshots branch
+        if: always()
+        run: |
+          test -d shots || exit 0
+          sed 's/%/%25/g' shots/report.md 2>/dev/null | awk 'BEGIN{ORS="%0A"} {print}' > notice.txt || true
+          echo "::notice title=Colour report::$(cat notice.txt)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan screenshots-publish
+          git rm -rfq --cached .
+          mkdir -p publish && cp shots/* publish/
+          git add -f publish
+          git commit -qm "Screenshots for ${GITHUB_SHA}"
+          git push -f origin HEAD:screenshots

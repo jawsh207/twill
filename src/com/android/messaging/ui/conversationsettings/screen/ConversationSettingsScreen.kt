@@ -448,7 +448,7 @@ private fun ContactButtonItem(
                 .fillMaxWidth()
                 .height(64.dp),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainer,
+            color = MaterialTheme.colorScheme.surfaceBright,
             onClick = onClick,
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -596,7 +596,7 @@ private fun ParticipantsCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.settingsCardShape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.surfaceBright,
     ) {
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
             Text(

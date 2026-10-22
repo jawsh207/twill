@@ -150,6 +150,7 @@ private fun SimSelectorDropdown(
     modifier: Modifier = Modifier,
 ) {
     DropdownMenu(
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
         modifier = modifier
             .testTag(tag = SIM_SELECTOR_DROPDOWN_TEST_TAG),
         expanded = expanded,

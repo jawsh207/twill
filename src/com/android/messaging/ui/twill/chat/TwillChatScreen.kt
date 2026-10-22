@@ -400,7 +400,7 @@ private fun InfoMessage(text: String) {
             modifier = Modifier
                 .padding(horizontal = 24.dp, vertical = 4.dp)
                 .background(
-                    MaterialTheme.colorScheme.surfaceContainer,
+                    MaterialTheme.colorScheme.surfaceBright,
                     RoundedCornerShape(12.dp),
                 )
                 .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -457,7 +457,7 @@ private fun MessageBubble(
                 shape = RoundedCornerShape(18.dp),
                 color = when {
                     message.isOutgoing -> MaterialTheme.colorScheme.primaryContainer
-                    else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                    else -> MaterialTheme.colorScheme.surfaceBright
                 },
                 contentColor = when {
                     message.isOutgoing -> MaterialTheme.colorScheme.onPrimaryContainer
@@ -832,6 +832,7 @@ private fun Composer(
                     )
                 }
                 DropdownMenu(
+                    containerColor = MaterialTheme.colorScheme.surfaceBright,
                     expanded = isAttachMenuExpanded,
                     onDismissRequest = { isAttachMenuExpanded = false },
                 ) {

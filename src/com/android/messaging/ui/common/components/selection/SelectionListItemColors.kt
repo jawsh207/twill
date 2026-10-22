@@ -22,7 +22,7 @@ internal val LocalSelectionListItemColors = compositionLocalOf<SelectionListItem
 @Composable
 @ReadOnlyComposable
 internal fun selectionListItemColors(
-    containerColor: Color = MaterialTheme.colorScheme.background,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceBright,
     selectedContainerColor: Color = MaterialTheme.colorScheme.secondaryContainer,
     primaryTextColor: Color = MaterialTheme.colorScheme.onSurface,
     selectedPrimaryTextColor: Color = MaterialTheme.colorScheme.onSecondaryContainer,

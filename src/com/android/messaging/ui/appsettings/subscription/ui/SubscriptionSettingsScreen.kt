@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -40,6 +39,9 @@ import com.android.messaging.R
 import com.android.messaging.data.subscription.model.SubId
 import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
+import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
+import com.android.messaging.ui.appsettings.common.SettingsGroupTitle
+import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.appsettings.general.model.AppSettingsAction
@@ -75,7 +77,7 @@ internal fun SubscriptionSettingsScreen(
             )
         },
     ) { contentPadding ->
-        LazyColumn(
+        SettingsLazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
@@ -153,7 +155,7 @@ private fun LazyListScope.mmsSettingsItems(
     onGroupMmsClick: () -> Unit,
     onPhoneNumberClick: () -> Unit,
 ) {
-    item(key = "mms_category_header") {
+    item(key = "mms_category_header", contentType = SettingsGroupTitle) {
         SettingsCategoryHeader(
             title = stringResource(R.string.mms_messaging_category_pref_title),
         )
@@ -273,10 +275,10 @@ private fun LazyListScope.advancedSettingsItems(
         subscriptionSettings.isWirelessAlertsSupported
     if (!hasAdvanced) return
 
-    item(key = "advanced_divider") {
+    item(key = "advanced_divider", contentType = SettingsGroupBreak) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
-    item(key = "advanced_category_header") {
+    item(key = "advanced_category_header", contentType = SettingsGroupTitle) {
         SettingsCategoryHeader(
             title = stringResource(R.string.advanced_category_pref_title),
         )

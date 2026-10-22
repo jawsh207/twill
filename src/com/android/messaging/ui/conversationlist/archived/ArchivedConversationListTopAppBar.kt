@@ -81,6 +81,7 @@ private fun ArchivedConversationListOverflowMenu(
         }
 
         DropdownMenu(
+            containerColor = MaterialTheme.colorScheme.surfaceBright,
             modifier = Modifier.width(OverflowMenuWidth),
             expanded = isExpanded,
             onDismissRequest = { isExpanded = false },

@@ -23,9 +23,20 @@
         <item name="android:forceDarkAllowed">true</item>
     </style>
 
-    <style name="Theme.Compose" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Twill: the window shows the page colour (system surface container) behind Compose, and
+         the system bars are transparent (edge to edge); values-night has the dark version. -->
+    <style name="Theme.Compose" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/twill_window_background</item>
+        <item name="android:colorBackground">@color/twill_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
-    <style name="Theme.License" parent="Theme.AppCompat.DayNight.NoActionBar" />
+    <style name="Theme.License" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/twill_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
     <!-- Application theme. -->
     <style name="BugleTheme" parent="BugleBaseTheme">
