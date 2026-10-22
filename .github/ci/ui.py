@@ -100,9 +100,9 @@ def report(directory):
 if __name__ == "__main__":
     command, argument = sys.argv[1], sys.argv[2]
     if command == "tap":
-        tap(argument)
+        sys.exit(0 if tap(argument) else 1)
     elif command == "tapcontains":
-        tap(argument, contains=True)
+        sys.exit(0 if tap(argument, contains=True) else 1)
     elif command == "palette":
         palette(argument)
     elif command == "report":
