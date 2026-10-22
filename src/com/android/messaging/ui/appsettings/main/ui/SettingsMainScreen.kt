@@ -1,7 +1,6 @@
 package com.android.messaging.ui.appsettings.main.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -16,6 +15,8 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.android.messaging.R
 import com.android.messaging.data.subscription.model.SubId
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
+import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
+import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.appsettings.subscription.model.SubscriptionUiState
 import com.android.messaging.ui.common.text.asLtrText
@@ -48,7 +49,7 @@ internal fun SettingsMainScreen(
     ) { contentPadding ->
         // Twill: "Use Twill for SMS/MMS" first, on the SMS Settings page.
         val twillHeader = LocalSmsSettingsHeader.current
-        LazyColumn(
+        SettingsLazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
@@ -61,7 +62,7 @@ internal fun SettingsMainScreen(
             }
 
             if (subscriptions.isNotEmpty()) {
-                item(key = "subscriptions_divider") {
+                item(key = "subscriptions_divider", contentType = SettingsGroupBreak) {
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
@@ -69,7 +70,7 @@ internal fun SettingsMainScreen(
             itemsIndexed(
                 items = subscriptions,
                 key = { _, item -> item.subId.value },
-            ) { index, subscription ->
+            ) { _, subscription ->
                 SettingsClickableItem(
                     title = subscription.displayName,
                     summary = subscription.displayDetail.asLtrText(),
@@ -77,10 +78,6 @@ internal fun SettingsMainScreen(
                         onSubscriptionClick(subscription.subId, subscription.displayName)
                     },
                 )
-
-                if (index < subscriptions.lastIndex) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                }
             }
         }
     }

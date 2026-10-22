@@ -83,7 +83,7 @@ internal fun RecipientSelectionQueryCard(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceBright,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             RecipientSelectionQueryCardBody(

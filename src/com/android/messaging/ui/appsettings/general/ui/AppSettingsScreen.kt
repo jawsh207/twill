@@ -1,7 +1,6 @@
 package com.android.messaging.ui.appsettings.general.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -16,6 +15,9 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.android.messaging.R
 import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
+import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
+import com.android.messaging.ui.appsettings.common.SettingsGroupTitle
+import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.appsettings.general.model.AppSettingsAction as Action
@@ -56,7 +58,7 @@ internal fun AppSettingsScreen(
     ) { contentPadding ->
         // Twill: "Use Twill for SMS/MMS" first, on the SMS Settings page.
         val twillHeader = LocalSmsSettingsHeader.current
-        LazyColumn(
+        SettingsLazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
@@ -162,10 +164,10 @@ private fun LazyListScope.debugSettingsItems(
 ) {
     if (!appSettings.isDebugEnabled) return
 
-    item(key = "debug_divider") {
+    item(key = "debug_divider", contentType = SettingsGroupBreak) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
-    item(key = "debug_category_header") {
+    item(key = "debug_category_header", contentType = SettingsGroupTitle) {
         SettingsCategoryHeader(
             title = stringResource(R.string.debug_category_pref_title),
         )
@@ -195,7 +197,7 @@ private fun LazyListScope.debugSettingsItems(
 private fun LazyListScope.licenseSettingsItems(
     onAction: (Action) -> Unit,
 ) {
-    item(key = "licenses_divider") {
+    item(key = "licenses_divider", contentType = SettingsGroupBreak) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
     item(key = "licenses") {

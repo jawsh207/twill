@@ -247,8 +247,8 @@ private fun itemContainerColor(item: ConversationListItemUiModel): Color {
     val isHighlighted = item.isSelected || item.isOpened
 
     return when {
-        isHighlighted -> MaterialTheme.colorScheme.surfaceContainerLow
-        else -> MaterialTheme.colorScheme.background
+        isHighlighted -> MaterialTheme.colorScheme.secondaryContainer
+        else -> MaterialTheme.colorScheme.surfaceBright
     }
 }
 

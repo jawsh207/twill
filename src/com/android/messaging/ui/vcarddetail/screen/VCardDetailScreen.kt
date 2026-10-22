@@ -95,7 +95,7 @@ private fun VCardDetailContent(
                 .fillMaxSize()
                 .padding(top = contentPadding.calculateTopPadding())
                 .clip(MaterialTheme.contentSurfaceShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                .background(MaterialTheme.colorScheme.surfaceBright),
         ) {
             when {
                 uiState.isLoading -> {

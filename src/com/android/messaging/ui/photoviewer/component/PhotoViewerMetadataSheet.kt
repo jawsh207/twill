@@ -60,7 +60,7 @@ internal fun PhotoViewerMetadataSheet(
         modifier = Modifier.testTag(tag = PHOTO_VIEWER_METADATA_SHEET_TEST_TAG),
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
         contentColor = MaterialTheme.colorScheme.onSurface,
         dragHandle = {
             PhotoViewerMetadataSheetDragHandle()

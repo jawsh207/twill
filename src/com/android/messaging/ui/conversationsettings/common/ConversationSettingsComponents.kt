@@ -109,7 +109,7 @@ internal fun ConversationSettingsItem(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = shape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.surfaceBright,
         onClick = onClick,
     ) {
         Row(

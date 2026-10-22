@@ -321,7 +321,7 @@ private fun QuickActionButton(
     Surface(
         modifier = modifier.height(ActionRowHeight),
         shape = RoundedCornerShape(percent = 50),
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.surfaceBright,
         onClick = onClick,
     ) {
         Box(contentAlignment = Alignment.Center) {

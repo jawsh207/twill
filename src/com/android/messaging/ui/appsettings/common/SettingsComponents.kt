@@ -76,9 +76,10 @@ internal fun SettingsCategoryHeader(
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier
             .fillMaxWidth()
+            // Twill: in line with the text of the grouped cards below (SettingsLazyColumn).
             .padding(
-                start = 16.dp,
-                end = 16.dp,
+                start = 32.dp,
+                end = 32.dp,
                 top = 24.dp,
                 bottom = 8.dp,
             ),

@@ -107,7 +107,7 @@ private fun BlockedParticipantsContent(
                 .fillMaxSize()
                 .padding(top = contentPadding.calculateTopPadding())
                 .clip(MaterialTheme.contentSurfaceShape)
-                .background(MaterialTheme.colorScheme.background),
+                .background(MaterialTheme.colorScheme.surfaceBright),
         ) {
             when {
                 uiState.isLoading -> Unit
@@ -165,7 +165,7 @@ private fun BlockedParticipantsList(
                             vertical = 1.dp,
                         ),
                         thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        color = MaterialTheme.colorScheme.surfaceContainer,
                     )
                 }
 

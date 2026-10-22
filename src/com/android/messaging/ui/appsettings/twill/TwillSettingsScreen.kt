@@ -1,7 +1,6 @@
 package com.android.messaging.ui.appsettings.twill
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -14,6 +13,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.android.messaging.R
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
+import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
+import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.core.MessagingPreviewTheme
 
@@ -44,7 +45,7 @@ internal fun TwillSettingsScreen(
             )
         },
     ) { contentPadding ->
-        LazyColumn(
+        SettingsLazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
@@ -74,7 +75,7 @@ internal fun TwillSettingsScreen(
                     onClick = onDeltaChatSettingsClick,
                 )
             }
-            item(key = "licenses_divider") {
+            item(key = "licenses_divider", contentType = SettingsGroupBreak) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
             item(key = "licenses") {

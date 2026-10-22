@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -54,6 +53,9 @@ import com.android.messaging.R
 import com.android.messaging.twill.TwillDeliveryMode
 import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
+import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
+import com.android.messaging.ui.appsettings.common.SettingsGroupTitle
+import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.util.UiUtils
@@ -103,8 +105,8 @@ internal fun DeltaChatSettingsScreen(
             )
         },
     ) { contentPadding ->
-        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
-            item(key = "profile_header") {
+        SettingsLazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = contentPadding) {
+            item(key = "profile_header", contentType = SettingsGroupTitle) {
                 SettingsCategoryHeader(title = stringResource(R.string.deltachat_profile_header))
             }
 
@@ -251,10 +253,10 @@ internal fun DeltaChatSettingsScreen(
                         )
                     }
 
-                    item(key = "delivery_divider") {
+                    item(key = "delivery_divider", contentType = SettingsGroupBreak) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
-                    item(key = "delivery_header") {
+                    item(key = "delivery_header", contentType = SettingsGroupTitle) {
                         SettingsCategoryHeader(
                             title = stringResource(R.string.nostr_delivery_header)
                         )
@@ -269,10 +271,10 @@ internal fun DeltaChatSettingsScreen(
                         )
                     }
 
-                    item(key = "privacy_divider") {
+                    item(key = "privacy_divider", contentType = SettingsGroupBreak) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
-                    item(key = "privacy_header") {
+                    item(key = "privacy_header", contentType = SettingsGroupTitle) {
                         SettingsCategoryHeader(
                             title = stringResource(R.string.deltachat_privacy_header)
                         )

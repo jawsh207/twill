@@ -75,7 +75,7 @@ private fun SimSwitchItem(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.settingsCardShape,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.surfaceBright,
         onClick = { expanded = true },
     ) {
         Column(
@@ -162,6 +162,7 @@ private fun SimSwitchItemMenu(
         }
 
         DropdownMenu(
+            containerColor = MaterialTheme.colorScheme.surfaceBright,
             expanded = expanded,
             shape = MaterialTheme.settingsCardShape,
             onDismissRequest = { onExpandedChange(false) },
