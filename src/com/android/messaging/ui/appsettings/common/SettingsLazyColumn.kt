@@ -180,8 +180,18 @@ private fun SettingsCardRow(
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceBright),
     ) {
-        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-            content()
+        // Inside a card, "surface" is the card colour, so ListItems and plain Surfaces in a row
+        // (which paint `surface`, the page colour elsewhere) blend into the card.
+        val colors = MaterialTheme.colorScheme
+        MaterialTheme(
+            colorScheme = colors.copy(surface = colors.surfaceBright),
+            motionScheme = MaterialTheme.motionScheme,
+            shapes = MaterialTheme.shapes,
+            typography = MaterialTheme.typography,
+        ) {
+            CompositionLocalProvider(LocalContentColor provides colors.onSurface) {
+                content()
+            }
         }
     }
 }
