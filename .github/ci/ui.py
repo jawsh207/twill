@@ -64,8 +64,10 @@ def palette(style):
             "android.theme.customization.color_source": "home_wallpaper",
         }
     value["_applied_timestamp"] = int(time.time() * 1000)
-    adb("shell", "settings", "put", "secure", "theme_customization_overlay_packages",
-        json.dumps(value, separators=(",", ":")))
+    # One quoted argument, or the device shell splits the JSON apart.
+    payload = json.dumps(value, separators=(",", ":"))
+    adb("shell", f"settings put secure theme_customization_overlay_packages '{payload}'")
+    print(adb("shell", "settings get secure theme_customization_overlay_packages").strip())
 
 
 def report(directory):
