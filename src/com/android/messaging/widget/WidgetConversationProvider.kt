@@ -46,6 +46,12 @@ class WidgetConversationProvider : AppWidgetProvider() {
             TwillWidgets.requestUpdate(context)
         }
 
+        /** An SMS conversation was renamed. */
+        @JvmStatic
+        fun notifyConversationRenamed(context: Context, conversationId: String) {
+            TwillWidgets.requestUpdate(context)
+        }
+
         /** Redraws the widgets now, e.g. after a conversation was picked. */
         @JvmStatic
         fun rebuildWidget(context: Context, appWidgetId: Int) {
