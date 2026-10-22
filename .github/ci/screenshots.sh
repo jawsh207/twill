@@ -25,6 +25,18 @@ for permission in READ_SMS SEND_SMS RECEIVE_SMS RECEIVE_MMS READ_CONTACTS READ_P
     adb shell pm grant "$PKG" "android.permission.$permission" 2>/dev/null
 done
 
+# No heads-up notifications over the screenshots.
+adb shell settings put global heads_up_notifications_enabled 0
+
+# First run: get through onboarding (SMS warning; role and permissions are already granted).
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG"
+sleep 4
+for _ in 1 2 3; do
+    $UI tap "Next" || break
+    sleep 3
+done
+shot "first-run"
+
 # A conversation: two incoming texts, and one sent from Twill.
 adb emu sms send 5551234 "Hey, are we still on for tonight?"
 sleep 3
@@ -34,7 +46,9 @@ adb shell am start -a android.intent.action.SENDTO -d sms:5551234 --es sms_body 
 sleep 6
 $UI tapcontains "Send"
 sleep 8
+shot "first-run-sent"
 adb shell am force-stop "$PKG"
+adb shell cmd notification cancel_all 2>/dev/null || adb shell service call notification 1
 
 for style in MONOCHROMATIC TONAL_SPOT; do
     $UI palette "$style" >> "$OUT/log.txt"
