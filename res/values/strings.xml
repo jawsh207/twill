@@ -982,7 +982,7 @@
     <string name="inbox_new_nostr_chat_invalid">Couldn\'t find that Nostr user. Check the address or paste their npub</string>
     <string name="inbox_start_chat">Start chat</string>
     <string name="inbox_nostr_empty">No Nostr chats yet. Tap + to start a chat or group.</string>
-    <string name="inbox_you_prefix">You: </string>
+    <string name="inbox_you_prefix">"You: "</string>
     <string name="inbox_pinned">Pinned</string>
     <string name="inbox_pin">Pin</string>
     <string name="inbox_unpin">Unpin</string>
@@ -1052,7 +1052,7 @@
     <string name="inbox_new_chat">New chat</string>
     <string name="inbox_new_group">New group</string>
     <string name="inbox_new_conversation">New %s chat or group</string>
-    <string name="inbox_request_prefix">Request: </string>
+    <string name="inbox_request_prefix">"Request: "</string>
     <string name="inbox_group_no_contacts">No contacts yet. Start a chat first, then you can add them to groups.</string>
     <string name="inbox_group_member_count">Members: %d</string>
 

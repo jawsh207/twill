@@ -57,10 +57,12 @@ adb shell cmd notification cancel_all 2>/dev/null || adb shell service call noti
 # Home screen widgets: add "Conversations" and "Conversation" (picking 555-1234) from the
 # launcher's widget picker. Each step is screenshotted, and the view tree is saved when a
 # step can't find what it taps.
-add_widget() { # $1 widget label, $2 file tag
+add_widget() { # $1 widget label, $2 file tag, $3 $4 an empty spot on the home screen
+    adb shell input keyevent KEYCODE_HOME
+    sleep 1
     adb shell input keyevent KEYCODE_HOME
     sleep 2
-    adb shell input swipe 540 1300 540 1300 1500
+    adb shell input swipe "$3" "$4" "$3" "$4" 1500
     sleep 2
     $UI tap "Widgets" || $UI dump "$OUT/widget-$2-menu.xml"
     sleep 3
@@ -75,9 +77,9 @@ add_widget() { # $1 widget label, $2 file tag
     $UI tap "Add" || $UI tapcontains "Add to home" || $UI dump "$OUT/widget-$2-add.xml"
     sleep 5
 }
-add_widget "Conversations" list
+add_widget "Conversations" list 540 1300
 shot "widget-list-added"
-add_widget "Conversation" conversation
+add_widget "Conversation" conversation 170 1530
 shot "widget-conversation-picker"
 $UI tapcontains "555-1234" || $UI dump "$OUT/widget-conversation-configure.xml"
 sleep 5
@@ -117,16 +119,18 @@ for style in MONOCHROMATIC TONAL_SPOT; do
 
         $UI tapcontains "555-1234"
         shot "$tag-07-conversation"
-        adb shell am force-stop "$PKG"
 
-        # Widgets on the home screen (both pages, wherever the launcher put them).
+        # Widgets on the home screen (both pages, wherever the launcher put them), before
+        # Twill is force-stopped: Android masks a stopped app's widgets.
         adb shell input keyevent KEYCODE_HOME
         sleep 1
         adb shell input keyevent KEYCODE_HOME
+        sleep 3
         shot "$tag-08-widgets"
         adb shell input swipe 900 1200 150 1200 300
         shot "$tag-09-widgets-page-2"
         adb shell input keyevent KEYCODE_HOME
+        adb shell am force-stop "$PKG"
     done
 done
 
