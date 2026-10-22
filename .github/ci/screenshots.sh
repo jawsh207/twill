@@ -37,7 +37,7 @@ sleep 8
 adb shell am force-stop "$PKG"
 
 for style in MONOCHROMATIC TONAL_SPOT; do
-    $UI palette "$style"
+    $UI palette "$style" >> "$OUT/log.txt"
     sleep 10
     for mode in no yes; do
         adb shell cmd uimode night "$mode"
@@ -49,7 +49,7 @@ for style in MONOCHROMATIC TONAL_SPOT; do
         adb shell am force-stop com.android.settings
 
         adb shell am force-stop "$PKG"
-        adb shell am start -W -n "$PKG/com.android.messaging.ui.MainActivity" >> "$OUT/log.txt" 2>&1
+        adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
         shot "$tag-01-conversation-list"
 
         $UI tap "More options"
