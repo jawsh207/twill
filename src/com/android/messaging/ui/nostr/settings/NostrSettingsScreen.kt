@@ -157,7 +157,7 @@ internal fun NostrSettingsScreen(
 
             when (val account = uiState.account) {
                 null -> {
-                    item(key = "signed_out_note") {
+                    item(key = "signed_out_note", contentType = SettingsGroupTitle) {
                         ListItem(
                             headlineContent = {
                                 Text(

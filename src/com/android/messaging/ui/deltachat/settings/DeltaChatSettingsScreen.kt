@@ -111,12 +111,15 @@ internal fun DeltaChatSettingsScreen(
             }
 
             when {
-                !uiState.isAvailable -> item(key = "unavailable") {
+                !uiState.isAvailable -> item(
+                    key = "unavailable",
+                    contentType = SettingsGroupTitle
+                ) {
                     NoteItem(text = stringResource(R.string.deltachat_unavailable))
                 }
 
                 !uiState.isConfigured -> {
-                    item(key = "off_note") {
+                    item(key = "off_note", contentType = SettingsGroupTitle) {
                         NoteItem(text = stringResource(R.string.deltachat_off_summary))
                     }
                     if (uiState.isWorking) {

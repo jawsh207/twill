@@ -42,10 +42,13 @@ adb emu sms send 5551234 "Hey, are we still on for tonight?"
 sleep 3
 adb emu sms send 5551234 "I can bring dessert"
 sleep 3
-adb shell am start -a android.intent.action.SENDTO -d sms:5551234 --es sms_body "Yes! See you at 7"
+adb shell am start -a android.intent.action.SENDTO -d sms:5551234
 sleep 6
-$UI tapcontains "Send"
-sleep 8
+$UI tap "Send message"
+adb shell input text "Yes%sSee%syou%sat%s7"
+sleep 2
+$UI tap "Send Message"
+sleep 10
 shot "first-run-sent"
 adb shell am force-stop "$PKG"
 adb shell cmd notification cancel_all 2>/dev/null || adb shell service call notification 1
