@@ -10,6 +10,7 @@ Twill is an SMS/MMS app forked from GrapheneOS Messaging (Compose rewrite, v13+)
 - Privacy-affecting options (anything that contacts a third party) default to **off**, like the YouTube and website link previews.
 - Keep edits to upstream files small; put new code in new files where possible, so `git merge upstream/main` stays easy.
 - New strings go in `res/values/strings.xml` (English only for now; other locales fall back to it).
+- **Attribution:** commits are authored and committed as `jawsh207 <jawsh207@users.noreply.github.com>`, with no co-author or session trailers. No tool or assistant is named anywhere in the repo: source, comments, notes, commit messages or release notes.
 
 ## Remotes and building
 
