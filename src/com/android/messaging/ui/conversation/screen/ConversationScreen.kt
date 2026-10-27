@@ -24,10 +24,12 @@ import com.android.messaging.data.conversation.model.ConversationId
 import com.android.messaging.data.conversation.model.MessageId
 import com.android.messaging.data.conversation.model.ParticipantId
 import com.android.messaging.data.conversation.model.draft.ConversationDraft
+import com.android.messaging.data.conversation.model.metadata.ConversationComposerDisabledReason
 import com.android.messaging.twill.SmsMessageSearch
 import com.android.messaging.ui.common.components.snackbar.MessagingSnackbarHost
 import com.android.messaging.ui.contact.model.AddContactRequest
 import com.android.messaging.ui.conversation.composer.ui.ConversationComposerSection
+import com.android.messaging.ui.conversation.composer.ui.ConversationReadOnlyNotice
 import com.android.messaging.ui.conversation.composer.ui.ConversationSimSelectorSheet
 import com.android.messaging.ui.conversation.composer.ui.DelayedSendUi
 import com.android.messaging.ui.conversation.composer.ui.LocalDelayedSendUi
@@ -439,6 +441,12 @@ private fun ConversationScreenBottomBar(
     screenModel: ConversationScreenModel,
 ) {
     if (isMediaPickerOpen) {
+        return
+    }
+
+    val disabledReason = uiState.composer.disabledReason
+    if (disabledReason == ConversationComposerDisabledReason.READ_ONLY_CONVERSATION) {
+        ConversationReadOnlyNotice()
         return
     }
 

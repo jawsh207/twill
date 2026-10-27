@@ -4,6 +4,18 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.10
+
+- Fixes from GrapheneOS Messaging:
+  - Texts that reach a SIM from another country without a country code are matched to the
+    right contact, and conversations an older version split off for them are merged back.
+  - Blocked and archived conversations stay blocked and archived if the message database
+    has to be rebuilt, and messages are kept when going back to an older version.
+  - Senders you can't reply to (such as short codes and named senders) show a note instead
+    of the message box, and their notifications no longer offer Reply.
+  - Tapping a link keeps the part after "#", so it opens at the right spot.
+- Library updates.
+
 ## 1.0.9
 
 - New home screen widgets in the same system colours as the app. "Conversations" lists your

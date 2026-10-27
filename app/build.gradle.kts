@@ -252,7 +252,6 @@ dependencies {
     implementation(libs.quartz)
     implementation(libs.okhttp)
 
-    implementation(project(":lib:platform_frameworks_opt_chips"))
     implementation(project(":lib:platform_frameworks_opt_vcard"))
 
     debugImplementation(libs.androidx.compose.ui.test.manifest)
