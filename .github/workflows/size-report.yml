@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [baseline, no-bundled-sqlite, obfuscate, optimize, obfuscate-optimize, narrow-keeps]
+        variant: [optimize-no-sqlite, all]
     steps:
       - name: Check out sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

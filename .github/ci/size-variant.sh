@@ -22,6 +22,22 @@ KTS
         # Upstream keeps every class in com.android.messaging (three package levels) and
         # several androidx packages whole. Keep only what Android instantiates by name.
         sed -i '/^-keep class com.android.messaging.\*/d; /^-keep class androidx\./d; /^-keep class com.android.messaging.ui.contact/d' proguard.flags proguard-release.flags ;;
+    all)
+        bash "$0" no-bundled-sqlite-only
+        sed -i '/^-dontobfuscate/d; /^-dontoptimize/d' proguard.flags
+        sed -i '/^-keep class com.android.messaging.\*/d; /^-keep class androidx\./d; /^-keep class com.android.messaging.ui.contact/d' proguard.flags proguard-release.flags ;;
+    optimize-no-sqlite)
+        bash "$0" no-bundled-sqlite-only
+        sed -i '/^-dontobfuscate/d; /^-dontoptimize/d' proguard.flags ;;
+    no-bundled-sqlite-only)
+        cat >> app/build.gradle.kts <<'KTS'
+
+configurations.configureEach {
+    exclude(group = "androidx.sqlite", module = "sqlite-bundled")
+    exclude(group = "androidx.sqlite", module = "sqlite-bundled-android")
+}
+KTS
+        exit 0 ;;
     *) echo "unknown variant $1"; exit 1 ;;
 esac
 # Record what R8 was told and what it removed.
