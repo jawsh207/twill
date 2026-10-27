@@ -21,9 +21,13 @@
 -keepclassmembers class * {
   @com.google.common.annotations.VisibleForTesting *;
 }
--keep class com.android.messaging.* { *; }
--keep class com.android.messaging.*.* { *; }
--keep class com.android.messaging.*.*.* { *; }
+# Twill: Parcelables travel in intents, alarms and saved state that can outlive one build,
+# and are read back by class name, so their names must not change between releases.
+-keepnames class com.android.messaging.** implements android.os.Parcelable
+
+# Twill: upstream kept every class in the app's top three package levels whole. R8 already
+# keeps what Android creates by name (manifest and layout classes, via aapt's rules), native
+# methods and Parcelable creators, so the blanket rule only kept unused code (about 2 MB).
 
 -keep public class * extends android.app.Activity
 -keep public class * extends android.app.Application
@@ -35,12 +39,6 @@
 -keep public class * extends androidx.fragment.app.Fragment
 -keep public class com.android.vcard.* { *; }
 
--keep class androidx.collection.* { *; }
--keep class androidx.core.* { *; }
--keep class androidx.core.*.* { *; }
--keep class androidx.appcompat.* { *; }
--keep class androidx.appcompat.*.* { *; }
--keep class androidx.viewpager.widget.* { *; }
 
 # Keep rastermill classes that need to be accessed from native code (JNI)
 -keep class android.support.rastermill.** { *; }
