@@ -1,0 +1,25 @@
+name: Move the 1.0.10 mapping file
+
+# One-off: moves the mapping file attached to the 1.0.10 release to the mappings branch.
+# Removed after it has run.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Move the mapping file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v1.0.10 -R "$GITHUB_REPOSITORY" -p "twill-1.0.10-mapping.txt" -D "$RUNNER_TEMP"
+          .github/ci/archive-mapping.sh "$RUNNER_TEMP/twill-1.0.10-mapping.txt" 1.0.10
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/v1.0.10" -q '.assets[] | select(.name=="twill-1.0.10-mapping.txt") | .id')
+          gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$id"

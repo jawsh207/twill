@@ -130,8 +130,6 @@ jobs:
           sha=$(sed -n 's/.*certificate SHA-256 digest: //p' certs.txt | head -1)
           out="twill-${{ steps.version.outputs.name }}.apk"
           cp "$apk" "$out"
-          # R8 shortens names; this map turns crash stack traces back into readable ones.
-          cp app/build/outputs/mapping/release/mapping.txt "twill-${{ steps.version.outputs.name }}-mapping.txt"
           echo "file=$out" >> "$GITHUB_OUTPUT"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "::notice title=Release certificate SHA-256::$sha"
@@ -154,9 +152,15 @@ jobs:
             echo "Signing certificate SHA-256: \`${{ steps.apk.outputs.sha }}\`"
           } > notes.md
           gh release create "${{ steps.version.outputs.tag }}" "$file" "$file.sha256" \
-            "twill-${{ steps.version.outputs.name }}-mapping.txt" \
             -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Twill ${{ steps.version.outputs.name }}" --notes-file notes.md
+
+      # R8 shortens names; the mapping file turns crash stack traces back into readable ones.
+      # It's too big to attach to every release, so it's kept on the mappings branch.
+      - name: Keep the mapping file
+        run: >
+          .github/ci/archive-mapping.sh app/build/outputs/mapping/release/mapping.txt
+          "${{ steps.version.outputs.name }}"
 
       - name: Remove the release key
         if: always()
