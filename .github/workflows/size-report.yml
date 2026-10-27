@@ -3,7 +3,8 @@ name: Size report (experiment)
 # Experiment branch only: builds the perf APK in several size variants and reports what
 # each would save. Nothing here is meant for main.
 on:
-  workflow_dispatch:
+  push:
+    branches: [experiment/size-report]
 
 jobs:
   size:
