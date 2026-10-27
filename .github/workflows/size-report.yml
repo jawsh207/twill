@@ -1,0 +1,62 @@
+name: Size report (experiment)
+
+# Experiment branch only: builds the perf APK in several size variants and reports what
+# each would save. Nothing here is meant for main.
+on:
+  workflow_dispatch:
+
+jobs:
+  size:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [baseline, no-bundled-sqlite, obfuscate, optimize, obfuscate-optimize, narrow-keeps]
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Use the shared test signing key
+        run: |
+          mkdir -p ~/.android
+          cp .github/ci/debug.keystore ~/.android/debug.keystore
+
+      - name: Restore Delta Chat core
+        uses: actions/cache/restore@v4
+        with:
+          path: deltachat
+          key: deltachat-core-${{ hashFiles('scripts/build-deltachat-core.sh', 'native/deltachat/**') }}
+
+      - name: Apply variant
+        run: bash .github/ci/size-variant.sh ${{ matrix.variant }}
+
+      - name: Assemble perf APK
+        run: .github/ci/gradle-report-errors.sh :app:assemblePerf --no-daemon --console=plain
+
+      - name: Report
+        if: always()
+        run: |
+          apk=$(ls app/build/outputs/apk/perf/*.apk 2>/dev/null | head -1)
+          mkdir -p size
+          if [ -n "$apk" ]; then
+            python3 .github/ci/size-report.py "$apk" "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" size/report.txt
+            echo "::notice title=${{ matrix.variant }}::$(head -2 size/report.txt | tr '\n' ' ')"
+          fi
+          cp app/build/outputs/mapping/perf/missing_rules.txt size/ 2>/dev/null || true
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: size-${{ matrix.variant }}
+          path: size/
