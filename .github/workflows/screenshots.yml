@@ -1,7 +1,7 @@
 name: Screenshots
 
 # Manual check of Twill's colours against system Settings: boots an Android 16 emulator,
-# installs the debug build as the default SMS app, screenshots Settings and Twill's screens
+# installs the optimized (perf) build as the default SMS app, screenshots Settings and Twill's screens
 # with "Other colors" (monochrome) and wallpaper colours, in light and dark, samples their
 # colours (report.md) and pushes everything to the `screenshots` branch.
 on:
@@ -34,8 +34,18 @@ jobs:
           path: deltachat
           key: deltachat-core-${{ hashFiles('scripts/build-deltachat-core.sh', 'native/deltachat/**') }}
 
-      - name: Assemble debug APK
-        run: .github/ci/gradle-report-errors.sh :app:assembleDebug --no-daemon --console=plain
+      # The optimized build (R8), as people install it, plus an x86_64 copy of the native
+      # libraries so Nostr's crypto runs in the emulator (Delta Chat's core is arm64 only, so
+      # its native methods are checked statically instead).
+      - name: Assemble perf APK
+        run: >
+          .github/ci/gradle-report-errors.sh :app:assemblePerf -Ptwill.extraAbi=x86_64
+          --no-daemon --console=plain
+
+      - name: Check Delta Chat's native methods survived R8
+        run: >
+          python3 .github/ci/check-jni.py "$(ls app/build/outputs/apk/perf/*.apk | head -1)"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
 
       - name: Enable KVM
         run: |
@@ -56,7 +66,7 @@ jobs:
           profile: pixel_7
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: bash .github/ci/screenshots.sh "$(ls app/build/outputs/apk/debug/*.apk | head -1)" shots
+          script: bash .github/ci/screenshots.sh "$(ls app/build/outputs/apk/perf/*.apk | head -1)" shots app.twill.perf
 
       - name: Publish to the screenshots branch
         if: always()

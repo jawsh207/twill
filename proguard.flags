@@ -56,5 +56,5 @@
     public static <fields>;
 }
 
--dontobfuscate
--dontoptimize
+# Twill: R8 optimizes and shortens names (about 10 MB smaller). Each release keeps its
+# mapping file so stack traces can be read.

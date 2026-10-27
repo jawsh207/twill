@@ -80,7 +80,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: twill-apk
-          path: app/build/outputs/apk/perf/*.apk
+          path: |
+            app/build/outputs/apk/perf/*.apk
+            app/build/outputs/mapping/perf/mapping.txt
           if-no-files-found: error
 
       - name: Assemble debug APK

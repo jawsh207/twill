@@ -6,7 +6,7 @@ set -uo pipefail
 
 APK="$1"
 OUT="$2"
-PKG=app.twill.debug
+PKG="${3:-app.twill.debug}"
 UI="python3 .github/ci/ui.py"
 mkdir -p "$OUT"
 
@@ -53,6 +53,51 @@ shot "first-run-sent"
 adb shell am force-stop "$PKG"
 adb shell cmd notification cancel_all 2>/dev/null || adb shell service call notification 1
 
+
+# Nostr: create a key, then start a chat with a throwaway key and send a message. This runs
+# the optimized build's crypto (secp256k1), storage and relay connections.
+NPUB=$(python3 .github/ci/nostr_key.py)
+echo "nostr test peer: $NPUB" >> "$OUT/log.txt"
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
+sleep 3
+$UI tap "More options"
+$UI tap "Settings"
+$UI tap "Nostr Settings"
+sleep 2
+$UI tap "Use a private key" || $UI dump "$OUT/nostr-settings.xml"
+sleep 2
+shot "nostr-1-key-dialog"
+$UI tap "Create a new key instead" || $UI dump "$OUT/nostr-key-dialog.xml"
+sleep 3
+$UI tap "Sign in" || true
+sleep 5
+shot "nostr-2-signed-in"
+back
+back
+sleep 2
+$UI longpress "Start chat" || $UI dump "$OUT/nostr-start.xml"
+sleep 2
+shot "nostr-3-picker"
+$UI tap "Nostr chat or group" || $UI dump "$OUT/nostr-picker.xml"
+sleep 1
+$UI tap "New chat" || $UI dump "$OUT/nostr-new.xml"
+sleep 2
+$UI tap "name@domain, npub or public key" || $UI dump "$OUT/nostr-field.xml"
+adb shell input text "$NPUB"
+sleep 1
+shot "nostr-4-new-chat"
+$UI tap "Start chat" || $UI dump "$OUT/nostr-start-chat.xml"
+sleep 8
+$UI tap "Nostr message" || $UI dump "$OUT/nostr-chat.xml"
+adb shell input text "Hello%sfrom%sthe%soptimized%sbuild"
+sleep 1
+$UI tap "Send Message" || $UI dump "$OUT/nostr-send.xml"
+sleep 15
+shot "nostr-5-sent"
+back
+sleep 2
+shot "nostr-6-inbox"
+adb shell am force-stop "$PKG"
 
 # Home screen widgets: add "Conversations" and "Conversation" (picking 555-1234) from the
 # launcher's widget picker. Each step is screenshotted, and the view tree is saved when a

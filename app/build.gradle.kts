@@ -72,6 +72,8 @@ android {
         ndk {
             abiFilters.clear()
             abiFilters.add("arm64-v8a")
+            // -Ptwill.extraAbi=x86_64 adds an emulator ABI for test builds (screenshots workflow).
+            providers.gradleProperty("twill.extraAbi").orNull?.let { abiFilters.add(it) }
         }
     }
 
@@ -202,6 +204,13 @@ androidComponents {
     onVariants(selector().withBuildType("release")) { variant ->
         variant.applicationId.set("app.twill.messages")
     }
+}
+
+// Twill: Quartz brings its own SQLite build for its optional event store and relay monitor,
+// which Twill doesn't use (Nostr messages are in Android's SQLite). About 1 MB.
+configurations.configureEach {
+    exclude(group = "androidx.sqlite", module = "sqlite-bundled")
+    exclude(group = "androidx.sqlite", module = "sqlite-bundled-android")
 }
 
 dependencies {
