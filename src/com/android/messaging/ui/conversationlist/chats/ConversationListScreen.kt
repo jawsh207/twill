@@ -13,16 +13,17 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -53,10 +54,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.messaging.R
 import com.android.messaging.data.conversation.model.ConversationId
-import com.android.messaging.ui.common.components.ComposeBarControlHeight
 import com.android.messaging.ui.common.components.ComposeBarVerticalPadding
 import com.android.messaging.ui.common.components.LocalIsListDetailPane
-import com.android.messaging.ui.common.components.PrimaryActionButton
 import com.android.messaging.ui.common.components.contentSurfaceShape
 import com.android.messaging.ui.common.components.horizontalSafeDrawingInsets
 import com.android.messaging.ui.common.components.reorder.OverlayReorderAnimation
@@ -496,7 +495,6 @@ private fun BoxScope.ConversationListFabs(
 
     StartChatFab(
         visible = hasItems && !isSelectionMode,
-        expanded = !uiState.isScrollToTopVisible,
         onClick = { onAction(Action.StartChatClicked) },
         // Twill: long press chooses the service (SMS/MMS, Nostr, Delta Chat...).
         onLongClick = rememberStartChatLongClick(),
@@ -601,7 +599,6 @@ private fun ScrollToTopFab(
 @Composable
 private fun StartChatFab(
     visible: Boolean,
-    expanded: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
@@ -612,19 +609,24 @@ private fun StartChatFab(
         enter = scaleIn() + fadeIn(),
         exit = scaleOut() + fadeOut(),
     ) {
-        PrimaryActionButton(
-            text = stringResource(R.string.conversation_list_start_chat),
+        // Twill: a standard FAB as in Dialtone and Contacts (56dp, default shape and
+        // elevation, primary container), with the same speech bubble as the SMS/MMS, Nostr
+        // and Delta Chat icons. A long press chooses the service.
+        FloatingActionButton(
             onClick = onClick,
-            modifier = Modifier
-                .height(height = ComposeBarControlHeight)
-                .twillLongPress(
-                    label = stringResource(R.string.inbox_start_chat_choose),
-                    onLongClick = onLongClick,
-                ),
-            expanded = expanded,
-            // Twill: the same speech bubble as the SMS/MMS, Nostr and Delta Chat icons.
-            leadingIcon = ImageVector.vectorResource(id = R.drawable.ic_start_chat),
-        )
+            modifier = Modifier.twillLongPress(
+                label = stringResource(R.string.inbox_start_chat_choose),
+                onLongClick = onLongClick,
+            ),
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ) {
+            Icon(
+                modifier = Modifier.size(24.dp),
+                imageVector = ImageVector.vectorResource(id = R.drawable.ic_start_chat),
+                contentDescription = stringResource(R.string.conversation_list_start_chat),
+            )
+        }
     }
 }
 

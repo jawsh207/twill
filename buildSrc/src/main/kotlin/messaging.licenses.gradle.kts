@@ -38,6 +38,12 @@ tasks.register<GenerateLicensesTask>("generateLicenses") {
             spdxId = "MPL-2.0",
             text = "Copyright (c) 2019 by Bjoern Petersen and contributors",
         ),
+        // Twill: Google Sans Flex (res/font/google_sans_flex.ttf), the app's font.
+        ExtraNotice(
+            name = "Google Sans Flex",
+            url = "https://github.com/googlefonts/googlesans-flex",
+            text = rootProject.file("assets/licenses/google_sans_flex-OFL.txt").readText(),
+        ),
         ExtraNotice(
             name = "GIFLIB",
             spdxId = "MIT",

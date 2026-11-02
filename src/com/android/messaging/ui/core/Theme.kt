@@ -3,14 +3,19 @@ package com.android.messaging.ui.core
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
-import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.android.messaging.R
 
 private val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(size = 12.dp),
@@ -20,45 +25,78 @@ private val AppShapes = Shapes(
     extraLarge = RoundedCornerShape(size = 36.dp),
 )
 
+/** Google Sans Flex: one variable font file, one entry per weight (SIL OFL 1.1). */
+internal val GoogleSansFlex: FontFamily = FontFamily(
+    listOf(
+        FontWeight.Thin,
+        FontWeight.ExtraLight,
+        FontWeight.Light,
+        FontWeight.Normal,
+        FontWeight.Medium,
+        FontWeight.SemiBold,
+        FontWeight.Bold,
+        FontWeight.ExtraBold,
+        FontWeight.Black,
+    ).map { weight -> Font(R.font.google_sans_flex, weight) },
+)
+
+/** Every Material type style, re-set in [family]. */
+internal fun Typography.withFontFamily(family: FontFamily): Typography = copy(
+    displayLarge = displayLarge.copy(fontFamily = family),
+    displayMedium = displayMedium.copy(fontFamily = family),
+    displaySmall = displaySmall.copy(fontFamily = family),
+    headlineLarge = headlineLarge.copy(fontFamily = family),
+    headlineMedium = headlineMedium.copy(fontFamily = family),
+    headlineSmall = headlineSmall.copy(fontFamily = family),
+    titleLarge = titleLarge.copy(fontFamily = family),
+    titleMedium = titleMedium.copy(fontFamily = family),
+    titleSmall = titleSmall.copy(fontFamily = family),
+    bodyLarge = bodyLarge.copy(fontFamily = family),
+    bodyMedium = bodyMedium.copy(fontFamily = family),
+    bodySmall = bodySmall.copy(fontFamily = family),
+    labelLarge = labelLarge.copy(fontFamily = family),
+    labelMedium = labelMedium.copy(fontFamily = family),
+    labelSmall = labelSmall.copy(fontFamily = family),
+)
+
 /**
- * Twill takes its colours from the system's dynamic colour roles exactly like GrapheneOS
- * Settings (on API 34+ the dynamic scheme reads `system_surface_container_*`,
- * `system_surface_bright_*` and friends), so "Other colors" gives neutral greys and
- * "Wallpaper colors" gives wallpaper tints, in light and dark:
+ * The same theme as Dialtone and Contacts: wallpaper (dynamic) colour following the system's
+ * light/dark setting, Google Sans Flex, Material 3 Expressive. Colour roles:
  *
- * - **Page / window** (`background`, `surface`, `surfaceContainer`): surface container.
- *   Scaffolds, top bars and plain Surfaces sit on it.
- * - **Rows, cards, others' bubbles, dialogs** (`surfaceBright`, and `surfaceContainerHigh`,
- *   which M3 dialogs and incoming bubbles use): surface bright. `surfaceContainerHighest` is
- *   left as the raised layer for fields and chips.
- * - **Accent** (`primary`, `primaryContainer`, `secondaryContainer`) only for highlights:
- *   FAB, switches, own bubbles, selection, links.
- * - **Text and icons**: `onSurface` / `onSurfaceVariant`, also for `onBackground`.
+ * - **Pages** (`background`, `surface`): surface container low.
+ * - **Cards, rows, menus, others' bubbles**: `surfaceBright` (set where they're drawn).
+ * - **Search bars**: `surfaceContainerHighest`.
+ * - **Accent** (`primary`, `primaryContainer`...) only for highlights: FAB, switches, own
+ *   bubbles, selection, links.
  *
- * Material 3 Expressive: expressive motion via [MaterialExpressiveTheme].
+ * Twill only: upstream's screens paint their pages and top bars with `surfaceContainer`
+ * directly, so it is set to the page colour too (Twill has no bottom bar, the one thing that
+ * keeps the default `surfaceContainer` in Dialtone). minSdk is 36, so dynamic colour is always
+ * available and Dialtone's fallback to the plain Material schemes isn't needed.
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val dynamic = when {
-        isSystemInDarkTheme() -> dynamicDarkColorScheme(context = context)
-        else -> dynamicLightColorScheme(context = context)
+    val wallpaper = if (darkTheme) {
+        dynamicDarkColorScheme(context)
+    } else {
+        dynamicLightColorScheme(context)
     }
-
     MaterialExpressiveTheme(
-        colorScheme = dynamic.withSettingsSurfaces(),
-        motionScheme = MotionScheme.expressive(),
+        colorScheme = wallpaper.withTwillSurfaces(),
+        typography = Typography().withFontFamily(GoogleSansFlex),
         shapes = AppShapes,
         content = content,
     )
 }
 
-/** Maps the surface roles the way Settings uses them (see [AppTheme]). */
-internal fun ColorScheme.withSettingsSurfaces(): ColorScheme = copy(
-    background = surfaceContainer,
-    onBackground = onSurface,
-    surface = surfaceContainer,
-    surfaceContainerHigh = surfaceBright,
+/** Pages use surface container low (see [AppTheme]). */
+internal fun ColorScheme.withTwillSurfaces(): ColorScheme = copy(
+    background = surfaceContainerLow,
+    surface = surfaceContainerLow,
+    surfaceContainer = surfaceContainerLow,
 )

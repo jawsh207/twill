@@ -4,6 +4,12 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.12
+
+- Same look as Dialtone and Contacts: Google Sans Flex for all text, wallpaper colours with
+  slightly lighter pages, a search bar in the search-bar colour, and a round Start chat
+  button (long-press it to choose the service).
+
 ## 1.0.11
 
 - Delta Chat chats now show their messages; they opened empty before, which also hid

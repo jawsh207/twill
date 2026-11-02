@@ -28,7 +28,7 @@ Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: N
 - **Off until you sign in.** Nothing contacts a relay until you sign in under **Settings › Nostr Settings**.
 - **Sign in with Amber** (recommended): your key stays in the Amber signer app (NIP-55). Approve Twill's requests once in Amber and messages decrypt in the background.
 - **Or use a private key:** paste an nsec or create a new one. It is encrypted with the phone's Android Keystore and never leaves the device.
-- **Conversation list:** when signed in, the list has collapsible **SMS** and **Nostr** sections. Use the **+** in the Nostr header to start a chat or a group, by NIP-05 address (`name@domain`), npub or public key. Long-press a Nostr chat to pin, mark unread or delete it.
+- **Conversation list:** when signed in, the list has collapsible **SMS** and **Nostr** sections. Long-press **Start chat** and choose Nostr to start a chat or a group, by NIP-05 address (`name@domain`), npub or public key. Long-press a Nostr chat to pin, mark unread or delete it.
 - **Group chats (NIP-17):** name a group when you create it, or rename it from the chat header; members see the new name with your next message. Group messages show who sent them.
 - **Attachments:** photos and files are encrypted on your phone (AES-GCM, NIP-17 kind 15) and uploaded to a Blossom media server, which only ever sees ciphertext. Photos are re-saved first so location and camera details never leave your phone. The server is set in Nostr Settings › Media (default `blossom.primal.net`); limit 25 MB.
 - **Incoming attachments** are tap-to-download unless **Download attachments automatically** is on (off by default, because downloading reveals your IP address to the sender's file server). Downloads are hash-checked before decrypting.
@@ -48,7 +48,7 @@ Twill can send and receive [Delta Chat](https://delta.chat) messages: end-to-end
   - **Create a new profile:** a free, anonymous address on a relay (default `nine.testrun.org`). No phone number or email needed.
   - **Use a setup code:** a `dcaccount:` or `dclogin:` code from a relay's website.
   - **Use an existing email address:** works with most providers. Messages to people who don't use Delta Chat aren't encrypted.
-- **Start chats** with the **+** in the Delta Chat section: paste someone's invite link (or an email address). Share your own invite link from Delta Chat Settings.
+- **Start chats** by long-pressing **Start chat** and choosing Delta Chat: paste someone's invite link (or an email address). Share your own invite link from Delta Chat Settings.
 - **Contact requests:** a chat from someone new shows **Accept** and **Block** instead of the message box.
 - **Groups, photos and files** work like the other sections; sent messages show ✓ when delivered and ✓✓ when read (read receipts can be turned off).
 - **Message delivery:** the same three choices as Nostr. If both use "Always connected", they share one permanent notification.
@@ -116,3 +116,5 @@ To keep these merges easy, Twill's changes are kept small and mostly live in the
 ## Credits and license
 
 Twill is a fork of [GrapheneOS Messaging](https://github.com/GrapheneOS/Messaging), which is itself based on the Android Open Source Project's Messaging app. Files that came from AOSP carry the Apache License 2.0 header and remain under that license. All credit for the base app goes to the GrapheneOS and AOSP contributors.
+
+Twill's text is set in [Google Sans Flex](https://github.com/googlefonts/googlesans-flex) (`res/font/google_sans_flex.ttf`), Copyright 2015 The Google Sans Flex Authors, licensed under the SIL Open Font License 1.1 ([`assets/licenses/google_sans_flex-OFL.txt`](assets/licenses/google_sans_flex-OFL.txt), also shown in the app's open source licenses).

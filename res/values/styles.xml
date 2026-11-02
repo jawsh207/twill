@@ -23,9 +23,12 @@
         <item name="android:forceDarkAllowed">true</item>
     </style>
 
-    <!-- Twill: the window shows the page colour (system surface container) behind Compose, and
-         the system bars are transparent (edge to edge); values-night has the dark version. -->
-    <style name="Theme.Compose" parent="android:Theme.Material.Light.NoActionBar">
+    <!-- Twill: as in Dialtone, a DeviceDefault DayNight window (light and dark in one) that
+         only covers the window before Compose's first frame: the page colour (system surface
+         container low) and transparent system bars (edge to edge). -->
+    <style name="Theme.Compose" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:windowBackground">@color/twill_window_background</item>
         <item name="android:colorBackground">@color/twill_window_background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>

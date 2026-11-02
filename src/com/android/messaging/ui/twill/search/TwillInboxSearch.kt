@@ -133,8 +133,8 @@ private val SearchBarHeight = 56.dp
 private val SearchBarShape = RoundedCornerShape(percent = 50)
 
 /**
- * The inbox's top bar: a "Search messages" field on a rounded card, with Settings on the
- * right. Tapping it starts [search]; while searching it edits the query.
+ * The inbox's top bar: a "Search messages" field (surface container highest, the search bar
+ * role shared with Dialtone and Contacts), with Settings on the right. Tapping it starts [search]; while searching it edits the query.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,7 +154,9 @@ internal fun TwillInboxSearchBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            // A solid page colour behind the bar and the status bar, so the list doesn't show
+            // through while it scrolls under them.
+            .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(TopAppBarDefaults.windowInsets)
             .padding(horizontal = TwillCards.SideMargin, vertical = 8.dp),
     ) {
@@ -163,7 +165,7 @@ internal fun TwillInboxSearchBar(
                 .fillMaxWidth()
                 .height(SearchBarHeight)
                 .clip(SearchBarShape)
-                .background(MaterialTheme.colorScheme.surfaceBright)
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                 .then(
                     if (search.isActive) {
                         Modifier

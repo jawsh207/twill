@@ -21,6 +21,14 @@ java {
     }
 }
 
+// Twill: Material 3 Expressive APIs (MaterialExpressiveTheme), as in Dialtone. AGP 9 compiles
+// Kotlin itself ("built-in Kotlin").
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3ExpressiveApi")
+    }
+}
+
 tasks.withType<Test>().configureEach {
     javaLauncher.set(
         javaToolchains.launcherFor {
