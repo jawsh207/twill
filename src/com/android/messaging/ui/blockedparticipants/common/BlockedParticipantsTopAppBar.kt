@@ -36,7 +36,7 @@ internal fun BlockedParticipantsTopAppBar(
                     )
                     else -> stringResource(R.string.blocked_contacts_title)
                 },
-                style = MaterialTheme.typography.titleMedium,
+                // Twill: the default title size, like the archived list's.
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
