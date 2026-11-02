@@ -380,7 +380,8 @@ internal class DeltaChatProtocol @Inject constructor(
                 val loaded = rpc.callObject("get_messages", account, chunk)
                 chunk.forEach { msgId ->
                     loaded.optJSONObject(msgId.toString())
-                        ?.takeIf { it.optString("kind") == "Message" }
+                        // MessageLoadResult is tagged in camelCase: "message" or "loadingError".
+                        ?.takeIf { it.optString("kind").equals("message", ignoreCase = true) }
                         ?.let { messageCache.put(msgId, it.toCached()) }
                 }
             }
