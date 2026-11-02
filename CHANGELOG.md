@@ -4,6 +4,17 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.11
+
+- Delta Chat chats now show their messages; they opened empty before, which also hid
+  failed messages and their retry.
+- New inbox look: every conversation is its own card, grouped under SMS, Nostr and Delta
+  Chat.
+- A "Search messages" bar at the top searches conversation names and messages across SMS,
+  Nostr and Delta Chat; opening a result jumps to that message. Settings is at the right
+  of the bar.
+- Archived conversations and Blocked contacts moved to SMS Settings.
+
 ## 1.0.10
 
 - Fixes from GrapheneOS Messaging:
