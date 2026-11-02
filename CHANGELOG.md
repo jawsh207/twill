@@ -8,6 +8,10 @@ section here. Write entries for people using the app, newest version first.
 
 - Delta Chat groups have their own QR code: open the group's info and tap "Invite with QR
   code". Anyone who scans it with Delta Chat or Twill joins the group.
+- Bottom bar: swipe left and right to change tabs, and Back returns to the SMS tab before
+  leaving the app.
+- Swiping an SMS conversation to archive it is gone (archive it from the selection bar after a
+  long press). Swiping right to mark it read or unread stays.
 
 ## 1.0.13
 

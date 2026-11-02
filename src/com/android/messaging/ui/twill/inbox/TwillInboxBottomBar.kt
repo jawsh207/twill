@@ -1,8 +1,11 @@
 package com.android.messaging.ui.twill.inbox
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -13,6 +16,10 @@ import androidx.compose.material3.ShortNavigationBarDefaults
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.res.painterResource
@@ -93,5 +100,46 @@ private fun TwillInboxTab.iconRes(isSelected: Boolean): Int = when (this) {
         } else {
             R.drawable.ic_twill_tab_deltachat_outline
         }
+    }
+}
+
+/**
+ * The bottom bar's tabs as horizontal pages: swiping changes tab, and choosing a tab in the
+ * bar scrolls to its page. [page] draws one tab's list.
+ */
+@Composable
+internal fun TwillInboxPager(
+    tabs: List<TwillInboxTab>,
+    selected: TwillInboxTab,
+    isSwipeEnabled: Boolean,
+    onSelected: (TwillInboxTab) -> Unit,
+    modifier: Modifier = Modifier,
+    page: @Composable (TwillInboxTab) -> Unit,
+) {
+    val currentTabs by rememberUpdatedState(tabs)
+    val currentOnSelected by rememberUpdatedState(onSelected)
+    val pagerState = rememberPagerState(
+        initialPage = tabs.indexOf(selected).coerceAtLeast(0),
+    ) { currentTabs.size }
+
+    // The bar (or Back) picked a tab: show its page.
+    LaunchedEffect(selected, tabs) {
+        val index = tabs.indexOf(selected)
+        if (index >= 0 && index != pagerState.currentPage) pagerState.animateScrollToPage(index)
+    }
+    // A swipe settled on a page: that tab is now selected.
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { index ->
+            currentTabs.getOrNull(index)?.let(currentOnSelected)
+        }
+    }
+
+    HorizontalPager(
+        state = pagerState,
+        modifier = modifier.fillMaxSize(),
+        userScrollEnabled = isSwipeEnabled,
+        key = { index -> currentTabs.getOrNull(index)?.toString() ?: index },
+    ) { index ->
+        currentTabs.getOrNull(index)?.let { tab -> page(tab) }
     }
 }

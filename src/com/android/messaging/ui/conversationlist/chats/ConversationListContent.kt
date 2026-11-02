@@ -32,14 +32,17 @@ import com.android.messaging.ui.conversationlist.model.ConversationListItemUiMod
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.twill.inbox.ConversationListSections
 import com.android.messaging.ui.twill.inbox.LocalTwillInbox
+import com.android.messaging.ui.twill.inbox.TwillInboxTab
 import com.android.messaging.ui.twill.inbox.TwillInboxUiState
 import com.android.messaging.ui.twill.inbox.rememberConversationListSections
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentSetOf
 
+// Twill: no swipe to archive (archive from the selection bar); a swipe left can then switch
+// the bottom bar's tabs instead.
 private val ChatSwipeSpec = ConversationListSwipeSpec(
     startToEnd = ConversationSwipeKind.ToggleRead,
-    endToStart = ConversationSwipeKind.Archive,
+    endToStart = null,
 )
 
 @Composable
@@ -52,6 +55,8 @@ internal fun ConversationListContent(
     fabBottomReserve: Dp,
     pinAnimationController: OverlayReorderAnimationController<Model, ConversationId>?,
     modifier: Modifier = Modifier,
+    // Twill: the bottom bar's tab this page shows (null without the bar).
+    twillPageTab: TwillInboxTab? = null,
 ) {
     // Twill: SMS and protocol sections, only when another protocol is set up.
     val inbox = LocalTwillInbox.current
@@ -61,6 +66,7 @@ internal fun ConversationListContent(
         inbox = inbox,
         state = inboxState,
         smsCount = (content as? ConversationListContentUiState.Items)?.items?.size ?: 0,
+        pageTab = twillPageTab,
     )
 
     Box(modifier = modifier.fillMaxSize()) {

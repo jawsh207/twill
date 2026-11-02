@@ -166,11 +166,13 @@ private fun LazyItemScope.ConversationListRow(
         kind = swipeSpec.startToEnd,
         onItemEvent = onItemEvent,
     )
-    val endToStartAction = rememberConversationSwipeAction(
-        conversationId = item.conversationId,
-        kind = swipeSpec.endToStart,
-        onItemEvent = onItemEvent,
-    )
+    val endToStartAction = swipeSpec.endToStart?.let { kind ->
+        rememberConversationSwipeAction(
+            conversationId = item.conversationId,
+            kind = kind,
+            onItemEvent = onItemEvent,
+        )
+    }
 
     DisposableEffect(item.conversationId, pinAnimationController) {
         onDispose {

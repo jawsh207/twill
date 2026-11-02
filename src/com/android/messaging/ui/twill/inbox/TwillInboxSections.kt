@@ -97,19 +97,16 @@ private sealed interface NewChatDialog {
 }
 
 /**
- * Builds the sections from the inbox state, or null for the plain upstream SMS list (SMS on
- * and no other protocol set up).
+ * The inbox's new-chat picker and new chat / group dialogs, shown once for the whole inbox
+ * (the bottom bar's pages each build their own sections).
  */
 @Composable
-internal fun rememberConversationListSections(
-    inbox: TwillInbox?,
+internal fun TwillInboxDialogs(
+    inbox: TwillInbox,
     state: TwillInboxUiState,
-    smsCount: Int,
-): ConversationListSections? {
-    if (inbox == null || (state.isSmsEnabled && state.sections.isEmpty())) return null
-
-    var dialog by remember { mutableStateOf<NewChatDialog>(NewChatDialog.None) }
+) {
     val controller = inbox.controller
+    var dialog by remember { mutableStateOf<NewChatDialog>(NewChatDialog.None) }
 
     // The new-message button (with SMS off, or long pressed): choose where to start the chat.
     if (inbox.isNewChatPickerVisible.value) {
@@ -173,9 +170,24 @@ internal fun rememberConversationListSections(
             onDismiss = { dialog = NewChatDialog.None },
         )
     }
+}
+
+/**
+ * Builds the sections from the inbox state, or null for the plain upstream SMS list (SMS on
+ * and no other protocol set up). With the bottom bar, [pageTab] is the tab being drawn.
+ */
+@Composable
+internal fun rememberConversationListSections(
+    inbox: TwillInbox?,
+    state: TwillInboxUiState,
+    smsCount: Int,
+    pageTab: TwillInboxTab? = null,
+): ConversationListSections? {
+    if (inbox == null || (state.isSmsEnabled && state.sections.isEmpty())) return null
+    val controller = inbox.controller
 
     // The bottom bar (Settings option, two or more services): one service per tab, no headers.
-    when (val tab = inbox.currentTab(state)) {
+    when (val tab = pageTab ?: inbox.currentTab(state)) {
         null -> Unit
 
         TwillInboxTab.Sms -> return ConversationListSections(

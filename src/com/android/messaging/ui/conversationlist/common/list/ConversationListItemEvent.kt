@@ -41,7 +41,8 @@ internal sealed interface ConversationListItemEvent {
 @Immutable
 internal data class ConversationListSwipeSpec(
     val startToEnd: ConversationSwipeKind,
-    val endToStart: ConversationSwipeKind,
+    // Twill: null for no swipe that way (the inbox has no swipe to archive).
+    val endToStart: ConversationSwipeKind?,
 )
 
 internal fun unsupportedSwipeKind(kind: ConversationSwipeKind): Nothing {

@@ -110,13 +110,22 @@ shot "bottom-bar-1-setting"
 back
 sleep 2
 shot "bottom-bar-2-sms"
-$UI tap "Nostr" || $UI dump "$OUT/bottom-bar-tabs.xml"
+# Swipe left over the SMS row: no swipe-to-archive any more, so the pager moves to Nostr.
+adb shell input swipe 900 450 150 450 250
 sleep 2
-shot "bottom-bar-3-nostr"
+shot "bottom-bar-3-nostr-swiped"
 $UI tap "Start chat" || $UI dump "$OUT/bottom-bar-start.xml"
 sleep 2
 shot "bottom-bar-4-start-chat"
 back
+sleep 1
+# Back from the Nostr tab returns to the SMS tab instead of leaving the app.
+back
+sleep 2
+shot "bottom-bar-5-back-to-sms"
+$UI tap "Nostr"
+sleep 2
+shot "bottom-bar-6-nostr-tapped"
 $UI tap "SMS"
 adb shell am force-stop "$PKG"
 

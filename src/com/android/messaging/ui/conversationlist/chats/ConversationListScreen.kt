@@ -77,6 +77,8 @@ import com.android.messaging.ui.conversationlist.model.ConversationListItemUiMod
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.twill.inbox.LocalTwillInbox
 import com.android.messaging.ui.twill.inbox.TwillInboxBottomBar
+import com.android.messaging.ui.twill.inbox.TwillInboxDialogs
+import com.android.messaging.ui.twill.inbox.TwillInboxPager
 import com.android.messaging.ui.twill.inbox.TwillInboxTab
 import com.android.messaging.ui.twill.inbox.rememberStartChatLongClick
 import com.android.messaging.ui.twill.inbox.twillLongPress
@@ -418,6 +420,13 @@ private fun ConversationListScaffold(
     val twillState = twillInbox?.controller?.uiState?.collectAsStateWithLifecycle()?.value
     val twillTab = twillState?.let { twillInbox.currentTab(it) }
     val isBottomBarShown = twillTab != null && !isSelectionMode && !twillInbox.search.isActive
+    if (twillInbox != null && twillState != null) TwillInboxDialogs(twillInbox, twillState)
+
+    // Back goes to the first tab (SMS) before leaving the app.
+    val firstTab = twillState?.tabs?.firstOrNull()
+    BackHandler(enabled = isBottomBarShown && twillTab != firstTab) {
+        if (firstTab != null) twillInbox?.selectedTab?.value = firstTab
+    }
 
     Scaffold(
         modifier = modifier,
@@ -480,15 +489,37 @@ private fun ConversationListScaffold(
                     contentPadding = contentPadding,
                 )
             } else {
-                ConversationListContent(
-                    content = uiState.content,
-                    listState = listState,
-                    onAction = onAction,
-                    scaffoldContentPadding = contentPadding,
-                    isSelectionMode = isSelectionMode,
-                    fabBottomReserve = FabBottomReserve,
-                    pinAnimationController = pinAnimationController,
-                )
+                if (twillTab != null && twillState != null) {
+                    // Twill: the bottom bar's tabs as pages, so a swipe changes tab.
+                    TwillInboxPager(
+                        tabs = twillState.tabs,
+                        selected = twillTab,
+                        isSwipeEnabled = !isSelectionMode,
+                        onSelected = { tab -> twillInbox.selectedTab.value = tab },
+                    ) { tab ->
+                        val isSms = tab == TwillInboxTab.Sms
+                        ConversationListContent(
+                            content = uiState.content,
+                            listState = if (isSms) listState else rememberLazyListState(),
+                            onAction = onAction,
+                            scaffoldContentPadding = contentPadding,
+                            isSelectionMode = isSelectionMode,
+                            fabBottomReserve = FabBottomReserve,
+                            pinAnimationController = pinAnimationController.takeIf { isSms },
+                            twillPageTab = tab,
+                        )
+                    }
+                } else {
+                    ConversationListContent(
+                        content = uiState.content,
+                        listState = listState,
+                        onAction = onAction,
+                        scaffoldContentPadding = contentPadding,
+                        isSelectionMode = isSelectionMode,
+                        fabBottomReserve = FabBottomReserve,
+                        pinAnimationController = pinAnimationController,
+                    )
+                }
 
                 ConversationListFabs(
                     uiState = uiState,

@@ -277,7 +277,13 @@ private fun Modifier.swipeActions(
 
                 var initialOverSlop = 0f
                 val slopChange = awaitTouchSlopOrCancellation(down.id) { change, overSlop ->
-                    if (isHorizontalDrag(overSlop)) {
+                    // Twill: only take drags towards a side that has an action, so others reach
+                    // the parent (the inbox's tab pager).
+                    val hasAction = when {
+                        overSlop.x > 0 -> startToEndAction() != null
+                        else -> endToStartAction() != null
+                    }
+                    if (isHorizontalDrag(overSlop) && hasAction) {
                         change.consume()
                         initialOverSlop = overSlop.x
                     }
