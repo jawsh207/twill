@@ -11,6 +11,9 @@ import com.android.messaging.R
 import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.twillEntryPoint
+import com.android.messaging.ui.deltachat.qr.DeltaChatQrNavKey
+import com.android.messaging.ui.deltachat.qr.DeltaChatQrScreen
+import com.android.messaging.ui.deltachat.qr.DeltaChatQrViewModel
 import com.android.messaging.ui.navigation.LocalNavigator
 import com.android.messaging.ui.navigation.paneTitleMetadata
 import com.android.messaging.ui.twill.chat.TwillChatScreen
@@ -36,6 +39,22 @@ internal fun EntryProviderScope<NavKey>.twillEntries() {
     entry<TwillChatNavKey>(
         metadata = paneTitleMetadata(R.string.twill_chat_pane_title),
         content = twillChatRouteContent(),
+    )
+    entry<DeltaChatQrNavKey>(
+        metadata = paneTitleMetadata(R.string.deltachat_qr_title),
+        content = {
+            val navigator = LocalNavigator.current
+            DeltaChatQrScreen(
+                viewModel = hiltViewModel<DeltaChatQrViewModel>(),
+                onNavigateBack = navigator::back,
+                // The chat replaces the QR screen, so Back from it goes where QR was opened.
+                onOpenChat = { chatId ->
+                    navigator.replaceTop(
+                        TwillChatNavKey(protocol = TwillProtocolId.DeltaChat.key, chatId = chatId),
+                    )
+                },
+            )
+        },
     )
 }
 

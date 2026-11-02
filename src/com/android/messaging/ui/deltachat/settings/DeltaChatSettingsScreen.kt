@@ -71,6 +71,7 @@ internal fun DeltaChatSettingsScreen(
     viewModel: DeltaChatSettingsViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenQr: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -200,6 +201,13 @@ internal fun DeltaChatSettingsScreen(
                                 copy(context, uiState.profile.address)
                                 UiUtils.showToastAtBottom(R.string.deltachat_copied)
                             },
+                        )
+                    }
+                    item(key = "qr") {
+                        SettingsClickableItem(
+                            title = stringResource(R.string.deltachat_qr_title),
+                            summary = stringResource(R.string.deltachat_qr_settings_summary),
+                            onClick = onOpenQr,
                         )
                     }
                     item(key = "invite") {

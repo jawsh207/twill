@@ -23,6 +23,7 @@ import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -117,6 +118,11 @@ internal fun rememberConversationListSections(
             sections = state.sections,
             initialService = state.sections.firstOrNull {
                 it.protocol == inbox.pickerService.value
+            },
+            onOpenQr = {
+                inbox.isNewChatPickerVisible.value = false
+                inbox.pickerService.value = null
+                inbox.onOpenDeltaChatQr()
             },
             onNewSms = {
                 inbox.isNewChatPickerVisible.value = false
@@ -258,6 +264,7 @@ private fun NewChatPicker(
     sections: List<TwillInboxSection>,
     /** Opens straight on this service's chat or group choice (Start chat on its tab). */
     initialService: TwillInboxSection?,
+    onOpenQr: () -> Unit,
     onNewSms: () -> Unit,
     onPick: (TwillInboxSection, isGroup: Boolean) -> Unit,
     onOpenSettings: () -> Unit,
@@ -292,6 +299,14 @@ private fun NewChatPicker(
                         label = stringResource(R.string.inbox_new_group),
                         onClick = { onPick(service, true) },
                     )
+                    // Delta Chat: show your QR code or scan someone else's.
+                    if (service.protocol == TwillProtocolId.DeltaChat) {
+                        PickerRow(
+                            icon = rememberVectorPainter(Icons.Rounded.QrCode2),
+                            label = stringResource(R.string.deltachat_qr_title),
+                            onClick = onOpenQr,
+                        )
+                    }
                 } else {
                     if (sections.isEmpty()) {
                         Text(text = stringResource(R.string.twill_setup_hint))

@@ -26,6 +26,7 @@ import com.android.messaging.ui.conversationlist.chats.ConversationListNavigatio
 import com.android.messaging.ui.conversationlist.chats.ConversationListScreen
 import com.android.messaging.ui.conversationlist.chats.ConversationListViewModel
 import com.android.messaging.ui.conversationlist.chats.rememberConversationListEffectHandler
+import com.android.messaging.ui.deltachat.qr.DeltaChatQrNavKey
 import com.android.messaging.ui.navigation.LocalNavigator
 import com.android.messaging.ui.navigation.Navigator
 import com.android.messaging.ui.navigation.paneTitleMetadata
@@ -69,6 +70,7 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
                 onOpenSms = { id ->
                     navigator.navigateToConversation(conversationId = ConversationId(id))
                 },
+                onOpenDeltaChatQr = { appNavigator.push(DeltaChatQrNavKey) },
             )
         }
         LaunchedEffect(inbox) { inbox.search.run() }

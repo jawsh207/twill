@@ -1170,4 +1170,14 @@
     <!-- Twill: inbox bottom bar option -->
     <string name="twill_bottom_bar">Bottom bar</string>
     <string name="twill_bottom_bar_summary">When more than one service is on, show a tab for each instead of sections</string>
+    <!-- Twill: Delta Chat QR codes -->
+    <string name="deltachat_qr_title">QR code</string>
+    <string name="deltachat_qr_mine">My QR code</string>
+    <string name="deltachat_qr_scan">Scan</string>
+    <string name="deltachat_qr_mine_hint">Let someone scan this with Delta Chat or Twill to start an end-to-end encrypted chat with you. It also works over a video call.</string>
+    <string name="deltachat_qr_scan_hint">Point the camera at someone\'s Delta Chat QR code to start a chat with them or join their group.</string>
+    <string name="deltachat_qr_copy">Copy link</string>
+    <string name="deltachat_qr_allow_camera">Allow camera</string>
+    <string name="deltachat_qr_not_invite">That isn\'t a Delta Chat invite code</string>
+    <string name="deltachat_qr_settings_summary">Show yours or scan someone else\'s to start a chat</string>
 </resources>

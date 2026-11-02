@@ -151,6 +151,8 @@ internal class TwillInbox(
     val onNewSms: () -> Unit,
     /** Opens an SMS/MMS conversation by id. */
     val onOpenSms: (conversationId: String) -> Unit,
+    /** Delta Chat's QR code screen (show yours, scan someone else's). */
+    val onOpenDeltaChatQr: () -> Unit = {},
 ) {
     /** The "Search messages" bar at the top of the inbox. */
     val search = TwillInboxSearch(controller::search)

@@ -34,6 +34,7 @@ import com.android.messaging.ui.appsettings.twill.TwillSettingsScreen
 import com.android.messaging.ui.blockedparticipants.navigation.BlockedParticipantsNavKey
 import com.android.messaging.ui.conversationlist.navigation.ArchivedConversationListNavKey
 import com.android.messaging.ui.core.CollectEvents
+import com.android.messaging.ui.deltachat.qr.DeltaChatQrNavKey
 import com.android.messaging.ui.deltachat.settings.DeltaChatSettingsScreen
 import com.android.messaging.ui.deltachat.settings.DeltaChatSettingsViewModel
 import com.android.messaging.ui.license.navigation.LicenseNavKey
@@ -140,6 +141,7 @@ private fun deltaChatSettingsRouteContent(): @Composable (DeltaChatSettingsNavKe
         DeltaChatSettingsScreen(
             viewModel = hiltViewModel<DeltaChatSettingsViewModel>(),
             onNavigateBack = navigator::back,
+            onOpenQr = { navigator.push(DeltaChatQrNavKey) },
         )
     }
 }
