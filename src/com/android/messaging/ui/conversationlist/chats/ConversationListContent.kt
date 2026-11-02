@@ -67,6 +67,7 @@ internal fun ConversationListContent(
         when {
             // Twill: protocol sections only (no SMS rows) when SMS is empty or turned off.
             sections != null &&
+                !sections.isSmsOnly &&
                 (content is ConversationListContentUiState.Empty || sections.isSmsHidden) -> {
                 ConversationListItems(
                     items = persistentListOf(),

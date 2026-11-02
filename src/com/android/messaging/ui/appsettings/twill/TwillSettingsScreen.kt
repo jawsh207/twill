@@ -15,6 +15,7 @@ import com.android.messaging.R
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
 import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
 import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
+import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.core.MessagingPreviewTheme
 
@@ -34,6 +35,8 @@ internal fun TwillSettingsScreen(
     isSmsEnabled: Boolean = true,
     /** Test builds only: upstream's debug options, formerly in the inbox's menu. */
     onDebugClick: (() -> Unit)? = null,
+    isBottomBarEnabled: Boolean = false,
+    onBottomBarChange: (Boolean) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -80,6 +83,15 @@ internal fun TwillSettingsScreen(
             item(key = "licenses_divider", contentType = SettingsGroupBreak) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
+            item(key = "bottom_bar") {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.twill_bottom_bar),
+                    summary = stringResource(R.string.twill_bottom_bar_summary),
+                    checked = isBottomBarEnabled,
+                    onCheckedChange = onBottomBarChange,
+                )
+            }
+            item(key = "licenses_break", contentType = SettingsGroupBreak) {}
             item(key = "licenses") {
                 SettingsClickableItem(
                     title = stringResource(R.string.menu_license),

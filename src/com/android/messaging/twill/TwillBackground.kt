@@ -48,6 +48,8 @@ internal interface TwillEntryPoint {
     fun twillAppVisibility(): TwillAppVisibility
 
     fun twillSms(): TwillSms
+
+    fun twillInboxSettings(): TwillInboxSettings
 }
 
 internal fun Context.twillEntryPoint(): TwillEntryPoint =

@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,6 +76,8 @@ import com.android.messaging.ui.conversationlist.model.ConversationListContentUi
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.twill.inbox.LocalTwillInbox
+import com.android.messaging.ui.twill.inbox.TwillInboxBottomBar
+import com.android.messaging.ui.twill.inbox.TwillInboxTab
 import com.android.messaging.ui.twill.inbox.rememberStartChatLongClick
 import com.android.messaging.ui.twill.inbox.twillLongPress
 import com.android.messaging.ui.twill.search.TwillInboxSearchBar
@@ -410,9 +413,38 @@ private fun ConversationListScaffold(
         onAction = onAction,
     )
 
+    // Twill: the bottom bar (a Settings option) with a tab per service, when 2+ are on.
+    val twillInbox = LocalTwillInbox.current
+    val twillState = twillInbox?.controller?.uiState?.collectAsStateWithLifecycle()?.value
+    val twillTab = twillState?.let { twillInbox.currentTab(it) }
+    val isBottomBarShown = twillTab != null && !isSelectionMode && !twillInbox.search.isActive
+
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        bottomBar = {
+            if (isBottomBarShown && twillState != null && twillTab != null) {
+                val smsUnread = (uiState.content as? ConversationListContentUiState.Items)
+                    ?.items?.count { it.isUnread } ?: 0
+                TwillInboxBottomBar(
+                    tabs = twillState.tabs,
+                    selected = twillTab,
+                    unreadCount = { tab ->
+                        when (tab) {
+                            TwillInboxTab.Sms -> smsUnread
+                            is TwillInboxTab.Service ->
+                                twillState.sections
+                                    .firstOrNull { it.protocol == tab.protocol }
+                                    ?.chats?.count { it.unreadCount > 0 } ?: 0
+                        }
+                    },
+                    onSelect = { tab ->
+                        twillInbox.selectedTab.value = tab
+                        listState.requestScrollToItem(0)
+                    },
+                )
+            }
+        },
         topBar = {
             ConversationListTopBar(
                 uiState = uiState,
@@ -441,7 +473,6 @@ private fun ConversationListScaffold(
                 .background(listPaneContentColor()),
         ) {
             // Twill: while searching, the results take the list's place.
-            val twillInbox = LocalTwillInbox.current
             if (twillInbox != null && twillInbox.search.isActive) {
                 TwillInboxSearchResults(
                     search = twillInbox.search,
@@ -464,6 +495,12 @@ private fun ConversationListScaffold(
                     isSelectionMode = isSelectionMode,
                     onAction = onAction,
                     onScrollToTop = onScrollToTop,
+                    // Twill: above the bottom bar when it's shown.
+                    bottomBarHeight = if (isBottomBarShown) {
+                        contentPadding.calculateBottomPadding()
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -476,9 +513,16 @@ private fun BoxScope.ConversationListFabs(
     isSelectionMode: Boolean,
     onAction: (Action) -> Unit,
     onScrollToTop: () -> Unit,
+    bottomBarHeight: Dp? = null,
 ) {
-    val hasItems = uiState.content is ConversationListContentUiState.Items
-    val fabWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+    // Twill: with the bottom bar, Start chat is always there (a service tab may be the one
+    // in view) and both buttons sit above the bar instead of the gesture bar.
+    val hasItems =
+        uiState.content is ConversationListContentUiState.Items || bottomBarHeight != null
+    val fabWindowInsets = when (bottomBarHeight) {
+        null -> WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+        else -> WindowInsets(bottom = bottomBarHeight)
+    }
     val horizontalInsets = horizontalSafeDrawingInsets()
     val bottomSpacing = when {
         LocalIsListDetailPane.current -> ComposeBarVerticalPadding

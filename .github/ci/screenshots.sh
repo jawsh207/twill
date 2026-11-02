@@ -98,6 +98,28 @@ sleep 2
 shot "nostr-6-inbox"
 adb shell am force-stop "$PKG"
 
+# The bottom bar (Settings option): turn it on now that SMS and Nostr are both on, then look
+# at both tabs. It stays on for the rest of the run.
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
+sleep 2
+$UI tap "Settings"
+sleep 1
+$UI tap "Bottom bar" || $UI dump "$OUT/bottom-bar-settings.xml"
+sleep 1
+shot "bottom-bar-1-setting"
+back
+sleep 2
+shot "bottom-bar-2-sms"
+$UI tap "Nostr" || $UI dump "$OUT/bottom-bar-tabs.xml"
+sleep 2
+shot "bottom-bar-3-nostr"
+$UI tap "Start chat" || $UI dump "$OUT/bottom-bar-start.xml"
+sleep 2
+shot "bottom-bar-4-start-chat"
+back
+$UI tap "SMS"
+adb shell am force-stop "$PKG"
+
 # Home screen widgets: add "Conversations" and "Conversation" (picking 555-1234) from the
 # launcher's widget picker. Each step is screenshotted, and the view tree is saved when a
 # step can't find what it taps.

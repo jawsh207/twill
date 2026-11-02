@@ -1167,4 +1167,7 @@
     <string name="twill_sms_archived_summary">Conversations you archived</string>
     <string name="twill_sms_blocked_summary">People whose messages are blocked</string>
     <string name="twill_debug_summary">Developer options for this test build</string>
+    <!-- Twill: inbox bottom bar option -->
+    <string name="twill_bottom_bar">Bottom bar</string>
+    <string name="twill_bottom_bar_summary">When more than one service is on, show a tab for each instead of sections</string>
 </resources>

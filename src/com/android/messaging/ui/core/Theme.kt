@@ -10,6 +10,9 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -86,13 +89,23 @@ fun AppTheme(
     } else {
         dynamicLightColorScheme(context)
     }
-    MaterialExpressiveTheme(
-        colorScheme = wallpaper.withTwillSurfaces(),
-        typography = Typography().withFontFamily(GoogleSansFlex),
-        shapes = AppShapes,
-        content = content,
-    )
+    // The scheme's own surface container, for the bottom bar (see LocalBarContainerColor).
+    CompositionLocalProvider(LocalBarContainerColor provides wallpaper.surfaceContainer) {
+        MaterialExpressiveTheme(
+            colorScheme = wallpaper.withTwillSurfaces(),
+            typography = Typography().withFontFamily(GoogleSansFlex),
+            shapes = AppShapes,
+            content = content,
+        )
+    }
 }
+
+/**
+ * The dynamic scheme's real surface container: the bottom bar's default colour in Dialtone and
+ * Contacts. Twill's scheme maps `surfaceContainer` to the page colour (see [withTwillSurfaces]),
+ * so the bar takes it from here.
+ */
+internal val LocalBarContainerColor = staticCompositionLocalOf { Color.Unspecified }
 
 /** Pages use surface container low (see [AppTheme]). */
 internal fun ColorScheme.withTwillSurfaces(): ColorScheme = copy(

@@ -91,8 +91,12 @@ private fun twillSettingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
         val context = LocalContext.current
         val sms = remember(context) { context.twillEntryPoint().twillSms() }
         val isSmsEnabled by sms.isEnabled.collectAsStateWithLifecycle()
+        val inboxSettings = remember(context) { context.twillEntryPoint().twillInboxSettings() }
+        val isBottomBarEnabled by inboxSettings.isBottomBarEnabled.collectAsStateWithLifecycle()
 
         TwillSettingsScreen(
+            isBottomBarEnabled = isBottomBarEnabled,
+            onBottomBarChange = inboxSettings::setBottomBarEnabled,
             onNavigateBack = navigator::back,
             isSmsEnabled = isSmsEnabled,
             onSmsSettingsClick = {

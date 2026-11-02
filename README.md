@@ -119,4 +119,6 @@ Twill is a fork of [GrapheneOS Messaging](https://github.com/GrapheneOS/Messagin
 
 Twill's own code is licensed under the [Apache License 2.0](LICENSE): free to use, change and share, for any purpose. Bundled third-party parts keep their own licenses, listed in the app's open source licenses (for example the Delta Chat core under MPL 2.0 and Google Sans Flex under the SIL Open Font License 1.1).
 
+The Nostr tab icon is the Nostr community icon by Andrea Nicolini ([nostr-logo](https://github.com/mbarulli/nostr-logo), CC0 1.0).
+
 Twill's text is set in [Google Sans Flex](https://github.com/googlefonts/googlesans-flex) (`res/font/google_sans_flex.ttf`), Copyright 2015 The Google Sans Flex Authors, licensed under the SIL Open Font License 1.1 ([`assets/licenses/google_sans_flex-OFL.txt`](assets/licenses/google_sans_flex-OFL.txt), also shown in the app's open source licenses).

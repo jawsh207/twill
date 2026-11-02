@@ -9,6 +9,9 @@ section here. Write entries for people using the app, newest version first.
 - Same look as Dialtone and Contacts: Google Sans Flex for all text, wallpaper colours with
   slightly lighter pages and a search bar in the search-bar colour. Home screen widgets use
   the same colours.
+- New option in Settings: Bottom bar. When more than one service is on, the inbox shows a
+  tab for each (SMS, Nostr, Delta Chat) with unread counts, instead of sections. Start chat
+  starts a chat in the tab's service.
 
 ## 1.0.11
 

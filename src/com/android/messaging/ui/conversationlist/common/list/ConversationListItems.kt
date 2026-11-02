@@ -101,9 +101,10 @@ internal fun ConversationListItems(
         verticalArrangement = Arrangement.spacedBy(ListVerticalSpacing),
     ) {
         // Twill: collapsible SMS section header when another protocol is on (none if SMS is off).
-        if (sections != null && !sections.isSmsHidden) {
+        val smsHeader = sections?.smsHeader
+        if (sections != null && !sections.isSmsHidden && smsHeader != null) {
             item(key = "twill_sms_header", contentType = "twill_section_header") {
-                sections.smsHeader()
+                smsHeader()
             }
         }
 

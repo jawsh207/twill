@@ -78,14 +78,9 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
                 onNavigateToConversation = { conversationId ->
                     navigator.navigateToConversation(conversationId = conversationId)
                 },
-                // Twill: with SMS off, the new-message button picks a protocol instead.
-                onNavigateToNewChat = {
-                    if (inboxViewModel.uiState.value.isSmsEnabled) {
-                        navigator.navigateToNewChat()
-                    } else {
-                        inbox.isNewChatPickerVisible.value = true
-                    }
-                },
+                // Twill: SMS as upstream; with SMS off, a service picker; with the bottom bar,
+                // the selected tab's service.
+                onNavigateToNewChat = { inbox.startChat(inboxViewModel.uiState.value) },
                 onNavigateToConversationSettings = { conversationId ->
                     navigator.navigateToConversationSettings(conversationId = conversationId)
                 },

@@ -13,6 +13,7 @@ import com.android.messaging.data.appsettings.repository.AppPreferenceReader
 import com.android.messaging.twill.SmsGlobalSearch
 import com.android.messaging.twill.TwillChat
 import com.android.messaging.twill.TwillGroupResult
+import com.android.messaging.twill.TwillInboxSettings
 import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
@@ -56,7 +57,29 @@ internal data class TwillInboxUiState(
     val isSmsCollapsed: Boolean = false,
     /** Enabled protocols only. Empty hides the section headers: the list looks like SMS. */
     val sections: List<TwillInboxSection> = emptyList(),
-)
+    /** The bottom bar option (Settings); the bar shows only with two or more services. */
+    val isBottomBarEnabled: Boolean = false,
+) {
+    /** The tabs of the bottom bar: SMS (when on) and each set-up service. */
+    val tabs: List<TwillInboxTab>
+        get() = buildList {
+            if (isSmsEnabled) add(TwillInboxTab.Sms)
+            sections.forEach { add(TwillInboxTab.Service(it.protocol)) }
+        }
+
+    val isBottomBarVisible: Boolean
+        get() = isBottomBarEnabled && tabs.size >= 2
+}
+
+/** A tab of the inbox's bottom bar. */
+@Immutable
+internal sealed interface TwillInboxTab {
+    data object Sms : TwillInboxTab
+
+    data class Service(
+        val protocol: TwillProtocolId,
+    ) : TwillInboxTab
+}
 
 /** Where a search result leads: an SMS/MMS conversation or another protocol's chat. */
 @Immutable
@@ -132,6 +155,33 @@ internal class TwillInbox(
     /** The "Search messages" bar at the top of the inbox. */
     val search = TwillInboxSearch(controller::search)
 
+    /** The bottom bar's selected tab (when the bar is shown). */
+    val selectedTab = mutableStateOf<TwillInboxTab>(TwillInboxTab.Sms)
+
+    /** A service to open the new-chat picker on, skipping the service choice. */
+    val pickerService = mutableStateOf<TwillProtocolId?>(null)
+
+    /** The tab in use, or null when the bar isn't shown. */
+    fun currentTab(state: TwillInboxUiState): TwillInboxTab? {
+        if (!state.isBottomBarVisible) return null
+        val tabs = state.tabs
+        return selectedTab.value.takeIf { it in tabs } ?: tabs.first()
+    }
+
+    /** Start chat: in the selected tab's service when the bar is shown. */
+    fun startChat(state: TwillInboxUiState) {
+        when (val tab = currentTab(state)) {
+            is TwillInboxTab.Service -> {
+                pickerService.value = tab.protocol
+                isNewChatPickerVisible.value = true
+            }
+
+            TwillInboxTab.Sms -> onNewSms()
+
+            null -> if (state.isSmsEnabled) onNewSms() else isNewChatPickerVisible.value = true
+        }
+    }
+
     /** Opens a search result; a message result opens its conversation searching for it. */
     fun openSearchResult(item: TwillInboxSearchItem) {
         val query = search.query.trim()
@@ -178,6 +228,7 @@ internal class TwillInboxViewModel @Inject constructor(
     runtime: TwillRuntime,
     private val preferenceReader: AppPreferenceReader,
     private val sms: TwillSms,
+    private val inboxSettings: TwillInboxSettings,
 ) : ViewModel(),
     TwillInboxController {
 
@@ -216,16 +267,25 @@ internal class TwillInboxViewModel @Inject constructor(
     }
 
     override val uiState: StateFlow<TwillInboxUiState> =
-        combine(sms.isEnabled, smsCollapsed, sections) { smsEnabled, isSmsCollapsed, sectionList ->
+        combine(
+            sms.isEnabled,
+            smsCollapsed,
+            sections,
+            inboxSettings.isBottomBarEnabled,
+        ) { smsEnabled, isSmsCollapsed, sectionList, bottomBar ->
             TwillInboxUiState(
                 isSmsEnabled = smsEnabled,
                 isSmsCollapsed = isSmsCollapsed,
                 sections = sectionList,
+                isBottomBarEnabled = bottomBar,
             )
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
-            TwillInboxUiState(isSmsEnabled = sms.isEnabled.value),
+            TwillInboxUiState(
+                isSmsEnabled = sms.isEnabled.value,
+                isBottomBarEnabled = inboxSettings.isBottomBarEnabled.value,
+            ),
         )
 
     /** Pinned first, then unread (when "Keep unread at top" is on), then newest. */

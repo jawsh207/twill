@@ -76,8 +76,11 @@ internal class ConversationListSections(
     val isSmsCollapsed: Boolean,
     /** SMS is off: no SMS header or rows, whatever the SMS list contains. */
     val isSmsHidden: Boolean,
-    val smsHeader: @Composable () -> Unit,
+    /** Null when the bottom bar shows SMS on its own tab (no header). */
+    val smsHeader: (@Composable () -> Unit)?,
     val trailingItems: LazyListScope.() -> Unit,
+    /** The bottom bar's SMS tab: upstream's list as is, including its empty state. */
+    val isSmsOnly: Boolean = false,
 )
 
 private sealed interface NewChatDialog {
@@ -112,19 +115,26 @@ internal fun rememberConversationListSections(
         NewChatPicker(
             isSmsEnabled = state.isSmsEnabled,
             sections = state.sections,
+            initialService = state.sections.firstOrNull {
+                it.protocol == inbox.pickerService.value
+            },
             onNewSms = {
                 inbox.isNewChatPickerVisible.value = false
                 inbox.onNewSms()
             },
             onPick = { section, isGroup ->
                 inbox.isNewChatPickerVisible.value = false
+                inbox.pickerService.value = null
                 dialog = if (isGroup) NewChatDialog.Group(section) else NewChatDialog.Chat(section)
             },
             onOpenSettings = {
                 inbox.isNewChatPickerVisible.value = false
                 inbox.onOpenSettings()
             },
-            onDismiss = { inbox.isNewChatPickerVisible.value = false },
+            onDismiss = {
+                inbox.isNewChatPickerVisible.value = false
+                inbox.pickerService.value = null
+            },
         )
     }
 
@@ -156,6 +166,36 @@ internal fun rememberConversationListSections(
             },
             onDismiss = { dialog = NewChatDialog.None },
         )
+    }
+
+    // The bottom bar (Settings option, two or more services): one service per tab, no headers.
+    when (val tab = inbox.currentTab(state)) {
+        null -> Unit
+
+        TwillInboxTab.Sms -> return ConversationListSections(
+            isSmsCollapsed = false,
+            isSmsHidden = false,
+            smsHeader = null,
+            trailingItems = {},
+            isSmsOnly = true,
+        )
+
+        is TwillInboxTab.Service -> {
+            val section = state.sections.first { it.protocol == tab.protocol }
+            return ConversationListSections(
+                isSmsCollapsed = false,
+                isSmsHidden = true,
+                smsHeader = null,
+                trailingItems = {
+                    protocolSection(
+                        section = section.copy(isCollapsed = false),
+                        controller = controller,
+                        onOpen = { chat -> inbox.onOpenChat(chat.protocol, chat.chatId) },
+                        showHeader = false,
+                    )
+                },
+            )
+        }
     }
 
     return ConversationListSections(
@@ -216,12 +256,14 @@ private fun SetupHint(onOpenSettings: () -> Unit) {
 private fun NewChatPicker(
     isSmsEnabled: Boolean,
     sections: List<TwillInboxSection>,
+    /** Opens straight on this service's chat or group choice (Start chat on its tab). */
+    initialService: TwillInboxSection?,
     onNewSms: () -> Unit,
     onPick: (TwillInboxSection, isGroup: Boolean) -> Unit,
     onOpenSettings: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var picked by remember { mutableStateOf<TwillInboxSection?>(null) }
+    var picked by remember { mutableStateOf(initialService) }
     val service = picked
 
     AlertDialog(
@@ -320,15 +362,18 @@ private fun LazyListScope.protocolSection(
     section: TwillInboxSection,
     controller: TwillInboxController,
     onOpen: (TwillChat) -> Unit,
+    showHeader: Boolean = true,
 ) {
     val key = section.protocol.key
-    item(key = "twill_${key}_header", contentType = "twill_section_header") {
-        InboxSectionHeader(
-            title = stringResource(section.text.sectionTitle),
-            count = section.chats.size,
-            isCollapsed = section.isCollapsed,
-            onToggle = { controller.toggleCollapsed(section.protocol) },
-        )
+    if (showHeader) {
+        item(key = "twill_${key}_header", contentType = "twill_section_header") {
+            InboxSectionHeader(
+                title = stringResource(section.text.sectionTitle),
+                count = section.chats.size,
+                isCollapsed = section.isCollapsed,
+                onToggle = { controller.toggleCollapsed(section.protocol) },
+            )
+        }
     }
     if (section.isCollapsed) return
     if (section.chats.isEmpty()) {
