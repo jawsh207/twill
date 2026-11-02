@@ -117,4 +117,6 @@ To keep these merges easy, Twill's changes are kept small and mostly live in the
 
 Twill is a fork of [GrapheneOS Messaging](https://github.com/GrapheneOS/Messaging), which is itself based on the Android Open Source Project's Messaging app. Files that came from AOSP carry the Apache License 2.0 header and remain under that license. All credit for the base app goes to the GrapheneOS and AOSP contributors.
 
+Twill's own code is licensed under the [Apache License 2.0](LICENSE): free to use, change and share, for any purpose. Bundled third-party parts keep their own licenses, listed in the app's open source licenses (for example the Delta Chat core under MPL 2.0 and Google Sans Flex under the SIL Open Font License 1.1).
+
 Twill's text is set in [Google Sans Flex](https://github.com/googlefonts/googlesans-flex) (`res/font/google_sans_flex.ttf`), Copyright 2015 The Google Sans Flex Authors, licensed under the SIL Open Font License 1.1 ([`assets/licenses/google_sans_flex-OFL.txt`](assets/licenses/google_sans_flex-OFL.txt), also shown in the app's open source licenses).

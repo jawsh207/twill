@@ -10,6 +10,7 @@ Twill is an SMS/MMS app forked from GrapheneOS Messaging (Compose rewrite, v13+)
 - Privacy-affecting options (anything that contacts a third party) default to **off**, like the YouTube and website link previews.
 - Keep edits to upstream files small; put new code in new files where possible, so `git merge upstream/main` stays easy.
 - New strings go in `res/values/strings.xml` (English only for now; other locales fall back to it).
+- **License:** Twill's own code is Apache 2.0 (`LICENSE`), like the AOSP code it builds on. Only add third-party code, artwork or fonts whose licence allows that (permissive: Apache, MIT, BSD, CC0, OFL for fonts; MPL for the separately built Delta Chat core). No GPL artwork or code: it would put the GPL's conditions on Twill. Service logos: Nostr's community icon is CC0; Delta Chat's own logo is GPLv3, so Twill uses its own Δ icon instead.
 - **Attribution:** commits are authored and committed as `jawsh207 <jawsh207@users.noreply.github.com>`, with no co-author or session trailers. No tool or assistant is named anywhere in the repo: source, comments, notes, commit messages or release notes.
 
 ## Remotes and building
