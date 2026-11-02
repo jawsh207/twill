@@ -40,6 +40,7 @@ import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,6 +49,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -114,6 +116,8 @@ internal fun TwillChatScreen(
     viewModel: TwillChatViewModel,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Shows the group's invite QR code (Delta Chat groups); null for other protocols. */
+    onShowGroupQr: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val messages by viewModel.messages.collectAsStateWithLifecycle()
@@ -344,6 +348,13 @@ internal fun TwillChatScreen(
             renameHelp = protocolText.renameHelp,
             onRename = viewModel::rename,
             onDismiss = { isInfoDialogVisible = false },
+            // Only members can invite (canRename means "you're in this group").
+            onShowGroupQr = onShowGroupQr?.takeIf { info.isGroup && info.canRename }?.let { show ->
+                {
+                    isInfoDialogVisible = false
+                    show()
+                }
+            },
         )
     }
 
@@ -688,6 +699,7 @@ private fun ChatInfoDialog(
     renameHelp: Int?,
     onRename: (String) -> Unit,
     onDismiss: () -> Unit,
+    onShowGroupQr: (() -> Unit)? = null,
 ) {
     val groupName = if (details.isGroup) details.title else ""
     var name by rememberSaveable(groupName) { mutableStateOf(groupName) }
@@ -719,6 +731,19 @@ private fun ChatInfoDialog(
                             { Text(text = stringResource(help)) }
                         },
                     )
+                }
+                if (onShowGroupQr != null) {
+                    FilledTonalButton(modifier = Modifier.fillMaxWidth(), onClick = onShowGroupQr) {
+                        Icon(
+                            imageVector = Icons.Rounded.QrCode2,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            modifier = Modifier.padding(start = 8.dp),
+                            text = stringResource(R.string.deltachat_qr_group_invite),
+                        )
+                    }
                 }
                 if (details.isGroup) {
                     HorizontalDivider()

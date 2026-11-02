@@ -42,10 +42,11 @@ internal fun EntryProviderScope<NavKey>.twillEntries() {
     )
     entry<DeltaChatQrNavKey>(
         metadata = paneTitleMetadata(R.string.deltachat_qr_title),
-        content = {
+        content = { navKey ->
             val navigator = LocalNavigator.current
             DeltaChatQrScreen(
                 viewModel = hiltViewModel<DeltaChatQrViewModel>(),
+                groupChatId = navKey.groupChatId,
                 onNavigateBack = navigator::back,
                 // The chat replaces the QR screen, so Back from it goes where QR was opened.
                 onOpenChat = { chatId ->
@@ -67,6 +68,12 @@ private fun twillChatRouteContent(): @Composable (TwillChatNavKey) -> Unit {
         }
         if (protocol != null) {
             TwillChatScreen(
+                // Delta Chat groups: show the group's invite QR code from the group info.
+                onShowGroupQr = if (protocol.id == TwillProtocolId.DeltaChat) {
+                    { navigator.push(DeltaChatQrNavKey(groupChatId = navKey.chatId)) }
+                } else {
+                    null
+                },
                 protocol = protocol.id,
                 protocolText = protocol.text,
                 chatId = navKey.chatId,

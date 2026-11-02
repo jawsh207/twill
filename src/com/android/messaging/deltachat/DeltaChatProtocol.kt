@@ -813,10 +813,13 @@ internal class DeltaChatProtocol @Inject constructor(
         profileVersion.value += 1
     }
 
-    /** The user's invite link, which others open or paste to start an encrypted chat. */
-    suspend fun inviteLink(): String? = withContext(Dispatchers.IO) {
+    /**
+     * The user's invite link, which others open or paste to start an encrypted chat; with
+     * [groupChatId], that group's invite link, which lets others join it.
+     */
+    suspend fun inviteLink(groupChatId: Int? = null): String? = withContext(Dispatchers.IO) {
         runCatching {
-            rpc.call("get_chat_securejoin_qr_code", account(), null) as? String
+            rpc.call("get_chat_securejoin_qr_code", account(), groupChatId) as? String
         }.getOrNull()
     }
 

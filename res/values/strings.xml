@@ -1179,5 +1179,8 @@
     <string name="deltachat_qr_copy">Copy link</string>
     <string name="deltachat_qr_allow_camera">Allow camera</string>
     <string name="deltachat_qr_not_invite">That isn\'t a Delta Chat invite code</string>
+    <string name="deltachat_qr_group_title">Group QR code</string>
+    <string name="deltachat_qr_group_invite">Invite with QR code</string>
+    <string name="deltachat_qr_group_hint">Anyone who scans this with Delta Chat or Twill joins the group. Only share it with people you want in the group.</string>
     <string name="deltachat_qr_settings_summary">Show yours or scan someone else\'s to start a chat</string>
 </resources>

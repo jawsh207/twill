@@ -141,7 +141,7 @@ private fun deltaChatSettingsRouteContent(): @Composable (DeltaChatSettingsNavKe
         DeltaChatSettingsScreen(
             viewModel = hiltViewModel<DeltaChatSettingsViewModel>(),
             onNavigateBack = navigator::back,
-            onOpenQr = { navigator.push(DeltaChatQrNavKey) },
+            onOpenQr = { navigator.push(DeltaChatQrNavKey()) },
         )
     }
 }

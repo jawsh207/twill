@@ -4,6 +4,11 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.14
+
+- Delta Chat groups have their own QR code: open the group's info and tap "Invite with QR
+  code". Anyone who scans it with Delta Chat or Twill joins the group.
+
 ## 1.0.13
 
 - Delta Chat QR codes, as in Delta Chat: show your own QR code for someone to scan (in person

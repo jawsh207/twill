@@ -70,7 +70,7 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
                 onOpenSms = { id ->
                     navigator.navigateToConversation(conversationId = ConversationId(id))
                 },
-                onOpenDeltaChatQr = { appNavigator.push(DeltaChatQrNavKey) },
+                onOpenDeltaChatQr = { appNavigator.push(DeltaChatQrNavKey()) },
             )
         }
         LaunchedEffect(inbox) { inbox.search.run() }

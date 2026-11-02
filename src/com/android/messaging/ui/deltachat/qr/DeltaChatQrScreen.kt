@@ -93,16 +93,25 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
-/** Delta Chat's QR code screen: your invite code, or the camera to scan someone else's. */
+/**
+ * Delta Chat's QR code screen: your invite code, or the camera to scan someone else's. With
+ * [groupChatId], the invite code of that group instead (no scanning).
+ */
 @Serializable
-internal data object DeltaChatQrNavKey : NavKey
+internal data class DeltaChatQrNavKey(
+    val groupChatId: String? = null,
+) : NavKey
 
 @HiltViewModel
 internal class DeltaChatQrViewModel @Inject constructor(
     private val protocol: DeltaChatProtocol,
 ) : ViewModel() {
-    /** Your invite link (the text in your QR code), or null if Delta Chat isn't set up. */
-    suspend fun inviteLink(): String? = protocol.inviteLink()
+    /**
+     * Your invite link (the text in your QR code), or [groupChatId]'s, or null if Delta Chat
+     * isn't set up.
+     */
+    suspend fun inviteLink(groupChatId: String? = null): String? =
+        protocol.inviteLink(groupChatId?.toIntOrNull())
 
     /** The chat for a scanned invite (contact or group) or address, or null if it isn't one. */
     suspend fun startChat(scanned: String): String? = protocol.startChat(scanned.trim())
@@ -119,12 +128,24 @@ internal fun DeltaChatQrScreen(
     viewModel: DeltaChatQrViewModel,
     onNavigateBack: () -> Unit,
     onOpenChat: (chatId: String) -> Unit,
+    groupChatId: String? = null,
 ) {
     var tab by rememberSaveable { mutableStateOf(0) }
+    val isGroup = groupChatId != null
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = stringResource(R.string.deltachat_qr_title)) },
+                title = {
+                    Text(
+                        text = stringResource(
+                            if (isGroup) {
+                                R.string.deltachat_qr_group_title
+                            } else {
+                                R.string.deltachat_qr_title
+                            },
+                        ),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -140,6 +161,11 @@ internal fun DeltaChatQrScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // A group's code: just the code (joining is by scanning it from another device).
+            if (isGroup) {
+                MyQrCode(viewModel = viewModel, groupChatId = groupChatId)
+                return@Column
+            }
             PrimaryTabRow(
                 selectedTabIndex = tab,
                 containerColor = MaterialTheme.colorScheme.background,
@@ -156,7 +182,7 @@ internal fun DeltaChatQrScreen(
                 )
             }
             when (tab) {
-                0 -> MyQrCode(viewModel)
+                0 -> MyQrCode(viewModel = viewModel, groupChatId = null)
                 else -> ScanQrCode(viewModel = viewModel, onOpenChat = onOpenChat)
             }
         }
@@ -164,9 +190,11 @@ internal fun DeltaChatQrScreen(
 }
 
 @Composable
-private fun MyQrCode(viewModel: DeltaChatQrViewModel) {
+private fun MyQrCode(viewModel: DeltaChatQrViewModel, groupChatId: String?) {
     val context = LocalContext.current
-    val link by produceState<String?>(initialValue = null) { value = viewModel.inviteLink() }
+    val link by produceState<String?>(initialValue = null, groupChatId) {
+        value = viewModel.inviteLink(groupChatId)
+    }
     val matrix = remember(link) { link?.let(::encodeQr) }
 
     Column(
@@ -195,7 +223,15 @@ private fun MyQrCode(viewModel: DeltaChatQrViewModel) {
             }
         }
         Text(
-            text = stringResource(R.string.deltachat_qr_mine_hint),
+            text = stringResource(
+                if (groupChatId !=
+                    null
+                ) {
+                    R.string.deltachat_qr_group_hint
+                } else {
+                    R.string.deltachat_qr_mine_hint
+                },
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
