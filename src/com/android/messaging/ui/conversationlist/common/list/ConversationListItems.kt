@@ -10,13 +10,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -36,6 +38,8 @@ import com.android.messaging.ui.conversationlist.common.support.CONVERSATION_LIS
 import com.android.messaging.ui.conversationlist.common.support.rememberAppearanceAnimationTokens
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
 import com.android.messaging.ui.twill.inbox.ConversationListSections
+import com.android.messaging.ui.twill.inbox.LocalTwillCardShape
+import com.android.messaging.ui.twill.inbox.TwillCards
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 
@@ -47,7 +51,8 @@ private val ItemPlacementSpec = spring(
     visibilityThreshold = IntOffset.VisibilityThreshold,
 )
 
-private val ListVerticalSpacing = 2.dp
+// Twill: rows are separate cards (see TwillCards), 3dp apart.
+private val ListVerticalSpacing = TwillCards.RowGap
 
 private val ListContentPadding = 8.dp
 
@@ -102,18 +107,20 @@ internal fun ConversationListItems(
             }
         }
 
-        items(
-            items = if (sections?.isSmsCollapsed == true || sections?.isSmsHidden == true) {
-                emptyList()
-            } else {
-                items
-            },
-            key = { item -> item.conversationId.value },
-            contentType = { CONVERSATION_ROW_CONTENT_TYPE },
-        ) { item ->
+        val visibleItems = if (sections?.isSmsCollapsed == true || sections?.isSmsHidden == true) {
+            emptyList()
+        } else {
+            items
+        }
+        itemsIndexed(
+            items = visibleItems,
+            key = { _, item -> item.conversationId.value },
+            contentType = { _, _ -> CONVERSATION_ROW_CONTENT_TYPE },
+        ) { index, item ->
             val appearanceAnimationToken = appearanceTokens.tokenFor(item.conversationId)
 
             ConversationListRow(
+                cardShape = TwillCards.shape(index, visibleItems.size),
                 item = item,
                 listState = listState,
                 isSelectionMode = isSelectionMode,
@@ -140,6 +147,7 @@ internal fun ConversationListItems(
 
 @Composable
 private fun LazyItemScope.ConversationListRow(
+    cardShape: Shape,
     item: Model,
     listState: LazyListState,
     isSelectionMode: Boolean,
@@ -169,38 +177,42 @@ private fun LazyItemScope.ConversationListRow(
         }
     }
 
-    SwipeableConversationListItem(
-        item = item,
-        isSelectionMode = isSelectionMode,
-        isInteractionEnabled = !isHiddenByPinAnimation,
-        appearanceAnimationToken = appearanceAnimationToken,
-        onAppearanceAnimationFinished = onAppearanceAnimationFinished,
-        startToEndAction = startToEndAction,
-        endToStartAction = endToStartAction,
-        backgroundHorizontalInsets = horizontalInsets,
-        modifier = Modifier
-            .conversationItemAnimation(
-                lazyItemScope = this,
-                animatePlacement = !isHiddenByPinAnimation,
-            )
-            .trackPinAnimationBounds(
-                listState = listState,
-                conversationId = item.conversationId,
-                pinAnimationController = pinAnimationController,
-            )
-            .graphicsLayer {
-                alpha = when {
-                    isHiddenByPinAnimation -> 0f
-                    else -> 1f
-                }
-            },
-    ) {
-        ConversationListItemContent(
+    // Twill: each row is a card; the swipe background fills the same card.
+    CompositionLocalProvider(LocalTwillCardShape provides cardShape) {
+        SwipeableConversationListItem(
             item = item,
             isSelectionMode = isSelectionMode,
-            horizontalInsets = horizontalInsets,
-            onItemEvent = onItemEvent,
-        )
+            isInteractionEnabled = !isHiddenByPinAnimation,
+            appearanceAnimationToken = appearanceAnimationToken,
+            onAppearanceAnimationFinished = onAppearanceAnimationFinished,
+            startToEndAction = startToEndAction,
+            endToStartAction = endToStartAction,
+            backgroundHorizontalInsets = PaddingValues(),
+            modifier = Modifier
+                .padding(horizontalInsets)
+                .padding(horizontal = TwillCards.SideMargin)
+                .conversationItemAnimation(
+                    lazyItemScope = this,
+                    animatePlacement = !isHiddenByPinAnimation,
+                )
+                .trackPinAnimationBounds(
+                    listState = listState,
+                    conversationId = item.conversationId,
+                    pinAnimationController = pinAnimationController,
+                )
+                .graphicsLayer {
+                    alpha = when {
+                        isHiddenByPinAnimation -> 0f
+                        else -> 1f
+                    }
+                },
+        ) {
+            ConversationListItemContent(
+                item = item,
+                isSelectionMode = isSelectionMode,
+                onItemEvent = onItemEvent,
+            )
+        }
     }
 }
 
@@ -208,14 +220,12 @@ private fun LazyItemScope.ConversationListRow(
 private fun ConversationListItemContent(
     item: Model,
     isSelectionMode: Boolean,
-    horizontalInsets: PaddingValues,
     onItemEvent: (ConversationListItemEvent) -> Unit,
 ) {
     val destination = item.avatar.normalizedDestination
 
     ConversationListItemRow(
         item = item,
-        modifier = Modifier.conversationRowHorizontalPadding(horizontalInsets),
         onClick = {
             onItemEvent(ConversationListItemEvent.Clicked(item.conversationId))
         },
@@ -395,9 +405,10 @@ private fun hasPinReorder(
     val hasSameConversationIds = previousItems.size == currentItemsById.size &&
         previousItems.all { item -> item.conversationId in currentItemsById }
 
-    return hasSameConversationIds && previousItems.any { previousItem ->
-        currentItemsById.getValue(previousItem.conversationId).isPinned != previousItem.isPinned
-    }
+    return hasSameConversationIds &&
+        previousItems.any { previousItem ->
+            currentItemsById.getValue(previousItem.conversationId).isPinned != previousItem.isPinned
+        }
 }
 
 private fun resolveAnchorScrollRequest(

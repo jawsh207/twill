@@ -32,6 +32,8 @@ internal fun TwillSettingsScreen(
     onNostrSettingsClick: () -> Unit = {},
     onDeltaChatSettingsClick: () -> Unit = {},
     isSmsEnabled: Boolean = true,
+    /** Test builds only: upstream's debug options, formerly in the inbox's menu. */
+    onDebugClick: (() -> Unit)? = null,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -83,6 +85,15 @@ internal fun TwillSettingsScreen(
                     title = stringResource(R.string.menu_license),
                     onClick = onLicensesClick,
                 )
+            }
+            if (onDebugClick != null) {
+                item(key = "debug") {
+                    SettingsClickableItem(
+                        title = stringResource(R.string.action_debug_options),
+                        summary = stringResource(R.string.twill_debug_summary),
+                        onClick = onDebugClick,
+                    )
+                }
             }
         }
     }

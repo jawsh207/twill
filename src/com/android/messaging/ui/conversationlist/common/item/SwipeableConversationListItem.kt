@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
@@ -53,6 +54,7 @@ import com.android.messaging.R
 import com.android.messaging.data.conversation.model.ConversationId
 import com.android.messaging.ui.conversationlist.common.support.AppearanceAnimationToken
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel
+import com.android.messaging.ui.twill.inbox.LocalTwillCardShape
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
@@ -170,13 +172,21 @@ internal fun SwipeableConversationListItem(
             .collapseVertically { visibilityFraction.value }
             .graphicsLayer { alpha = visibilityFraction.value },
     ) {
+        // Twill: in a card row the background fills the card (see TwillCards).
+        val cardShape = LocalTwillCardShape.current
         ConversationListSwipeBackground(
             render = backgroundRender,
             isUnread = item.isUnread,
-            modifier = Modifier
-                .matchParentSize()
-                .padding(backgroundHorizontalInsets)
-                .padding(horizontal = SwipeBackgroundOuterHorizontalPadding),
+            shape = cardShape ?: SwipeBackgroundShape,
+            modifier = when (cardShape) {
+                null ->
+                    Modifier
+                        .matchParentSize()
+                        .padding(backgroundHorizontalInsets)
+                        .padding(horizontal = SwipeBackgroundOuterHorizontalPadding)
+
+                else -> Modifier.matchParentSize()
+            },
         )
 
         Box(
@@ -481,6 +491,7 @@ private fun resolveBackgroundRender(
 private fun ConversationListSwipeBackground(
     render: SwipeBackgroundRender?,
     isUnread: Boolean,
+    shape: Shape,
     modifier: Modifier = Modifier,
 ) {
     if (render == null) {
@@ -504,7 +515,7 @@ private fun ConversationListSwipeBackground(
 
     Box(
         modifier = modifier
-            .clip(SwipeBackgroundShape)
+            .clip(shape)
             .background(containerColor)
             .padding(horizontal = SwipeBackgroundHorizontalPadding),
         contentAlignment = render.alignment,

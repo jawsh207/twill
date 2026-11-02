@@ -3,6 +3,7 @@ package com.android.messaging.ui.conversationlist.navigation
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -65,8 +66,12 @@ private fun conversationListRouteContent(): @Composable (ConversationListNavKey)
                 },
                 onOpenSettings = { appNavigator.push(destination = SettingsNavKey) },
                 onNewSms = { navigator.navigateToNewChat() },
+                onOpenSms = { id ->
+                    navigator.navigateToConversation(conversationId = ConversationId(id))
+                },
             )
         }
+        LaunchedEffect(inbox) { inbox.search.run() }
 
         val navigation = remember(navigator, appNavigator, inbox) {
             ConversationListNavigationCallbacks(

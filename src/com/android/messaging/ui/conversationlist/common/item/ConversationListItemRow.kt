@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.NotificationsPaused
@@ -38,6 +39,7 @@ import com.android.messaging.ui.conversationlist.common.support.previewConversat
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel
 import com.android.messaging.ui.conversationlist.model.ConversationListPreviewUiModel
 import com.android.messaging.ui.core.MessagingPreviewColumn
+import com.android.messaging.ui.twill.inbox.LocalTwillCardShape
 import com.android.messaging.util.Dates
 
 @Composable
@@ -52,6 +54,8 @@ internal fun ConversationListItemRow(
     onAvatarContactClick: (() -> Unit)? = null,
     onAvatarInfoClick: () -> Unit = {},
 ) {
+    // Twill: drawn as a card when the inbox provides one (see TwillCards).
+    val cardShape = LocalTwillCardShape.current
     TwoLineListItem(
         onClick = onClick,
         leadingContent = {
@@ -78,6 +82,9 @@ internal fun ConversationListItemRow(
         subtitleContent = {
             ConversationListItemBody(item)
         },
+        shape = cardShape ?: RoundedCornerShape(percent = 50),
+        horizontalPadding = if (cardShape != null) 12.dp else 8.dp,
+        verticalPadding = if (cardShape != null) 10.dp else 8.dp,
     )
 }
 

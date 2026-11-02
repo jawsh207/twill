@@ -74,8 +74,11 @@ import com.android.messaging.ui.conversationlist.common.support.previewConversat
 import com.android.messaging.ui.conversationlist.model.ConversationListContentUiState
 import com.android.messaging.ui.conversationlist.model.ConversationListItemUiModel as Model
 import com.android.messaging.ui.core.MessagingPreviewTheme
+import com.android.messaging.ui.twill.inbox.LocalTwillInbox
 import com.android.messaging.ui.twill.inbox.rememberStartChatLongClick
 import com.android.messaging.ui.twill.inbox.twillLongPress
+import com.android.messaging.ui.twill.search.TwillInboxSearchBar
+import com.android.messaging.ui.twill.search.TwillInboxSearchResults
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -437,22 +440,32 @@ private fun ConversationListScaffold(
                 .clip(MaterialTheme.contentSurfaceShape)
                 .background(listPaneContentColor()),
         ) {
-            ConversationListContent(
-                content = uiState.content,
-                listState = listState,
-                onAction = onAction,
-                scaffoldContentPadding = contentPadding,
-                isSelectionMode = isSelectionMode,
-                fabBottomReserve = FabBottomReserve,
-                pinAnimationController = pinAnimationController,
-            )
+            // Twill: while searching, the results take the list's place.
+            val twillInbox = LocalTwillInbox.current
+            if (twillInbox != null && twillInbox.search.isActive) {
+                TwillInboxSearchResults(
+                    search = twillInbox.search,
+                    onOpen = twillInbox::openSearchResult,
+                    contentPadding = contentPadding,
+                )
+            } else {
+                ConversationListContent(
+                    content = uiState.content,
+                    listState = listState,
+                    onAction = onAction,
+                    scaffoldContentPadding = contentPadding,
+                    isSelectionMode = isSelectionMode,
+                    fabBottomReserve = FabBottomReserve,
+                    pinAnimationController = pinAnimationController,
+                )
 
-            ConversationListFabs(
-                uiState = uiState,
-                isSelectionMode = isSelectionMode,
-                onAction = onAction,
-                onScrollToTop = onScrollToTop,
-            )
+                ConversationListFabs(
+                    uiState = uiState,
+                    isSelectionMode = isSelectionMode,
+                    onAction = onAction,
+                    onScrollToTop = onScrollToTop,
+                )
+            }
         }
     }
 }
@@ -512,6 +525,7 @@ private fun ConversationListTopBar(
     onDeleteClick: () -> Unit,
     onSnoozeClick: () -> Unit,
 ) {
+    val twillInbox = LocalTwillInbox.current
     when {
         isSelectionMode -> {
             ConversationListSelectionTopAppBar(
@@ -520,6 +534,15 @@ private fun ConversationListTopBar(
                 onAction = onAction,
                 onDeleteClick = onDeleteClick,
                 onSnoozeClick = onSnoozeClick,
+            )
+        }
+
+        // Twill: a "Search messages" bar with Settings; Archived and Blocked contacts are in
+        // SMS Settings, and Debug (test builds) in Settings.
+        twillInbox != null -> {
+            TwillInboxSearchBar(
+                search = twillInbox.search,
+                onOpenSettings = { onAction(Action.SettingsClicked) },
             )
         }
 

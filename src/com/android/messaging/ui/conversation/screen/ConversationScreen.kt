@@ -48,6 +48,7 @@ import com.android.messaging.ui.conversation.screen.model.ConversationPendingLau
 import com.android.messaging.ui.conversation.screen.model.ConversationScreenScaffoldUiState
 import com.android.messaging.ui.photoviewer.model.PhotoViewerLaunchRequest
 import com.android.messaging.ui.twill.search.LocalTwillSearch
+import com.android.messaging.ui.twill.search.TwillPendingSearch
 import com.android.messaging.ui.twill.search.TwillSearchAction
 import com.android.messaging.ui.twill.search.TwillSearchTopBar
 import com.android.messaging.ui.twill.search.rememberTwillConversationSearch
@@ -230,7 +231,10 @@ internal fun ConversationScreenScaffold(
     }
     val scheduledCount = scheduledHere.size
     // Twill: search this conversation (real app route only, like scheduling).
-    val search = rememberTwillConversationSearch(key = conversationId) { query ->
+    val search = rememberTwillConversationSearch(
+        key = conversationId,
+        pendingKey = conversationId?.let { TwillPendingSearch.smsKey(it.value) },
+    ) { query ->
         conversationId?.let { SmsMessageSearch.search(it.value, query) }.orEmpty()
     }
     val topBarExtraActions: (@Composable () -> Unit)? =

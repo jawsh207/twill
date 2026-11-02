@@ -24,6 +24,7 @@ import com.android.messaging.ui.appsettings.general.model.AppSettingsAction as A
 import com.android.messaging.ui.appsettings.general.model.AppSettingsUiState
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.twill.LocalSmsSettingsHeader
+import com.android.messaging.ui.twill.twillSmsSettingsRows
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,13 +57,13 @@ internal fun AppSettingsScreen(
             )
         },
     ) { contentPadding ->
-        // Twill: "Use Twill for SMS/MMS" first, on the SMS Settings page.
+        // Twill: "Use Twill for SMS/MMS", Archived and Blocked contacts first (SMS Settings).
         val twillHeader = LocalSmsSettingsHeader.current
         SettingsLazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            twillHeader?.let { header -> item(key = "twill_sms_switch") { header() } }
+            twillSmsSettingsRows(twillHeader)
             coreSettingsItems(
                 appSettings = appSettings,
                 onAction = onAction,

@@ -75,6 +75,9 @@ internal class TwillConversationSearch(
     var jumpCount by mutableIntStateOf(0)
         private set
 
+    /** A message to select when results arrive (set when opened from the inbox search). */
+    private var target: String? = null
+
     val current: TwillSearchHit? get() = hits.getOrNull(index)
 
     /** The text to highlight in messages, or null when not searching. */
@@ -93,6 +96,13 @@ internal class TwillConversationSearch(
 
     fun onQueryChange(value: String) {
         query = value
+    }
+
+    /** Opens the search on [query], selecting [messageId] once the results are in. */
+    fun openAt(query: String, messageId: String?) {
+        target = messageId
+        this.query = query
+        isActive = true
     }
 
     fun older() {
@@ -130,7 +140,9 @@ internal class TwillConversationSearch(
                     emptyList()
                 }
                 hits = result
-                index = 0
+                index = target?.let { id -> result.indexOfFirst { it.messageId == id } }
+                    ?.takeIf { it >= 0 } ?: 0
+                target = null
                 jumpCount++
                 isSearching = false
             }
@@ -141,16 +153,49 @@ internal class TwillConversationSearch(
     }
 }
 
-/** A search for the conversation identified by [key]; a new conversation starts a new search. */
+/**
+ * A search for the conversation identified by [key]; a new conversation starts a new search.
+ * [pendingKey] picks up a search the inbox search handed over ([TwillPendingSearch]).
+ */
 @Composable
 internal fun rememberTwillConversationSearch(
     key: Any?,
+    pendingKey: String? = null,
     search: suspend (query: String) -> List<TwillSearchHit>,
 ): TwillConversationSearch {
     val currentSearch by rememberUpdatedState(newValue = search)
     val state = remember(key) { TwillConversationSearch { query -> currentSearch(query) } }
-    LaunchedEffect(state) { state.run() }
+    LaunchedEffect(state) {
+        pendingKey?.let(TwillPendingSearch::take)?.let { (query, messageId) ->
+            state.openAt(query, messageId)
+        }
+        state.run()
+    }
     return state
+}
+
+/**
+ * Hands a search from the inbox to the conversation it opens: the conversation's search bar
+ * opens on the same words with the tapped message selected. Keys are [smsKey] or [chatKey].
+ */
+internal object TwillPendingSearch {
+    private var pending: Triple<String, String, String?>? = null
+
+    fun smsKey(conversationId: String) = "sms:$conversationId"
+
+    fun chatKey(protocol: String, chatId: String) = "$protocol:$chatId"
+
+    @Synchronized
+    fun set(key: String, query: String, messageId: String?) {
+        pending = Triple(key, query, messageId)
+    }
+
+    @Synchronized
+    fun take(key: String): Pair<String, String?>? {
+        val value = pending?.takeIf { it.first == key } ?: return null
+        pending = null
+        return value.second to value.third
+    }
 }
 
 /** The active search, provided by the conversation screens while the search bar is open. */

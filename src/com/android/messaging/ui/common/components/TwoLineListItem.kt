@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 private val ItemHorizontalPadding = 8.dp
@@ -97,6 +98,9 @@ internal fun TwoLineListItem(
     keepLeadingContentAccessible: Boolean = false,
     subtitleContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
+    // Twill: card rows (see TwillCards) need more room inside their rounded corners.
+    horizontalPadding: Dp = ItemHorizontalPadding,
+    verticalPadding: Dp = ItemVerticalPadding,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -127,8 +131,8 @@ internal fun TwoLineListItem(
             modifier = clickModifier
                 .then(semanticsModifier)
                 .padding(
-                    horizontal = ItemHorizontalPadding,
-                    vertical = ItemVerticalPadding,
+                    horizontal = horizontalPadding,
+                    vertical = verticalPadding,
                 ),
             verticalAlignment = Alignment.CenterVertically,
         ) {

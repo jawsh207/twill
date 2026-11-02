@@ -143,6 +143,15 @@ internal data class TwillSearchHit(
     val rank: Int,
 )
 
+/** A message found by searching all of a protocol's chats ([TwillProtocol.searchAllMessages]). */
+internal data class TwillMessageHit(
+    val chatId: String,
+    val messageId: String,
+    val text: String,
+    val timeMillis: Long,
+    val isOutgoing: Boolean,
+)
+
 /** Strings and options that differ between protocols in shared screens. */
 @Immutable
 internal data class TwillProtocolText(
@@ -202,6 +211,9 @@ internal interface TwillProtocol {
 
     /** Messages of [chatId] whose text contains [query], newest first. */
     suspend fun searchMessages(chatId: String, query: String): List<TwillSearchHit>
+
+    /** Messages in any chat whose text contains [query], newest first (the inbox search). */
+    suspend fun searchAllMessages(query: String): List<TwillMessageHit> = emptyList()
 
     fun details(chatId: String): Flow<TwillChatDetails>
 

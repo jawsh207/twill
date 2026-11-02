@@ -1158,4 +1158,13 @@
     <string name="twill_widget_preview_time_3">Tue</string>
     <string name="twill_widget_preview_message_1">Are we still on for tonight?</string>
     <string name="twill_widget_preview_message_2">Yes! I\'ll bring dessert</string>
+    <!-- Twill: inbox search and SMS Settings rows -->
+    <string name="twill_inbox_search_hint">Search messages</string>
+    <string name="twill_inbox_search_clear">Clear search</string>
+    <string name="twill_inbox_search_conversations">Conversations</string>
+    <string name="twill_inbox_search_messages">Messages</string>
+    <string name="twill_inbox_search_no_results">No conversations or messages found</string>
+    <string name="twill_sms_archived_summary">Conversations you archived</string>
+    <string name="twill_sms_blocked_summary">People whose messages are blocked</string>
+    <string name="twill_debug_summary">Developer options for this test build</string>
 </resources>

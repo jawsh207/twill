@@ -7,8 +7,9 @@ import com.android.messaging.ui.common.components.LocalIsListDetailPane
 
 @Composable
 internal fun listPaneContentColor(): Color {
+    // Twill: the page colour; each conversation is its own surface bright card.
     return when {
-        LocalIsListDetailPane.current -> MaterialTheme.colorScheme.surfaceBright
-        else -> MaterialTheme.colorScheme.surfaceBright
+        LocalIsListDetailPane.current -> MaterialTheme.colorScheme.surfaceContainer
+        else -> MaterialTheme.colorScheme.surfaceContainer
     }
 }

@@ -1,5 +1,6 @@
 package com.android.messaging.ui.appsettings.navigation
 
+import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -15,6 +16,8 @@ import androidx.navigation3.runtime.NavKey
 import com.android.messaging.R
 import com.android.messaging.data.subscription.model.SubId
 import com.android.messaging.twill.twillEntryPoint
+import com.android.messaging.ui.appsettings.common.SettingsClickableItem
+import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
 import com.android.messaging.ui.appsettings.general.AppSettingsViewModel
 import com.android.messaging.ui.appsettings.general.model.AppSettingsNavEvent
 import com.android.messaging.ui.appsettings.general.rememberAppSettingsEffectHandler
@@ -28,6 +31,8 @@ import com.android.messaging.ui.appsettings.subscription.model.SubscriptionUiSta
 import com.android.messaging.ui.appsettings.subscription.rememberSubscriptionSettingsEffectHandler
 import com.android.messaging.ui.appsettings.subscription.ui.SubscriptionSettingsScreen
 import com.android.messaging.ui.appsettings.twill.TwillSettingsScreen
+import com.android.messaging.ui.blockedparticipants.navigation.BlockedParticipantsNavKey
+import com.android.messaging.ui.conversationlist.navigation.ArchivedConversationListNavKey
 import com.android.messaging.ui.core.CollectEvents
 import com.android.messaging.ui.deltachat.settings.DeltaChatSettingsScreen
 import com.android.messaging.ui.deltachat.settings.DeltaChatSettingsViewModel
@@ -41,7 +46,9 @@ import com.android.messaging.ui.nostr.settings.NostrSettingsViewModel
 import com.android.messaging.ui.onboarding.navigation.OnboardingNavKey
 import com.android.messaging.ui.twill.LocalSmsSettingsHeader
 import com.android.messaging.ui.twill.SmsOffSettingsScreen
+import com.android.messaging.ui.twill.TwillSettingsRow
 import com.android.messaging.ui.twill.TwillSmsSwitch
+import com.android.messaging.util.DebugUtils
 import com.android.messaging.util.OsUtil
 import kotlinx.collections.immutable.ImmutableList
 
@@ -100,6 +107,11 @@ private fun twillSettingsRouteContent(): @Composable (SettingsNavKey) -> Unit {
             onLicensesClick = {
                 navigator.push(destination = LicenseNavKey)
             },
+            onDebugClick = if (DebugUtils.isDebugEnabled()) {
+                { (context as? Activity)?.let(DebugUtils::showDebugOptions) }
+            } else {
+                null
+            },
         )
     }
 }
@@ -146,7 +158,32 @@ private fun settingsRouteContent(): @Composable (SmsSettingsNavKey) -> Unit {
         if (!isSmsEnabled || !OsUtil.hasRequiredPermissions()) {
             SmsOffSettingsScreen(onNavigateBack = navigator::back, header = smsSwitch)
         } else {
-            CompositionLocalProvider(LocalSmsSettingsHeader provides smsSwitch) {
+            // Archived and Blocked contacts moved here from the inbox's menu (SMS-only lists).
+            val archivedTitle = stringResource(R.string.action_menu_show_archived)
+            val archivedSummary = stringResource(R.string.twill_sms_archived_summary)
+            val blockedTitle = stringResource(R.string.blocked_contacts_title)
+            val blockedSummary = stringResource(R.string.twill_sms_blocked_summary)
+            val rows = remember(smsSwitch, navigator, archivedTitle, blockedTitle) {
+                listOf(
+                    TwillSettingsRow(key = "twill_sms_switch", content = smsSwitch),
+                    TwillSettingsRow(key = "twill_sms_archived") {
+                        SettingsClickableItem(
+                            title = archivedTitle,
+                            summary = archivedSummary,
+                            onClick = { navigator.push(ArchivedConversationListNavKey) },
+                        )
+                    },
+                    TwillSettingsRow(key = "twill_sms_blocked") {
+                        SettingsClickableItem(
+                            title = blockedTitle,
+                            summary = blockedSummary,
+                            onClick = { navigator.push(BlockedParticipantsNavKey) },
+                        )
+                    },
+                    TwillSettingsRow(key = "twill_sms_break", contentType = SettingsGroupBreak) {},
+                )
+            }
+            CompositionLocalProvider(LocalSmsSettingsHeader provides rows) {
                 SmsSettingsContent()
             }
         }

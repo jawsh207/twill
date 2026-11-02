@@ -3,6 +3,7 @@ package com.android.messaging.ui.twill.inbox
 import android.text.format.DateUtils
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -47,7 +48,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
@@ -362,12 +365,17 @@ private fun LazyListScope.protocolSection(
             )
         }
     }
-    items(
+    itemsIndexed(
         items = section.chats,
-        key = { "twill_$key:" + it.chatId },
-        contentType = { "twill_chat_row" },
-    ) { chat ->
-        ChatRow(chat = chat, controller = controller, onOpen = { onOpen(chat) })
+        key = { _, chat -> "twill_$key:" + chat.chatId },
+        contentType = { _, _ -> "twill_chat_row" },
+    ) { index, chat ->
+        ChatRow(
+            chat = chat,
+            controller = controller,
+            onOpen = { onOpen(chat) },
+            shape = TwillCards.shape(index, section.chats.size),
+        )
     }
 }
 
@@ -436,6 +444,7 @@ private fun ChatRow(
     chat: TwillChat,
     controller: TwillInboxController,
     onOpen: () -> Unit,
+    shape: Shape,
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     val isUnread = chat.unreadCount > 0
@@ -455,7 +464,12 @@ private fun ChatRow(
         else -> ""
     }
 
-    Box {
+    Box(
+        modifier = Modifier
+            .padding(horizontal = TwillCards.SideMargin)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceBright),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -463,7 +477,7 @@ private fun ChatRow(
                     onClick = onOpen,
                     onLongClick = { isMenuExpanded = true },
                 )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {

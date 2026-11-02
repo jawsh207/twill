@@ -14,6 +14,7 @@ import com.android.messaging.twill.TwillError
 import com.android.messaging.twill.TwillGroupResult
 import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
+import com.android.messaging.twill.TwillMessageHit
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
@@ -94,6 +95,9 @@ internal class NostrProtocol @Inject constructor(
 
     override suspend fun searchMessages(chatId: String, query: String): List<TwillSearchHit> =
         store.search(chatId, query)
+
+    override suspend fun searchAllMessages(query: String): List<TwillMessageHit> =
+        if (isEnabled.value) store.searchAll(query) else emptyList()
 
     override fun details(chatId: String): Flow<TwillChatDetails> {
         val members = NostrChatKey.members(chatId)

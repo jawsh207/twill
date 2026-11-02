@@ -60,7 +60,6 @@ NPUB=$(python3 .github/ci/nostr_key.py)
 echo "nostr test peer: $NPUB" >> "$OUT/log.txt"
 adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
 sleep 3
-$UI tap "More options"
 $UI tap "Settings"
 $UI tap "Nostr Settings"
 sleep 2
@@ -147,8 +146,18 @@ for style in MONOCHROMATIC TONAL_SPOT; do
         adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
         shot "$tag-01-conversation-list"
 
-        $UI tap "More options"
-        shot "$tag-02-menu"
+        # The inbox search: find the conversation by a word in it, then open the result.
+        $UI tap "Search messages"
+        sleep 1
+        adb shell input text "dessert"
+        sleep 3
+        shot "$tag-02-search"
+        $UI tapcontains "can bring dessert" || $UI dump "$OUT/$tag-search.xml"
+        sleep 3
+        shot "$tag-02-search-opened"
+        adb shell am force-stop "$PKG"
+        adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
+        sleep 2
         $UI tap "Settings"
         shot "$tag-03-twill-settings"
         $UI tap "SMS Settings"

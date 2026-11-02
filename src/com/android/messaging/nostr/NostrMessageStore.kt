@@ -6,6 +6,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import androidx.compose.runtime.Immutable
+import com.android.messaging.twill.TwillMessageHit
 import com.android.messaging.twill.TwillSearchHit
 import com.android.messaging.twill.escapeLike
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -456,6 +457,33 @@ internal class NostrMessageStore @Inject constructor(
             }
         }
 
+    /** Messages in any chat whose text contains [query] (ignoring ASCII case), newest first. */
+    suspend fun searchAll(query: String): List<TwillMessageHit> = withContext(Dispatchers.IO) {
+        helper.readableDatabase.rawQuery(
+            """
+            SELECT id, peer, content, created_at, outgoing FROM messages
+            WHERE content LIKE ? ESCAPE '\'
+            ORDER BY created_at DESC, rowid DESC
+            LIMIT $MAX_GLOBAL_SEARCH_HITS
+            """.trimIndent(),
+            arrayOf("%" + escapeLike(query) + "%"),
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(
+                        TwillMessageHit(
+                            chatId = cursor.getString(1),
+                            messageId = cursor.getString(0),
+                            text = cursor.getString(2),
+                            timeMillis = cursor.getLong(3) * 1000,
+                            isOutgoing = cursor.getInt(4) != 0,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
     private fun queryMessages(chatKey: String, limit: Int): List<NostrMessage> {
         return helper.readableDatabase.rawQuery(
             "SELECT * FROM messages WHERE peer = ? ORDER BY created_at DESC, rowid DESC LIMIT ?",
@@ -620,6 +648,7 @@ internal class NostrMessageStore @Inject constructor(
         const val DATABASE_NAME = "nostr.db"
         const val DATABASE_VERSION = 2
         const val MAX_SEARCH_HITS = 500
+        const val MAX_GLOBAL_SEARCH_HITS = 100
         const val KIND_TEXT = 14
         const val KIND_FILE = 15
     }

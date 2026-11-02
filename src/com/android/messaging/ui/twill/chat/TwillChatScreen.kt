@@ -97,6 +97,7 @@ import com.android.messaging.twill.TwillProtocolText
 import com.android.messaging.ui.nostr.NostrForegroundHost
 import com.android.messaging.ui.twill.TwillAvatarImage
 import com.android.messaging.ui.twill.search.LocalTwillSearch
+import com.android.messaging.ui.twill.search.TwillPendingSearch
 import com.android.messaging.ui.twill.search.TwillSearchAction
 import com.android.messaging.ui.twill.search.TwillSearchScrollEffect
 import com.android.messaging.ui.twill.search.TwillSearchTopBar
@@ -123,7 +124,10 @@ internal fun TwillChatScreen(
     var viewerPath by remember { mutableStateOf<String?>(null) }
     var pendingSave by remember { mutableStateOf<TwillMessage?>(null) }
     val listState = rememberLazyListState()
-    val search = rememberTwillConversationSearch(key = protocol to chatId) { query ->
+    val search = rememberTwillConversationSearch(
+        key = protocol to chatId,
+        pendingKey = TwillPendingSearch.chatKey(protocol.key, chatId),
+    ) { query ->
         viewModel.search(query)
     }
 

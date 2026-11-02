@@ -22,6 +22,7 @@ import com.android.messaging.ui.appsettings.subscription.model.SubscriptionUiSta
 import com.android.messaging.ui.common.text.asLtrText
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.twill.LocalSmsSettingsHeader
+import com.android.messaging.ui.twill.twillSmsSettingsRows
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -47,13 +48,13 @@ internal fun SettingsMainScreen(
             )
         },
     ) { contentPadding ->
-        // Twill: "Use Twill for SMS/MMS" first, on the SMS Settings page.
+        // Twill: "Use Twill for SMS/MMS", Archived and Blocked contacts first (SMS Settings).
         val twillHeader = LocalSmsSettingsHeader.current
         SettingsLazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            twillHeader?.let { header -> item(key = "twill_sms_switch") { header() } }
+            twillSmsSettingsRows(twillHeader)
             item(key = "general_settings") {
                 SettingsClickableItem(
                     title = stringResource(R.string.general_settings),

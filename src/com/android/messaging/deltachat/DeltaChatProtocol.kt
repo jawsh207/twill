@@ -18,6 +18,7 @@ import com.android.messaging.twill.TwillGroupResult
 import com.android.messaging.twill.TwillImages
 import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
+import com.android.messaging.twill.TwillMessageHit
 import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
@@ -362,6 +363,38 @@ internal class DeltaChatProtocol @Inject constructor(
                     .filter { it.value in found }
                     .asReversed()
                     .map { TwillSearchHit(it.value.toString(), ids.size - it.index) }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                emptyList()
+            }
+        }
+
+    /** The core's search across all chats: newest first, at most [MAX_GLOBAL_HITS]. */
+    override suspend fun searchAllMessages(query: String): List<TwillMessageHit> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (!isEnabled.value) return@withContext emptyList()
+                val account = account()
+                val ids = rpc.callArray("search_messages", account, query, null).ints()
+                if (ids.isEmpty()) return@withContext emptyList()
+                // Across all chats the core returns the newest first.
+                val newest = ids.take(MAX_GLOBAL_HITS)
+                val loaded = rpc.callObject("get_messages", account, newest)
+                newest.mapNotNull { msgId ->
+                    loaded.optJSONObject(msgId.toString())
+                        ?.takeIf { it.optString("kind").equals("message", ignoreCase = true) }
+                        ?.takeIf { !it.optBoolean("isInfo") }
+                        ?.let { message ->
+                            TwillMessageHit(
+                                chatId = message.optInt("chatId").toString(),
+                                messageId = msgId.toString(),
+                                text = message.optString("text"),
+                                timeMillis = message.optLong("timestamp") * 1000,
+                                isOutgoing = message.optInt("fromId") == DC_CONTACT_ID_SELF,
+                            )
+                        }
+                }.sortedByDescending { it.timeMillis }
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -829,6 +862,7 @@ internal class DeltaChatProtocol @Inject constructor(
         val OUTGOING_STATES = 18..28
         const val MESSAGE_CACHE_SIZE = 5_000
         const val FETCH_CHUNK = 200
+        const val MAX_GLOBAL_HITS = 100
         const val LIST_DEBOUNCE_MILLIS = 150L
         const val CHAT_DEBOUNCE_MILLIS = 60L
         const val BACKGROUND_FETCH_SECONDS = 20.0
