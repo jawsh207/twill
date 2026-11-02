@@ -983,7 +983,7 @@
     <string name="inbox_new_nostr_chat_hint">name@domain, npub or public key</string>
     <string name="inbox_new_nostr_chat_invalid">Couldn\'t find that Nostr user. Check the address or paste their npub</string>
     <string name="inbox_start_chat">Start chat</string>
-    <string name="inbox_nostr_empty">No Nostr chats yet. Tap + to start a chat or group.</string>
+    <string name="inbox_nostr_empty">No Nostr chats yet. Long-press Start chat to start a chat or group.</string>
     <string name="inbox_you_prefix">"You: "</string>
     <string name="inbox_pinned">Pinned</string>
     <string name="inbox_pin">Pin</string>
@@ -1064,7 +1064,7 @@
     <string name="deltachat_new_chat">New Delta Chat chat</string>
     <string name="deltachat_new_chat_hint">Invite link or email address</string>
     <string name="deltachat_new_chat_invalid">That isn\'t a Delta Chat invite link or an email address</string>
-    <string name="deltachat_empty">No Delta Chat chats yet. Share your invite link from Delta Chat Settings, or tap + to open someone else\'s.</string>
+    <string name="deltachat_empty">No Delta Chat chats yet. Share your invite link from Delta Chat Settings, or long-press Start chat to open someone else\'s.</string>
     <string name="deltachat_composer_hint">Delta Chat message</string>
     <string name="deltachat_chat_empty">Messages in this chat are end-to-end encrypted. Say hello.</string>
     <string name="deltachat_chat_empty_unencrypted">This chat isn\'t end-to-end encrypted: it\'s plain email, which the email servers can read. Chats started from an invite link are encrypted.</string>

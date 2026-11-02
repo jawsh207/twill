@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.PersonRemove
@@ -32,6 +33,7 @@ import com.android.messaging.ui.common.components.participant.participantAvatarL
 import com.android.messaging.ui.common.components.participant.participantColorSeed
 import com.android.messaging.ui.common.text.asLtrText
 import com.android.messaging.ui.core.MessagingPreviewColumn
+import com.android.messaging.ui.twill.inbox.LocalTwillCardShape
 
 @Composable
 internal fun BlockedParticipantItem(
@@ -105,6 +107,8 @@ private fun BlockedParticipantRow(
         modifier = modifier,
         onLongClick = onLongClick,
         color = backgroundColor,
+        // Twill: a card when the list provides one (see TwillCards).
+        shape = LocalTwillCardShape.current ?: RoundedCornerShape(percent = 50),
         leadingContent = {
             BlockedParticipantAvatarWithQuickActions(
                 participant = participant,

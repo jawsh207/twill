@@ -14,6 +14,9 @@ section here. Write entries for people using the app, newest version first.
   Nostr and Delta Chat; opening a result jumps to that message. Settings is at the right
   of the bar.
 - Archived conversations and Blocked contacts moved to SMS Settings.
+- Section headers are simpler: the collapse arrow is on the right, and new chats start from
+  a long press on Start chat.
+- Blocked contacts matches the new look.
 
 ## 1.0.10
 

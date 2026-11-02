@@ -162,6 +162,12 @@ for style in MONOCHROMATIC TONAL_SPOT; do
         shot "$tag-03-twill-settings"
         $UI tap "SMS Settings"
         shot "$tag-04-sms-settings"
+        $UI tap "Archived"
+        shot "$tag-04-archived"
+        back
+        $UI tap "Blocked contacts"
+        shot "$tag-04-blocked"
+        back
         back
         $UI tap "Nostr Settings"
         shot "$tag-05-nostr-settings"

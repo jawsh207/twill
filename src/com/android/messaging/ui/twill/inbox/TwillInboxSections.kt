@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Person
@@ -32,7 +31,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
@@ -182,8 +180,6 @@ internal fun rememberConversationListSections(
                     section = section,
                     controller = controller,
                     onOpen = { chat -> inbox.onOpenChat(chat.protocol, chat.chatId) },
-                    onNewChat = { dialog = NewChatDialog.Chat(section) },
-                    onNewGroup = { dialog = NewChatDialog.Group(section) },
                 )
             }
         },
@@ -324,8 +320,6 @@ private fun LazyListScope.protocolSection(
     section: TwillInboxSection,
     controller: TwillInboxController,
     onOpen: (TwillChat) -> Unit,
-    onNewChat: () -> Unit,
-    onNewGroup: () -> Unit,
 ) {
     val key = section.protocol.key
     item(key = "twill_${key}_header", contentType = "twill_section_header") {
@@ -334,24 +328,6 @@ private fun LazyListScope.protocolSection(
             count = section.chats.size,
             isCollapsed = section.isCollapsed,
             onToggle = { controller.toggleCollapsed(section.protocol) },
-            addMenu = { onDone ->
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(R.string.inbox_new_chat)) },
-                    leadingIcon = { Icon(Icons.Rounded.Person, contentDescription = null) },
-                    onClick = {
-                        onDone()
-                        onNewChat()
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(text = stringResource(R.string.inbox_new_group)) },
-                    leadingIcon = { Icon(Icons.Rounded.Group, contentDescription = null) },
-                    onClick = {
-                        onDone()
-                        onNewGroup()
-                    },
-                )
-            },
         )
     }
     if (section.isCollapsed) return
@@ -385,56 +361,36 @@ private fun InboxSectionHeader(
     count: Int,
     isCollapsed: Boolean,
     onToggle: () -> Unit,
-    addMenu: (@Composable (onDone: () -> Unit) -> Unit)? = null,
 ) {
     val rotation by animateFloatAsState(
-        targetValue = if (isCollapsed) -90f else 0f,
+        targetValue = if (isCollapsed) 0f else 180f,
         label = "inbox_section_chevron",
     )
     val stateLabel = stringResource(
         if (isCollapsed) R.string.inbox_section_expand else R.string.inbox_section_collapse,
     )
-    var isMenuExpanded by remember { mutableStateOf(false) }
 
+    // Twill: title on the left, collapse chevron on the right; new chats come from a long
+    // press on Start chat.
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClickLabel = stateLabel, role = Role.Button, onClick = onToggle)
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+            .padding(start = 32.dp, end = 28.dp, top = 12.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Text(
+            modifier = Modifier.weight(1f),
+            text = "$title · $count",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
         Icon(
             modifier = Modifier.rotate(rotation),
             imageVector = Icons.Rounded.ExpandMore,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
         )
-        Text(
-            modifier = Modifier
-                .padding(start = 8.dp)
-                .weight(1f),
-            text = "$title · $count",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        if (addMenu != null) {
-            Box {
-                IconButton(onClick = { isMenuExpanded = true }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Add,
-                        contentDescription = stringResource(R.string.inbox_new_conversation, title),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                DropdownMenu(
-                    containerColor = MaterialTheme.colorScheme.surfaceBright,
-                    expanded = isMenuExpanded,
-                    onDismissRequest = { isMenuExpanded = false },
-                ) {
-                    addMenu { isMenuExpanded = false }
-                }
-            }
-        }
     }
 }
 
