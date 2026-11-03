@@ -214,7 +214,9 @@ internal class NostrProtocol @Inject constructor(
             TwillMember(
                 id = person.pubKey,
                 name = name,
-                detail = verified ?: NostrSignerProvider.shortNpub(person.pubKey),
+                // The name is already the npub when there's no profile name.
+                detail = verified
+                    ?: NostrSignerProvider.shortNpub(person.pubKey).takeIf { profile?.name != null },
                 isVerified = verified != null,
                 avatar = TwillAvatar(name, profile?.picture?.takeIf { pictures }),
             )
