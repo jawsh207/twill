@@ -96,6 +96,45 @@ internal data class NostrProfile(
     val isNip05Verified: Boolean = false,
 )
 
+/** Someone the user might want to message, for the new-chat suggestions. */
+@Immutable
+internal data class NostrPerson(
+    val pubKey: String,
+    val npub: String,
+    val profile: NostrProfile?,
+    /** Where they were found: [NostrPeopleSource] bits. */
+    val sources: Int,
+    /** The profile's NIP-05 address hasn't been checked yet. */
+    val isNip05Unchecked: Boolean,
+)
+
+/** Where a person in the directory was found (bits of `people.sources`). */
+internal object NostrPeopleSource {
+    /** Someone with a chat in Twill. */
+    const val CHAT = 1
+
+    /** On the user's follow list (kind 3), shared by every Nostr client. */
+    const val FOLLOW = 2
+
+    /** Older-style DMs (NIP-04, kind 4) sent or received in another client. */
+    const val LEGACY_DM = 4
+
+    /** Replied to, mentioned, reacted to or zapped the user, or the other way round. */
+    const val INTERACTION = 8
+
+    /** Follows the user. */
+    const val FOLLOWER = 16
+
+    /** Found by a search relay (only when relay search is on). */
+    const val SEARCH = 32
+
+    /** On the user's public mute list: never suggested. */
+    const val MUTED = 64
+
+    /** Sources that mean the user knows them, ranked above the rest. */
+    const val CLOSE = CHAT or FOLLOW or LEGACY_DM
+}
+
 @Immutable
 internal data class NostrGroupInfo(
     val chatKey: String,
@@ -135,6 +174,233 @@ internal class NostrMessageStore @Inject constructor(
 
     fun group(chatKey: String): Flow<NostrGroupInfo> =
         changes.map { NostrGroupInfo(chatKey, queryGroupName(chatKey)) }.flowOn(Dispatchers.IO)
+
+    /**
+     * People whose name, NIP-05 address, npub or hex key contains [query], best matches first:
+     * names and addresses starting with it, then people the user knows (chats, follows, DMs),
+     * then the most interactions. Muted people are left out. Re-read when the store changes.
+     */
+    fun suggestPeople(query: String, limit: Int): Flow<List<NostrPerson>> =
+        changes.map { queryPeople(query.trim(), limit) }.flowOn(Dispatchers.IO)
+
+    /**
+     * Adds [pubKeys] to the directory with the [source] bit, adding [counts] (interactions)
+     * to their score. With [replaceSource], everyone else loses that bit (a new follow list).
+     */
+    fun addPeople(
+        pubKeys: Collection<String>,
+        source: Int,
+        counts: Map<String, Int> = emptyMap(),
+        replaceSource: Boolean = false,
+    ) {
+        val valid = pubKeys.filter { it.length == PUBKEY_HEX_LENGTH }.distinct()
+        if (valid.isEmpty() && !replaceSource) return
+        val db = helper.writableDatabase
+        val now = System.currentTimeMillis()
+        db.beginTransaction()
+        try {
+            if (replaceSource) {
+                db.execSQL("UPDATE people SET sources = sources & ~$source")
+            }
+            valid.forEach { pubKey -> insertPerson(db, pubKey, source, counts[pubKey] ?: 0, now) }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        notifyChanged()
+    }
+
+    private fun insertPerson(
+        db: SQLiteDatabase,
+        pubKey: String,
+        source: Int,
+        count: Int,
+        now: Long,
+    ) {
+        val npub = runCatching { NostrSignerProvider.npubOf(pubKey) }.getOrNull() ?: return
+        db.execSQL(
+            "INSERT OR IGNORE INTO people (pubkey, npub, sources, score, seen_at) " +
+                "VALUES (?, ?, 0, 0, ?)",
+            arrayOf<Any>(pubKey, npub, now),
+        )
+        db.execSQL(
+            "UPDATE people SET sources = sources | ?, score = score + ?, seen_at = ? " +
+                "WHERE pubkey = ?",
+            arrayOf<Any>(source, count, now, pubKey),
+        )
+    }
+
+    /**
+     * Directory people with no profile, or one older than [maxAgeMillis]: the people the user
+     * knows first. At most [limit].
+     */
+    fun peopleNeedingProfiles(maxAgeMillis: Long, limit: Int): List<String> {
+        val cutoff = System.currentTimeMillis() - maxAgeMillis
+        helper.readableDatabase.rawQuery(
+            "SELECT p.pubkey FROM people p LEFT JOIN profiles pr ON pr.pubkey = p.pubkey " +
+                "WHERE (p.sources & ${NostrPeopleSource.MUTED}) = 0 " +
+                "AND (pr.pubkey IS NULL OR pr.updated_at < ?) " +
+                "ORDER BY (p.sources & ${NostrPeopleSource.CLOSE}) = 0, p.score DESC LIMIT ?",
+            arrayOf(cutoff.toString(), limit.toString()),
+        ).use { cursor ->
+            return buildList { while (cursor.moveToNext()) add(cursor.getString(0)) }
+        }
+    }
+
+    /**
+     * Saves profiles fetched in bulk. A NIP-05 address that changed is marked unchecked
+     * (shown once [markNip05Checked] confirms it); an unchanged one keeps its earlier check.
+     */
+    fun upsertProfiles(profiles: Collection<NostrProfile>) {
+        if (profiles.isEmpty()) return
+        val db = helper.writableDatabase
+        val now = System.currentTimeMillis()
+        db.beginTransaction()
+        try {
+            profiles.forEach { profile ->
+                val previous = db.rawQuery(
+                    "SELECT nip05, nip05_verified, nip05_checked FROM profiles WHERE pubkey = ?",
+                    arrayOf(profile.pubKey),
+                ).use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        Triple(cursor.getString(0), cursor.getInt(1) == 1, cursor.getInt(2) == 1)
+                    } else {
+                        null
+                    }
+                }
+                val isSameAddress = previous != null &&
+                    previous.first.equals(profile.nip05, ignoreCase = true)
+                db.insertWithOnConflict(
+                    "profiles",
+                    null,
+                    ContentValues().apply {
+                        put("pubkey", profile.pubKey)
+                        put("name", profile.name)
+                        put("picture", profile.picture)
+                        put("nip05", profile.nip05)
+                        put("nip05_verified", if (isSameAddress && previous.second) 1 else 0)
+                        put(
+                            "nip05_checked",
+                            if (profile.nip05 == null ||
+                                (isSameAddress && previous.third)
+                            ) {
+                                1
+                            } else {
+                                0
+                            },
+                        )
+                        put("updated_at", now)
+                    },
+                    SQLiteDatabase.CONFLICT_REPLACE,
+                )
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        notifyChanged()
+    }
+
+    /**
+     * Notes that [pubKeys] were looked for in bulk without finding a profile, so the
+     * directory doesn't ask for them again for a few days. The time is set a day back, so
+     * opening a chat with one of them still tries again (see NostrMessenger.refreshProfile).
+     */
+    fun markProfilesFetched(pubKeys: Collection<String>) {
+        if (pubKeys.isEmpty()) return
+        val db = helper.writableDatabase
+        val at = System.currentTimeMillis() - BULK_MISS_AGE_MILLIS
+        db.beginTransaction()
+        try {
+            pubKeys.forEach { pubKey ->
+                db.execSQL(
+                    "INSERT OR IGNORE INTO profiles (pubkey, updated_at, nip05_checked) " +
+                        "VALUES (?, ?, 1)",
+                    arrayOf<Any>(pubKey, at),
+                )
+                db.execSQL(
+                    "UPDATE profiles SET updated_at = max(updated_at, ?) WHERE pubkey = ?",
+                    arrayOf<Any>(at, pubKey),
+                )
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    /** Records the result of checking [pubKey]'s NIP-05 address. */
+    fun markNip05Checked(pubKey: String, isVerified: Boolean) {
+        helper.writableDatabase.update(
+            "profiles",
+            ContentValues().apply {
+                put("nip05_verified", if (isVerified) 1 else 0)
+                put("nip05_checked", 1)
+            },
+            "pubkey = ?",
+            arrayOf(pubKey),
+        )
+        notifyChanged()
+    }
+
+    /** Everyone with a chat (one-to-one or group member), for seeding the directory. */
+    fun chatPeople(): List<String> {
+        helper.readableDatabase.rawQuery("SELECT DISTINCT peer FROM messages", null).use { cursor ->
+            return buildList {
+                while (cursor.moveToNext()) addAll(NostrChatKey.members(cursor.getString(0)))
+            }.distinct()
+        }
+    }
+
+    private fun queryPeople(query: String, limit: Int): List<NostrPerson> {
+        if (query.isEmpty()) return emptyList()
+        val lowered = query.lowercase().removePrefix("nostr:")
+        val contains = "%" + escapeLike(lowered) + "%"
+        val prefix = escapeLike(lowered) + "%"
+        helper.readableDatabase.rawQuery(
+            "SELECT p.pubkey, p.npub, p.sources, pr.pubkey AS has_profile, pr.name, " +
+                "pr.picture, pr.nip05, pr.nip05_verified, pr.nip05_checked " +
+                "FROM people p LEFT JOIN profiles pr ON pr.pubkey = p.pubkey " +
+                "WHERE (p.sources & ${NostrPeopleSource.MUTED}) = 0 AND (" +
+                "lower(pr.name) LIKE ?1 ESCAPE '\\' OR lower(pr.nip05) LIKE ?1 ESCAPE '\\' " +
+                "OR p.npub LIKE ?2 ESCAPE '\\' OR p.pubkey LIKE ?2 ESCAPE '\\') " +
+                "ORDER BY " +
+                "(lower(pr.name) LIKE ?2 ESCAPE '\\' " +
+                "OR lower(pr.nip05) LIKE ?2 ESCAPE '\\') DESC, " +
+                "(p.sources & ${NostrPeopleSource.CLOSE}) = 0, " +
+                "(p.sources & ${NostrPeopleSource.SEARCH}) = p.sources, " +
+                "p.score DESC, lower(pr.name) LIMIT ?3",
+            arrayOf(contains, prefix, limit.toString()),
+        ).use { cursor ->
+            return buildList {
+                while (cursor.moveToNext()) {
+                    val pubKey = cursor.getString(0)
+                    val hasProfile = cursor.getStringOrNull("has_profile") != null
+                    val nip05 = cursor.getStringOrNull("nip05")
+                    add(
+                        NostrPerson(
+                            pubKey = pubKey,
+                            npub = cursor.getString(1),
+                            sources = cursor.getInt(2),
+                            profile = if (hasProfile) {
+                                NostrProfile(
+                                    pubKey = pubKey,
+                                    name = cursor.getStringOrNull("name"),
+                                    picture = cursor.getStringOrNull("picture"),
+                                    nip05 = nip05,
+                                    isNip05Verified = cursor.getIntOrNull("nip05_verified") == 1,
+                                )
+                            } else {
+                                null
+                            },
+                            isNip05Unchecked = nip05 != null &&
+                                cursor.getIntOrNull("nip05_checked") == 0,
+                        ),
+                    )
+                }
+            }
+        }
+    }
 
     fun hasSeenWrap(wrapId: String): Boolean {
         helper.readableDatabase.rawQuery(
@@ -260,6 +526,7 @@ internal class NostrMessageStore @Inject constructor(
                 put("picture", profile.picture)
                 put("nip05", profile.nip05)
                 put("nip05_verified", if (profile.isNip05Verified) 1 else 0)
+                put("nip05_checked", 1)
                 put("updated_at", System.currentTimeMillis())
             },
             SQLiteDatabase.CONFLICT_REPLACE,
@@ -359,7 +626,15 @@ internal class NostrMessageStore @Inject constructor(
         val db = helper.writableDatabase
         db.rawQuery("SELECT local_path FROM messages WHERE local_path IS NOT NULL", null)
             .use { cursor -> while (cursor.moveToNext()) File(cursor.getString(0)).delete() }
-        listOf("messages", "seen_wraps", "profiles", "pinned", "state", "groups").forEach { table ->
+        listOf(
+            "messages",
+            "seen_wraps",
+            "profiles",
+            "pinned",
+            "state",
+            "groups",
+            "people"
+        ).forEach { table ->
             db.delete(table, null, null)
         }
         notifyChanged()
@@ -609,10 +884,26 @@ internal class NostrMessageStore @Inject constructor(
             db.execSQL("CREATE TABLE pinned (peer TEXT PRIMARY KEY)")
             db.execSQL("CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT)")
             upgradeToVersion2(db)
+            upgradeToVersion3(db)
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             if (oldVersion < 2) upgradeToVersion2(db)
+            if (oldVersion < 3) upgradeToVersion3(db)
+        }
+
+        /**
+         * Version 3: the people directory behind new-chat suggestions (filled from chats,
+         * follows and other clients' activity; see NostrDirectory).
+         */
+        private fun upgradeToVersion3(db: SQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE people (pubkey TEXT PRIMARY KEY, npub TEXT NOT NULL, " +
+                    "sources INTEGER NOT NULL DEFAULT 0, score INTEGER NOT NULL DEFAULT 0, " +
+                    "seen_at INTEGER NOT NULL DEFAULT 0)",
+            )
+            // Profiles saved so far had their NIP-05 address checked when fetched.
+            db.execSQL("ALTER TABLE profiles ADD COLUMN nip05_checked INTEGER NOT NULL DEFAULT 1")
         }
 
         /** Version 2: attachments, group names and NIP-05 verification. */
@@ -646,7 +937,9 @@ internal class NostrMessageStore @Inject constructor(
 
     private companion object {
         const val DATABASE_NAME = "nostr.db"
-        const val DATABASE_VERSION = 2
+        const val DATABASE_VERSION = 3
+        const val PUBKEY_HEX_LENGTH = 64
+        const val BULK_MISS_AGE_MILLIS = 24 * 60 * 60 * 1000L + 60_000L
         const val MAX_SEARCH_HITS = 500
         const val MAX_GLOBAL_SEARCH_HITS = 100
         const val KIND_TEXT = 14

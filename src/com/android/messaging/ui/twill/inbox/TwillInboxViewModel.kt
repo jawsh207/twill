@@ -131,6 +131,13 @@ internal interface TwillInboxController {
 
     suspend fun knownContacts(protocol: TwillProtocolId): List<TwillMember>
 
+    /** People matching [query] for [protocol]'s new-chat box. */
+    fun contactSuggestions(protocol: TwillProtocolId, query: String): Flow<List<TwillMember>>
+
+    fun onNewChatOpened(protocol: TwillProtocolId)
+
+    suspend fun searchContacts(protocol: TwillProtocolId, query: String)
+
     /** Conversations and messages of every protocol matching [query] (the inbox search). */
     suspend fun search(query: String): TwillInboxSearchResults
 
@@ -325,6 +332,16 @@ internal class TwillInboxViewModel @Inject constructor(
 
     override suspend fun knownContacts(protocol: TwillProtocolId): List<TwillMember> =
         protocols[protocol].knownContacts()
+
+    override fun contactSuggestions(
+        protocol: TwillProtocolId,
+        query: String,
+    ): Flow<List<TwillMember>> = protocols[protocol].contactSuggestions(query)
+
+    override fun onNewChatOpened(protocol: TwillProtocolId) = protocols[protocol].onNewChatOpened()
+
+    override suspend fun searchContacts(protocol: TwillProtocolId, query: String) =
+        protocols[protocol].searchContacts(query)
 
     override suspend fun createGroup(
         protocol: TwillProtocolId,

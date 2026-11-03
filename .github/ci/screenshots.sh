@@ -81,7 +81,7 @@ $UI tap "Nostr chat or group" || $UI dump "$OUT/nostr-picker.xml"
 sleep 1
 $UI tap "New chat" || $UI dump "$OUT/nostr-new.xml"
 sleep 2
-$UI tap "name@domain, npub or public key" || $UI dump "$OUT/nostr-field.xml"
+$UI tap "Name, name@domain or npub" || $UI dump "$OUT/nostr-field.xml"
 adb shell input text "$NPUB"
 sleep 1
 shot "nostr-4-new-chat"
@@ -96,6 +96,18 @@ shot "nostr-5-sent"
 back
 sleep 2
 shot "nostr-6-inbox"
+# Suggestions: the start of the key just messaged finds them in the new-chat box.
+$UI longpress "Start chat" || true
+sleep 2
+$UI tap "Nostr chat or group" || true
+sleep 1
+$UI tap "New chat" || true
+sleep 2
+$UI tap "Name, name@domain or npub" || $UI dump "$OUT/nostr-suggest-field.xml"
+adb shell input text "${NPUB:0:10}"
+sleep 3
+shot "nostr-7-suggestions"
+$UI dump "$OUT/nostr-suggestions.xml"
 adb shell am force-stop "$PKG"
 
 # The bottom bar (Settings option): turn it on now that SMS and Nostr are both on, then look

@@ -47,6 +47,7 @@ internal class NostrProtocol @Inject constructor(
     private val store: NostrMessageStore,
     private val messenger: NostrMessenger,
     private val media: NostrMedia,
+    private val directory: NostrDirectory,
     @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
 ) : TwillProtocol {
 
@@ -156,7 +157,10 @@ internal class NostrProtocol @Inject constructor(
         }
     }
 
-    override fun install() = messenger.install()
+    override fun install() {
+        messenger.install()
+        directory.install()
+    }
 
     override fun onChatOpened(chatId: String) {
         NostrChatKey.members(chatId).forEach { messenger.refreshProfile(it) }
@@ -196,6 +200,30 @@ internal class NostrProtocol @Inject constructor(
     override fun rename(chatId: String, name: String) = messenger.renameGroup(chatId, name)
 
     override suspend fun startChat(input: String): String? = messenger.resolveIdentifier(input)
+
+    override fun contactSuggestions(query: String): Flow<List<TwillMember>> = combine(
+        store.suggestPeople(query, MAX_SUGGESTIONS),
+        accountStore.loadProfilePictures,
+    ) { people, pictures ->
+        directory.checkShown(people)
+        people.map { person ->
+            val profile = person.profile
+            val name = profile?.name ?: NostrSignerProvider.shortNpub(person.pubKey)
+            // Only a checked address is shown; otherwise the key, which can't be faked.
+            val verified = profile?.takeIf { it.isNip05Verified }?.nip05
+            TwillMember(
+                id = person.pubKey,
+                name = name,
+                detail = verified ?: NostrSignerProvider.shortNpub(person.pubKey),
+                isVerified = verified != null,
+                avatar = TwillAvatar(name, profile?.picture?.takeIf { pictures }),
+            )
+        }
+    }
+
+    override fun onNewChatOpened() = directory.refreshIfStale()
+
+    override suspend fun searchContacts(query: String) = directory.search(query)
 
     override suspend fun knownContacts(): List<TwillMember> = withContext(Dispatchers.IO) {
         val pictures = accountStore.loadProfilePictures.value
@@ -288,6 +316,8 @@ internal class NostrProtocol @Inject constructor(
     )
 
     companion object {
+        private const val MAX_SUGGESTIONS = 8
+
         /** A conversation's title: its name, or members' names, or short npubs. */
         fun conversationTitle(conversation: NostrConversation): String {
             conversation.displayName?.let { return it }

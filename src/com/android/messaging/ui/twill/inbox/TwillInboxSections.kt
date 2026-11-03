@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -38,6 +39,7 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -67,6 +69,8 @@ import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
 import com.android.messaging.ui.nostr.NostrForegroundHost
 import com.android.messaging.ui.twill.TwillAvatarImage
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 /**
@@ -147,7 +151,15 @@ internal fun TwillInboxDialogs(
         NewChatDialog.None -> Unit
 
         is NewChatDialog.Chat -> NewChatDialogContent(
+            protocol = current.section.protocol,
             text = current.section.text,
+            suggestions = { query ->
+                controller.contactSuggestions(current.section.protocol, query)
+            },
+            onOpened = { controller.onNewChatOpened(current.section.protocol) },
+            searchFurther = { query ->
+                controller.searchContacts(current.section.protocol, query)
+            },
             startChat = { input -> controller.startChat(current.section.protocol, input) },
             onStarted = { chatId ->
                 dialog = NewChatDialog.None
@@ -611,7 +623,11 @@ private fun ChatRow(
 
 @Composable
 private fun NewChatDialogContent(
+    protocol: TwillProtocolId,
     text: TwillProtocolText,
+    suggestions: (String) -> Flow<List<TwillMember>>,
+    onOpened: () -> Unit,
+    searchFurther: suspend (String) -> Unit,
     startChat: suspend (String) -> String?,
     onStarted: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -620,38 +636,79 @@ private fun NewChatDialogContent(
     var input by rememberSaveable { mutableStateOf("") }
     var isInvalid by rememberSaveable { mutableStateOf(false) }
     var isLooking by remember { mutableStateOf(false) }
+    var isSearching by remember { mutableStateOf(false) }
+    var matches by remember { mutableStateOf<List<TwillMember>>(emptyList()) }
+
+    LaunchedEffect(Unit) { onOpened() }
+    // People on the phone as you type; a moment later, a search server too (if allowed).
+    LaunchedEffect(input) {
+        val query = input.trim()
+        if (query.isEmpty()) {
+            matches = emptyList()
+            return@LaunchedEffect
+        }
+        delay(SUGGESTION_DELAY_MILLIS)
+        launch {
+            delay(SEARCH_FURTHER_DELAY_MILLIS)
+            isSearching = true
+            try {
+                searchFurther(query)
+            } finally {
+                isSearching = false
+            }
+        }
+        suggestions(query).collect { matches = it }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(text.newChatTitle)) },
         text = {
-            OutlinedTextField(
-                modifier = Modifier.fillMaxWidth(),
-                value = input,
-                onValueChange = {
-                    input = it
-                    isInvalid = false
-                },
-                singleLine = true,
-                enabled = !isLooking,
-                label = { Text(text = stringResource(text.newChatHint)) },
-                isError = isInvalid,
-                supportingText = if (isInvalid) {
-                    { Text(text = stringResource(text.newChatInvalid)) }
-                } else {
-                    null
-                },
-                trailingIcon = if (isLooking) {
-                    {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                        )
+            Column {
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = input,
+                    onValueChange = {
+                        input = it
+                        isInvalid = false
+                    },
+                    singleLine = true,
+                    enabled = !isLooking,
+                    label = { Text(text = stringResource(text.newChatHint)) },
+                    isError = isInvalid,
+                    supportingText = if (isInvalid) {
+                        { Text(text = stringResource(text.newChatInvalid)) }
+                    } else {
+                        null
+                    },
+                    trailingIcon = if (isLooking || isSearching) {
+                        {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                )
+                if (matches.isNotEmpty() && !isLooking) {
+                    Column(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .heightIn(max = 320.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        matches.forEach { member ->
+                            SuggestionRow(
+                                member = member,
+                                protocol = protocol,
+                                onClick = { onStarted(member.id) },
+                            )
+                        }
                     }
-                } else {
-                    null
-                },
-            )
+                }
+            }
         },
         confirmButton = {
             TextButton(
@@ -675,6 +732,54 @@ private fun NewChatDialogContent(
         },
     )
 }
+
+/** One person suggested in the new-chat box: picture, name, and checked address or key. */
+@Composable
+private fun SuggestionRow(member: TwillMember, protocol: TwillProtocolId, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        TwillAvatarImage(avatar = member.avatar, protocol = protocol, size = 36.dp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = member.name,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            member.detail?.let { detail ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (member.isVerified) {
+                        Icon(
+                            imageVector = Icons.Rounded.Verified,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(end = 4.dp)
+                                .size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Text(
+                        text = detail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val SUGGESTION_DELAY_MILLIS = 120L
+private const val SEARCH_FURTHER_DELAY_MILLIS = 600L
 
 @Composable
 private fun NewGroupDialogContent(

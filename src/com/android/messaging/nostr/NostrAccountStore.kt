@@ -31,6 +31,7 @@ internal class NostrAccountStore @Inject constructor(
     private val _mediaServer = MutableStateFlow(NostrDefaults.DEFAULT_MEDIA_SERVER)
     private val _autoDownloadMedia = MutableStateFlow(false)
     private val _loadProfilePictures = MutableStateFlow(false)
+    private val _searchRelays = MutableStateFlow(false)
     private var isLoaded = false
     private val lock = Any()
 
@@ -80,6 +81,24 @@ internal class NostrAccountStore @Inject constructor(
             ensureLoaded()
             return _loadProfilePictures.asStateFlow()
         }
+
+    /**
+     * Ask a search relay for people matching what's typed in the new-chat box. Off by default
+     * (the search relay sees what you type).
+     */
+    val searchRelays: StateFlow<Boolean>
+        get() {
+            ensureLoaded()
+            return _searchRelays.asStateFlow()
+        }
+
+    fun setSearchRelays(enabled: Boolean) {
+        synchronized(lock) {
+            ensureLoaded()
+            prefs.edit().putBoolean(KEY_SEARCH_RELAYS, enabled).commit()
+            _searchRelays.value = enabled
+        }
+    }
 
     fun setMediaServer(url: String) {
         synchronized(lock) {
@@ -185,6 +204,7 @@ internal class NostrAccountStore @Inject constructor(
                 ?: NostrDefaults.DEFAULT_MEDIA_SERVER
             _autoDownloadMedia.value = prefs.getBoolean(KEY_AUTO_DOWNLOAD, false)
             _loadProfilePictures.value = prefs.getBoolean(KEY_LOAD_PICTURES, false)
+            _searchRelays.value = prefs.getBoolean(KEY_SEARCH_RELAYS, false)
             isLoaded = true
         }
     }
@@ -216,6 +236,7 @@ internal class NostrAccountStore @Inject constructor(
         const val KEY_MEDIA_SERVER = "media_server"
         const val KEY_AUTO_DOWNLOAD = "auto_download_media"
         const val KEY_LOAD_PICTURES = "load_profile_pictures"
+        const val KEY_SEARCH_RELAYS = "search_relays"
         const val METHOD_EXTERNAL = "external"
         const val METHOD_LOCAL = "local"
         const val RELAY_SEPARATOR = "\n"

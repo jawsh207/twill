@@ -980,7 +980,7 @@
     <string name="inbox_section_expand">Expand</string>
     <string name="inbox_section_collapse">Collapse</string>
     <string name="inbox_new_nostr_chat">New Nostr chat</string>
-    <string name="inbox_new_nostr_chat_hint">name@domain, npub or public key</string>
+    <string name="inbox_new_nostr_chat_hint">Name, name@domain or npub</string>
     <string name="inbox_new_nostr_chat_invalid">Couldn\'t find that Nostr user. Check the address or paste their npub</string>
     <string name="inbox_start_chat">Start chat</string>
     <string name="inbox_nostr_empty">No Nostr chats yet. Long-press Start chat to start a chat or group.</string>
@@ -1030,6 +1030,9 @@
     <string name="nostr_file_too_large">That file is too large. The limit is 25 MB</string>
     <string name="nostr_download_failed">Couldn\'t download the attachment</string>
     <string name="nostr_media_header">Media</string>
+    <string name="nostr_people_header">Finding people</string>
+    <string name="nostr_search_relays">Search relays for people</string>
+    <string name="nostr_search_relays_summary">In Start chat, also finds people you haven\'t followed or talked to. What you type is sent to a search relay</string>
     <string name="nostr_load_pictures">Show profile pictures</string>
     <string name="nostr_load_pictures_summary">Loads pictures from the servers people chose for them, which can see your IP address</string>
     <string name="nostr_auto_download">Download attachments automatically</string>

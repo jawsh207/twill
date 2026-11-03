@@ -4,6 +4,14 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.15
+
+- Nostr Start chat suggests people as you type a name, address or npub: people you follow,
+  talk to, or have replied to, mentioned, reacted to or zapped, including in other Nostr apps.
+  Addresses show once they're confirmed, with a check mark.
+- New setting under Nostr > Finding people: "Search relays for people" also finds people you
+  have no connection with. It's off by default, because the search relay sees what you type.
+
 ## 1.0.14
 
 - Delta Chat groups have their own QR code: open the group's info and tap "Invite with QR

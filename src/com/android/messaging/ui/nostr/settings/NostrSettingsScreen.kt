@@ -257,6 +257,21 @@ internal fun NostrSettingsScreen(
                 )
             }
 
+            item(key = "people_divider", contentType = SettingsGroupBreak) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            item(key = "people_header", contentType = SettingsGroupTitle) {
+                SettingsCategoryHeader(title = stringResource(R.string.nostr_people_header))
+            }
+            item(key = "search_relays") {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.nostr_search_relays),
+                    summary = stringResource(R.string.nostr_search_relays_summary),
+                    checked = uiState.searchRelays,
+                    onCheckedChange = viewModel::setSearchRelays,
+                )
+            }
+
             item(key = "media_divider", contentType = SettingsGroupBreak) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }

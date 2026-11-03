@@ -9,6 +9,7 @@ import java.io.File
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * The messaging protocols Twill speaks besides SMS/MMS (which stays upstream's code).
@@ -252,6 +253,21 @@ internal interface TwillProtocol {
 
     /** A chat id for what the user typed (address, key, invite link), or null if invalid. */
     suspend fun startChat(input: String): String?
+
+    /**
+     * People matching what's typed in the new-chat box (name, address or key), best first.
+     * Updates as more is learned about them. Empty for protocols without suggestions.
+     */
+    fun contactSuggestions(query: String): Flow<List<TwillMember>> = flowOf(emptyList())
+
+    /** The new-chat box opened: a chance to refresh what [contactSuggestions] draws on. */
+    fun onNewChatOpened() = Unit
+
+    /**
+     * Looks further afield for [query] (a search server, if the user allowed it); anything
+     * found arrives through [contactSuggestions].
+     */
+    suspend fun searchContacts(query: String) = Unit
 
     /** People the user can add to a group without typing anything. */
     suspend fun knownContacts(): List<TwillMember>

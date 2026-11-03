@@ -391,9 +391,10 @@ internal class NostrMessenger @Inject constructor(
      * Collects every event matching [filter] from [relays] until each relay has finished
      * (EOSE, closed or unreachable) or the timeout passes.
      */
-    private suspend fun fetchAll(
+    suspend fun fetchAll(
         relays: List<NormalizedRelayUrl>,
         filter: Filter,
+        timeoutMillis: Long = FETCH_TIMEOUT_MILLIS,
     ): List<Event> {
         val events = Collections.synchronizedList(mutableListOf<Event>())
         val finished = MutableStateFlow<Set<NormalizedRelayUrl>>(emptySet())
@@ -430,7 +431,7 @@ internal class NostrMessenger @Inject constructor(
         }
         try {
             client.subscribe(subscriptionId, relays.associateWith { listOf(filter) }, listener)
-            withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
+            withTimeoutOrNull(timeoutMillis) {
                 finished.first { it.size >= relays.size }
             }
         } finally {
@@ -443,7 +444,7 @@ internal class NostrMessenger @Inject constructor(
      * Checks that [address] (name@domain) lists [pubKey], by fetching
      * https://domain/.well-known/nostr.json?name=name (NIP-05).
      */
-    private suspend fun verifyNip05(address: String, pubKey: String): Boolean {
+    suspend fun verifyNip05(address: String, pubKey: String): Boolean {
         val trimmed = address.trim().lowercase()
         val at = trimmed.lastIndexOf('@')
         val name = if (at > 0) trimmed.substring(0, at) else "_"
@@ -533,6 +534,7 @@ internal class NostrMessenger @Inject constructor(
             status = if (delivered) NostrMessage.Status.Sent else NostrMessage.Status.Failed,
         )
         members.forEach(::refreshProfile)
+        store.addPeople(members, NostrPeopleSource.CHAT)
     }
 
     private suspend fun sendAttachment(chatKey: String, uri: Uri) {
@@ -878,6 +880,7 @@ internal class NostrMessenger @Inject constructor(
         }
         refreshProfile(rumor.pubKey)
         NostrChatKey.members(chatKey).forEach(::refreshProfile)
+        store.addPeople(NostrChatKey.members(chatKey), NostrPeopleSource.CHAT)
     }
 
     /** Reads a kind 15 file message. Returns null if it can't be decrypted. */
@@ -948,7 +951,7 @@ internal class NostrMessenger @Inject constructor(
         return NostrChatKey.members(chatKey).take(3).map { nameOf(it) }.joinToString(", ")
     }
 
-    private fun normalizedRelays(urls: List<String>): List<NormalizedRelayUrl> =
+    fun normalizedRelays(urls: List<String>): List<NormalizedRelayUrl> =
         urls.mapNotNull { it.normalizeRelayUrlOrNull() }.distinct()
 
     private data class ConnectionPlan(

@@ -34,6 +34,7 @@ internal data class NostrSettingsUiState(
     val mediaServer: String = "",
     val autoDownloadMedia: Boolean = false,
     val loadProfilePictures: Boolean = false,
+    val searchRelays: Boolean = false,
     val ownProfile: NostrProfile? = null,
     val isRefreshingProfile: Boolean = false,
 )
@@ -63,7 +64,17 @@ internal class NostrSettingsViewModel @Inject constructor(
         accountStore.mediaServer,
         accountStore.autoDownloadMedia,
         accountStore.loadProfilePictures,
-    ) { server, autoDownload, loadPictures -> Triple(server, autoDownload, loadPictures) }
+        accountStore.searchRelays,
+    ) { server, autoDownload, loadPictures, search ->
+        MediaSettings(server, autoDownload, loadPictures, search)
+    }
+
+    private data class MediaSettings(
+        val server: String,
+        val autoDownload: Boolean,
+        val loadPictures: Boolean,
+        val searchRelays: Boolean,
+    )
 
     val uiState: StateFlow<NostrSettingsUiState> = combine(
         accountStore.account,
@@ -75,7 +86,7 @@ internal class NostrSettingsViewModel @Inject constructor(
             account,
             relays,
             deliveryMode,
-            (server, autoDownload, loadPictures),
+            (server, autoDownload, loadPictures, search),
             (profile, refreshing),
         ->
         NostrSettingsUiState(
@@ -86,6 +97,7 @@ internal class NostrSettingsViewModel @Inject constructor(
             mediaServer = server,
             autoDownloadMedia = autoDownload,
             loadProfilePictures = loadPictures,
+            searchRelays = search,
             ownProfile = profile,
             isRefreshingProfile = refreshing,
         )
@@ -142,6 +154,10 @@ internal class NostrSettingsViewModel @Inject constructor(
 
     fun setAutoDownloadMedia(enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) { accountStore.setAutoDownloadMedia(enabled) }
+    }
+
+    fun setSearchRelays(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { accountStore.setSearchRelays(enabled) }
     }
 
     fun setLoadProfilePictures(enabled: Boolean) {
