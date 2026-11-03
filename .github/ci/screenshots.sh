@@ -97,7 +97,10 @@ back
 sleep 2
 shot "nostr-6-inbox"
 # Suggestions: the start of the key just messaged finds them in the new-chat box.
-$UI longpress "Start chat" || true
+adb shell am force-stop "$PKG"
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
+sleep 3
+$UI longpress "Start chat" || $UI dump "$OUT/nostr-suggest-start.xml"
 sleep 2
 $UI tap "Nostr chat or group" || true
 sleep 1
