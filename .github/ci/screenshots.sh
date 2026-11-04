@@ -70,10 +70,18 @@ $UI tap "Use a private key" || $UI dump "$OUT/nostr-settings.xml"
 sleep 2
 shot "nostr-1-key-dialog"
 $UI tap "Private key (nsec…)" || $UI dump "$OUT/nostr-key-dialog.xml"
-adb shell input text "$NSEC"
-sleep 2
-$UI tap "Sign in" || true
-sleep 5
+# The emulator's keyboard sometimes drops a typed character: retype if the key is refused.
+for attempt in 1 2 3; do
+    adb shell input keyevent KEYCODE_MOVE_END
+    adb shell input keyevent $(printf 'KEYCODE_DEL %.0s' $(seq 1 70))
+    adb shell input text "$NSEC"
+    sleep 2
+    $UI tap "Sign in" || true
+    sleep 5
+    $UI dump "$OUT/nostr-sign-in.xml"
+    grep -q "Private key (nsec" "$OUT/nostr-sign-in.xml" || break
+    echo "nostr sign-in attempt $attempt refused, retyping" >> "$OUT/log.txt"
+done
 shot "nostr-2-signed-in"
 back
 back
