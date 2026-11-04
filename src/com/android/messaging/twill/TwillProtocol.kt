@@ -251,6 +251,22 @@ internal interface TwillProtocol {
 
     fun blockRequest(chatId: String) = Unit
 
+    /**
+     * "Mark as read" on a notification that showed [messageIds]. Unlike [markRead], it can't
+     * rely on the chat having been loaded.
+     */
+    suspend fun markReadFromNotification(chatId: String, messageIds: List<String>) =
+        markRead(chatId)
+
+    /** Deletes [messageIds] of [chatId] from this device ("Delete" on a notification). */
+    suspend fun deleteMessages(chatId: String, messageIds: List<String>) = Unit
+
+    /**
+     * Sends a reply typed in a notification, connecting for the moment if Twill isn't
+     * connected, and returns once it's sent (or failed).
+     */
+    suspend fun sendFromNotification(chatId: String, text: String) = send(chatId, text)
+
     /** A chat id for what the user typed (address, key, invite link), or null if invalid. */
     suspend fun startChat(input: String): String?
 

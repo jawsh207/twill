@@ -4,6 +4,14 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.16
+
+- Nostr and Delta Chat notifications now look and work like SMS ones: the conversation's last
+  few messages with names and pictures, and Mark as read, Reply and Delete buttons. They show
+  in Android's Conversations section, with the same per-conversation settings as SMS.
+- Replying from a notification works even when Twill isn't connected in the background; it
+  connects just long enough to send.
+
 ## 1.0.15
 
 - Nostr Start chat suggests people as you type a name, address or npub: people you follow,

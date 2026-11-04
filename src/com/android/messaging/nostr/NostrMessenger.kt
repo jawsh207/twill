@@ -6,6 +6,7 @@ import com.android.messaging.R
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.twill.TwillAppVisibility
 import com.android.messaging.twill.TwillError
+import com.android.messaging.twill.TwillNotificationMessage
 import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.util.LogUtil
@@ -253,6 +254,20 @@ internal class NostrMessenger @Inject constructor(
     /** Sends [text] to everyone in [chatKey]. The message shows immediately as sending. */
     fun send(chatKey: String, text: String) {
         appScope.launch(Dispatchers.IO) { sendText(chatKey = chatKey, text = text) }
+    }
+
+    /**
+     * Sends [text] typed in a notification and returns once the relays answered, connecting
+     * for the moment if Twill isn't connected.
+     */
+    suspend fun sendNow(chatKey: String, text: String) = withContext(Dispatchers.IO) {
+        val wasConnected = _isConnected.value
+        if (!wasConnected) client.connect()
+        try {
+            sendText(chatKey = chatKey, text = text)
+        } finally {
+            if (!wasConnected && !_isConnected.value) client.disconnect()
+        }
     }
 
     /** Encrypts, uploads and sends the file at [uri] to everyone in [chatKey]. */
@@ -923,22 +938,34 @@ internal class NostrMessenger @Inject constructor(
         // Uses the real on-screen state, not the delayed one that keeps relays connected.
         if (visibility.isViewing(TwillProtocolId.Nostr, message.chatKey)) return
         val attachment = message.attachment
+        val sender = message.senderPubKey
+        val picture = if (accountStore.loadProfilePictures.value) {
+            store.profile(sender).first()?.picture?.let { url ->
+                runCatching { media.loadAvatar(url) }.getOrNull()
+            }
+        } else {
+            null
+        }
         TwillNotifications.showMessage(
             context = context,
             protocol = TwillProtocolId.Nostr,
             icon = R.drawable.ic_notification_nostr,
             chatId = message.chatKey,
             title = chatTitle(message.chatKey),
-            senderName = when {
-                NostrChatKey.isGroup(message.chatKey) -> nameOf(message.senderPubKey)
-                else -> null
-            },
-            body = when {
-                attachment?.isImage == true -> context.getString(R.string.nostr_photo)
-                attachment != null -> context.getString(R.string.nostr_file)
-                else -> message.content
-            },
-            timeMillis = message.createdAtSeconds * 1000,
+            isGroup = NostrChatKey.isGroup(message.chatKey),
+            chatPicture = null,
+            message = TwillNotificationMessage(
+                id = message.id,
+                senderKey = sender,
+                senderName = nameOf(sender),
+                senderPicture = picture,
+                text = when {
+                    attachment?.isImage == true -> context.getString(R.string.nostr_photo)
+                    attachment != null -> context.getString(R.string.nostr_file)
+                    else -> message.content
+                },
+                timeMillis = message.createdAtSeconds * 1000,
+            ),
         )
     }
 

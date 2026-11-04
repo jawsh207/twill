@@ -19,6 +19,7 @@ import com.android.messaging.twill.TwillImages
 import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
 import com.android.messaging.twill.TwillMessageHit
+import com.android.messaging.twill.TwillNotificationMessage
 import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
@@ -27,13 +28,17 @@ import com.android.messaging.twill.TwillSearchHit
 import com.android.messaging.util.LogUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +50,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -257,16 +263,34 @@ internal class DeltaChatProtocol @Inject constructor(
             val account = account()
             if (rpc.call("is_chat_muted", account, chatId) == true) return
             val info = rpc.callObject("get_message_notification_info", account, msgId)
-            val prefix = info.optStringOrNull("summaryPrefix")?.takeIf { it.isNotBlank() }
+            val message = rpc.callObject("get_messages", account, listOf(msgId))
+                .optJSONObject(msgId.toString())
+            val sender = message?.optJSONObject("sender")
+            val chat = rpc.callObject("get_full_chat_by_id", account, chatId)
+            val isGroup = chat.optString("chatType") != "Single"
+            val senderName = sender?.optString("displayName")?.takeIf { it.isNotBlank() }
+                ?: info.optStringOrNull("summaryPrefix")?.takeIf { it.isNotBlank() }
+                ?: info.optString("chatName")
             TwillNotifications.showMessage(
                 context = context,
                 protocol = id,
                 icon = text.notificationIcon,
                 chatId = chatId.toString(),
                 title = info.optString("chatName"),
-                senderName = prefix,
-                body = info.optString("summaryText"),
-                timeMillis = System.currentTimeMillis(),
+                isGroup = isGroup,
+                chatPicture = chat.optStringOrNull("profileImage")
+                    ?.let { TwillImages.loadLocalAvatar(it) },
+                message = TwillNotificationMessage(
+                    id = msgId.toString(),
+                    senderKey = message?.optInt("fromId")?.toString() ?: senderName,
+                    senderName = senderName,
+                    senderPicture = sender?.optStringOrNull("profileImage")
+                        ?.let { TwillImages.loadLocalAvatar(it) },
+                    text = info.optString("summaryText"),
+                    timeMillis = message?.optLong("timestamp")?.takeIf { it > 0 }
+                        ?.let { it * 1000 }
+                        ?: System.currentTimeMillis(),
+                ),
             )
         } catch (exception: CancellationException) {
             throw exception
@@ -618,6 +642,57 @@ internal class DeltaChatProtocol @Inject constructor(
         }
     }
 
+    override suspend fun markReadFromNotification(chatId: String, messageIds: List<String>) =
+        withContext(Dispatchers.IO) {
+            val account = account()
+            // markseen sends read receipts (if enabled), as reading in the chat does.
+            val ids = messageIds.mapNotNull { it.toIntOrNull() }
+            if (ids.isNotEmpty()) rpc.call("markseen_msgs", account, ids)
+            rpc.call("marknoticed_chat", account, chatId.toInt())
+            Unit
+        }
+
+    override suspend fun deleteMessages(chatId: String, messageIds: List<String>) =
+        withContext(Dispatchers.IO) {
+            val ids = messageIds.mapNotNull { it.toIntOrNull() }
+            if (ids.isNotEmpty()) rpc.call("delete_messages", account(), ids)
+            Unit
+        }
+
+    /**
+     * Sends a notification reply. If the core's network isn't running (Twill closed and not
+     * "always connected"), runs it until the message is delivered or fails, then stops it.
+     */
+    override suspend fun sendFromNotification(chatId: String, text: String) =
+        withContext(Dispatchers.IO) {
+            val account = account()
+            fun shouldRun() = visibility.isRecentlyVisible.value || keepConnectedInBackground.value
+            coroutineScope {
+                val sentId = AtomicInteger(-1)
+                // Listening before sending, so a quick delivery isn't missed.
+                val outcome = async(start = CoroutineStart.UNDISPATCHED) {
+                    rpc.events.first { event ->
+                        event.accountId == account &&
+                            (
+                                event.id == DeltaChatEvents.MSG_DELIVERED ||
+                                    event.id == DeltaChatEvents.MSG_FAILED
+                                ) &&
+                            event.data2 == sentId.get()
+                    }
+                }
+                val msgId = rpc.callInt("misc_send_text_message", account, chatId.toInt(), text)
+                sentId.set(msgId)
+                listChanged()
+                chatChanged(chatId.toInt(), affectsDetails = false)
+                if (!shouldRun()) {
+                    rpc.call("start_io", account)
+                    withTimeoutOrNull(REPLY_SEND_TIMEOUT_MILLIS) { outcome.await() }
+                    if (!shouldRun()) rpc.call("stop_io", account)
+                }
+                outcome.cancel()
+            }
+        }
+
     override fun setRead(chatId: String, isRead: Boolean) = launchCall(null, chatId) { account ->
         rpc.call(if (isRead) "marknoticed_chat" else "markfresh_chat", account, chatId.toInt())
     }
@@ -856,6 +931,7 @@ internal class DeltaChatProtocol @Inject constructor(
         const val TAG = "DeltaChatProtocol"
         const val DC_GCL_NO_SPECIALS = 0x02
         const val DC_CONTACT_ID_SELF = 1
+        const val REPLY_SEND_TIMEOUT_MILLIS = 45_000L
         const val DC_STATE_OUT_PREPARING = 18
         const val DC_STATE_OUT_PENDING = 20
         const val DC_STATE_OUT_FAILED = 24

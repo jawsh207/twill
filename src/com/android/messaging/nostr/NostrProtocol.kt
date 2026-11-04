@@ -168,6 +168,12 @@ internal class NostrProtocol @Inject constructor(
 
     override fun send(chatId: String, text: String) = messenger.send(chatKey = chatId, text = text)
 
+    override suspend fun sendFromNotification(chatId: String, text: String) =
+        messenger.sendNow(chatKey = chatId, text = text)
+
+    override suspend fun deleteMessages(chatId: String, messageIds: List<String>) =
+        withContext(Dispatchers.IO) { messageIds.forEach(store::deleteMessage) }
+
     override fun sendFile(chatId: String, uri: Uri) = messenger.sendFile(
         chatKey = chatId,
         uri = uri
