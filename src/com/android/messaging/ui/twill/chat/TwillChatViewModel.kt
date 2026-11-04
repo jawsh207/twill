@@ -72,9 +72,13 @@ internal class TwillChatViewModel @Inject constructor(
     }
 
     /** While a chat is on screen, its messages don't raise notifications. */
-    fun setActive(isActive: Boolean) {
+    fun setActive(isActive: Boolean, isInBubble: Boolean = false) {
         val current = target.value ?: return
-        visibility.setActiveChat(current.protocol.id, if (isActive) current.chatId else null)
+        visibility.setActiveChat(
+            protocol = current.protocol.id,
+            chatId = if (isActive) current.chatId else null,
+            cancelNotification = !isInBubble,
+        )
     }
 
     private inline fun withTarget(block: (TwillProtocol, String) -> Unit) {

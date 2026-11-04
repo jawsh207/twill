@@ -11,6 +11,8 @@ section here. Write entries for people using the app, newest version first.
   in Android's Conversations section, with the same per-conversation settings as SMS.
 - Replying from a notification works even when Twill isn't connected in the background; it
   connects just long enough to send.
+- Nostr and Delta Chat chats can open as bubbles, like SMS: tap the bubble button on a
+  notification (or allow bubbles for all conversations in Twill's notification settings).
 
 ## 1.0.15
 

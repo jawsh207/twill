@@ -118,6 +118,8 @@ internal fun TwillChatScreen(
     modifier: Modifier = Modifier,
     /** Shows the group's invite QR code (Delta Chat groups); null for other protocols. */
     onShowGroupQr: (() -> Unit)? = null,
+    /** Shown in a notification bubble: its notification must stay. */
+    isInBubble: Boolean = false,
 ) {
     val context = LocalContext.current
     val messages by viewModel.messages.collectAsStateWithLifecycle()
@@ -140,8 +142,8 @@ internal fun TwillChatScreen(
     // While this chat is on screen, its messages don't raise notifications.
     DisposableEffect(protocol, chatId) {
         viewModel.bind(protocol, chatId)
-        viewModel.setActive(true)
-        onDispose { viewModel.setActive(false) }
+        viewModel.setActive(true, isInBubble)
+        onDispose { viewModel.setActive(false, isInBubble) }
     }
 
     // Near the oldest loaded message (the top, in this reversed list), load an older page.

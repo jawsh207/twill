@@ -118,11 +118,23 @@ $UI dump "$OUT/nostr-suggestions.xml"
 back
 back
 # Notifications: with the inbox open (connected, no chat on screen), receive two DMs from a
-# test sender, then look at the notification and reply from it.
+# test sender, open the chat's bubble, then look at the notification and reply from it.
+# Bubbles: "All conversations can bubble" for Twill, so they appear without a tap first.
+adb shell cmd notification set_bubbles "$PKG" 1 >> "$OUT/log.txt" 2>&1 || true
 python3 .github/ci/nostr_dm.py send "$KEYS" "Hi, are we still on for lunch?" >> "$OUT/log.txt" 2>&1
 sleep 8
 python3 .github/ci/nostr_dm.py send "$KEYS" "I can do 12:30 at the usual place" >> "$OUT/log.txt" 2>&1
 sleep 10
+adb shell input keyevent KEYCODE_HOME
+sleep 3
+shot "nostr-8a-bubble"
+$UI dump "$OUT/nostr-bubble.xml"
+if $UI tapcontains "Robin Test"; then
+    sleep 4
+    shot "nostr-8b-bubble-open"
+    back
+    sleep 2
+fi
 adb shell cmd statusbar expand-notifications
 sleep 2
 shot "nostr-8-notification"

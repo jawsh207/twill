@@ -11,6 +11,7 @@ import com.android.messaging.R
 import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.twillEntryPoint
+import com.android.messaging.ui.conversation.navigation.LocalConversationEntryNavState
 import com.android.messaging.ui.deltachat.qr.DeltaChatQrNavKey
 import com.android.messaging.ui.deltachat.qr.DeltaChatQrScreen
 import com.android.messaging.ui.deltachat.qr.DeltaChatQrViewModel
@@ -63,6 +64,7 @@ private fun twillChatRouteContent(): @Composable (TwillChatNavKey) -> Unit {
     return { navKey ->
         val navigator = LocalNavigator.current
         val context = LocalContext.current
+        val isInBubble = LocalConversationEntryNavState.current.isLaunchedFromBubble
         val protocol = remember(context, navKey.protocol) {
             context.twillEntryPoint().twillProtocols().byKey(navKey.protocol)
         }
@@ -81,6 +83,7 @@ private fun twillChatRouteContent(): @Composable (TwillChatNavKey) -> Unit {
                     key = "twill-chat-" + navKey.protocol + ":" + navKey.chatId,
                 ),
                 onNavigateBack = navigator::back,
+                isInBubble = isInBubble,
             )
         }
     }

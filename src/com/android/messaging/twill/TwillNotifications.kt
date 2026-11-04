@@ -27,6 +27,7 @@ import androidx.core.graphics.drawable.IconCompat
 import com.android.messaging.R
 import com.android.messaging.datamodel.BugleNotifications
 import com.android.messaging.ui.MainActivity
+import com.android.messaging.ui.conversation.ConversationActivity
 import com.android.messaging.util.AvatarUriUtil
 import com.android.messaging.util.LogUtil
 import java.security.MessageDigest
@@ -191,6 +192,12 @@ internal object TwillNotifications {
             .setShowWhen(true)
             .setShortcutId(key)
             .setLocusId(LocusIdCompat(key))
+            // A bubble, as on SMS: the shortcut's screen in a floating window.
+            .setBubbleMetadata(
+                NotificationCompat.BubbleMetadata.Builder(key)
+                    .setDesiredHeightResId(R.dimen.max_bubbled_activity_height)
+                    .build(),
+            )
             .addPerson(sender)
             .addExtras(Bundle().apply { putStringArray(EXTRA_MESSAGE_IDS, ids.toTypedArray()) })
             .addAction(markReadAction(context, protocol, chatId, ids))
@@ -301,7 +308,7 @@ internal object TwillNotifications {
                             R.drawable.ic_launcher_foreground
                         ),
                 )
-                .setIntent(chatIntent(context, protocol, chatId).setAction(Intent.ACTION_VIEW))
+                .setIntent(bubbleIntent(context, protocol, chatId))
                 .build()
             ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
         }.onFailure { LogUtil.w(TAG, "Shortcut failed: ${it.javaClass.simpleName}") }
@@ -427,6 +434,17 @@ internal object TwillNotifications {
         }
         return intent
     }
+
+    /**
+     * The chat in the screen SMS bubbles use (`ConversationActivity`), the only one Android
+     * can embed in a bubble. Also what the chat's launcher shortcut opens, as for SMS.
+     */
+    private fun bubbleIntent(context: Context, protocol: TwillProtocolId, chatId: String) =
+        Intent(context, ConversationActivity::class.java)
+            .setAction(Intent.ACTION_VIEW)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(EXTRA_PROTOCOL, protocol.key)
+            .putExtra(EXTRA_CHAT_ID, chatId)
 
     private fun openIntent(
         context: Context,

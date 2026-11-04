@@ -74,9 +74,20 @@ internal class TwillAppVisibility @Inject constructor(
     var activeChat: String? = null
         private set
 
-    fun setActiveChat(protocol: TwillProtocolId, chatId: String?) {
+    /**
+     * [chatId] of [protocol] is on screen (null: none). Its notification is cleared, except
+     * in a bubble ([cancelNotification] false): Android removes a bubble whose notification
+     * goes, as SMS avoids too.
+     */
+    fun setActiveChat(
+        protocol: TwillProtocolId,
+        chatId: String?,
+        cancelNotification: Boolean = true,
+    ) {
         activeChat = chatId?.let { protocol.key + ":" + it }
-        if (chatId != null) TwillNotifications.cancelChat(context, protocol, chatId)
+        if (chatId != null && cancelNotification) {
+            TwillNotifications.cancelChat(context, protocol, chatId)
+        }
     }
 
     fun isViewing(protocol: TwillProtocolId, chatId: String): Boolean =
