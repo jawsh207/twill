@@ -130,6 +130,9 @@ sleep 3
 shot "nostr-8a-bubble"
 $UI dump "$OUT/nostr-bubble.xml"
 # The bubble is a system overlay (not in the view dump): tap where it sits, top left.
+# The first tap closes Android's one-time "Chat using bubbles" tip.
+adb shell input tap 70 537
+sleep 3
 adb shell input tap 70 537
 sleep 5
 shot "nostr-8b-bubble-open"
