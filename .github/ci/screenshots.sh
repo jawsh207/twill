@@ -118,27 +118,13 @@ $UI dump "$OUT/nostr-suggestions.xml"
 back
 back
 # Notifications: with the inbox open (connected, no chat on screen), receive two DMs from a
-# test sender, open the chat's bubble, then look at the notification and reply from it.
+# test sender, reply from the notification, then open and close the chat's bubble.
 # Bubbles: "All conversations can bubble" for Twill, so they appear without a tap first.
 adb shell cmd notification set_bubbles "$PKG" 1 >> "$OUT/log.txt" 2>&1 || true
 python3 .github/ci/nostr_dm.py send "$KEYS" "Hi, are we still on for lunch?" >> "$OUT/log.txt" 2>&1
 sleep 8
 python3 .github/ci/nostr_dm.py send "$KEYS" "I can do 12:30 at the usual place" >> "$OUT/log.txt" 2>&1
 sleep 10
-adb shell input keyevent KEYCODE_HOME
-sleep 3
-shot "nostr-8a-bubble"
-$UI dump "$OUT/nostr-bubble.xml"
-# The bubble is a system overlay (not in the view dump): tap where it sits, top left.
-# The first tap closes Android's one-time "Chat using bubbles" tip.
-adb shell input tap 70 537
-sleep 3
-adb shell input tap 70 537
-sleep 5
-shot "nostr-8b-bubble-open"
-$UI dump "$OUT/nostr-bubble-open.xml"
-back
-sleep 2
 adb shell cmd statusbar expand-notifications
 sleep 2
 shot "nostr-8-notification"
@@ -154,6 +140,26 @@ if $UI tap "Reply"; then
 fi
 adb shell cmd statusbar collapse
 sleep 1
+adb shell input keyevent KEYCODE_HOME
+sleep 3
+shot "nostr-8a-bubble"
+$UI dump "$OUT/nostr-bubble.xml"
+# The bubble is a system overlay (not in the view dump): tap where it sits, top left.
+# The first tap closes Android's one-time "Chat using bubbles" tip.
+adb shell input tap 70 537
+sleep 3
+adb shell input tap 70 537
+sleep 5
+shot "nostr-8b-bubble-open"
+$UI dump "$OUT/nostr-bubble-open.xml"
+# Back twice: the first may only close the "Control bubbles anytime" tip.
+back
+back
+sleep 2
+# Still there after closing it (the chat in a bubble keeps the notification).
+shot "nostr-8c-bubble-closed"
+adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
+sleep 3
 # The reply is in the chat, sent.
 $UI tap "Robin Test" || $UI tapcontains "npub1" || $UI dump "$OUT/nostr-chat-after-reply.xml"
 sleep 3
