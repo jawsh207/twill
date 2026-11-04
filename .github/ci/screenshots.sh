@@ -129,12 +129,13 @@ adb shell input keyevent KEYCODE_HOME
 sleep 3
 shot "nostr-8a-bubble"
 $UI dump "$OUT/nostr-bubble.xml"
-if $UI tapcontains "Robin Test"; then
-    sleep 4
-    shot "nostr-8b-bubble-open"
-    back
-    sleep 2
-fi
+# The bubble is a system overlay (not in the view dump): tap where it sits, top left.
+adb shell input tap 70 537
+sleep 5
+shot "nostr-8b-bubble-open"
+$UI dump "$OUT/nostr-bubble-open.xml"
+back
+sleep 2
 adb shell cmd statusbar expand-notifications
 sleep 2
 shot "nostr-8-notification"
