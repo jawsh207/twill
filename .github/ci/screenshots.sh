@@ -57,6 +57,9 @@ adb shell cmd notification cancel_all 2>/dev/null || adb shell service call noti
 # Nostr: create a key, then start a chat with a throwaway key and send a message. This runs
 # the optimized build's crypto (secp256k1), storage and relay connections.
 NPUB=$(python3 .github/ci/nostr_key.py)
+# The account signs in with a known key, so a test sender can message it (nostr_dm.py).
+KEYS=$(mktemp)
+NSEC=$(python3 .github/ci/nostr_dm.py account "$KEYS")
 echo "nostr test peer: $NPUB" >> "$OUT/log.txt"
 adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -p "$PKG" >> "$OUT/log.txt" 2>&1
 sleep 3
@@ -66,8 +69,9 @@ sleep 2
 $UI tap "Use a private key" || $UI dump "$OUT/nostr-settings.xml"
 sleep 2
 shot "nostr-1-key-dialog"
-$UI tap "Create a new key instead" || $UI dump "$OUT/nostr-key-dialog.xml"
-sleep 3
+$UI tap "Private key (nsec…)" || $UI dump "$OUT/nostr-key-dialog.xml"
+adb shell input text "$NSEC"
+sleep 2
 $UI tap "Sign in" || true
 sleep 5
 shot "nostr-2-signed-in"
@@ -111,6 +115,28 @@ adb shell input text "${NPUB:0:10}"
 sleep 3
 shot "nostr-7-suggestions"
 $UI dump "$OUT/nostr-suggestions.xml"
+back
+back
+# Notifications: with the inbox open (connected, no chat on screen), receive two DMs from a
+# test sender, then look at the notification and reply from it.
+python3 .github/ci/nostr_dm.py send "$KEYS" "Hi, are we still on for lunch?" >> "$OUT/log.txt" 2>&1
+sleep 8
+python3 .github/ci/nostr_dm.py send "$KEYS" "I can do 12:30 at the usual place" >> "$OUT/log.txt" 2>&1
+sleep 10
+adb shell cmd statusbar expand-notifications
+sleep 2
+shot "nostr-8-notification"
+$UI dump "$OUT/nostr-notification.xml"
+if $UI tap "Reply"; then
+    sleep 2
+    adb shell input text "Sounds%sgood"
+    sleep 1
+    shot "nostr-9-reply-typing"
+    $UI tap "Send" || $UI tapcontains "Send" || adb shell input keyevent KEYCODE_ENTER
+    sleep 10
+    shot "nostr-10-replied"
+fi
+adb shell cmd statusbar collapse
 adb shell am force-stop "$PKG"
 
 # The bottom bar (Settings option): turn it on now that SMS and Nostr are both on, then look
