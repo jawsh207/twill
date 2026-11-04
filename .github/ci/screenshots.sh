@@ -137,6 +137,11 @@ if $UI tap "Reply"; then
     shot "nostr-10-replied"
 fi
 adb shell cmd statusbar collapse
+sleep 1
+# The reply is in the chat, sent.
+$UI tap "Robin Test" || $UI tapcontains "npub1" || $UI dump "$OUT/nostr-chat-after-reply.xml"
+sleep 3
+shot "nostr-11-chat-after-reply"
 adb shell am force-stop "$PKG"
 
 # The bottom bar (Settings option): turn it on now that SMS and Nostr are both on, then look

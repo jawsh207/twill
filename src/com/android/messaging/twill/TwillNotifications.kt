@@ -145,9 +145,6 @@ internal object TwillNotifications {
         val active = activeNotification(context, tag)
         val shownIds = active?.extras?.getStringArray(EXTRA_MESSAGE_IDS)?.toList().orEmpty()
         if (message.id in shownIds) return
-        val style = active?.let(MessagingStyle::extractMessagingStyleFromNotification)
-            ?: MessagingStyle(selfPerson(context))
-
         val sender = Person.Builder()
             .setName(message.senderName)
             .setKey(protocol.key + ":" + message.senderKey)
@@ -155,6 +152,17 @@ internal object TwillNotifications {
                 avatarIcon(context, message.senderPicture, message.senderName, message.senderKey)
             )
             .build()
+        // Earlier messages from the same sender take their current name and picture (a
+        // profile can arrive after the first message, which then showed a key).
+        val style = MessagingStyle(selfPerson(context))
+        active?.let(MessagingStyle::extractMessagingStyleFromNotification)
+            ?.messages
+            ?.forEach { earlier ->
+                val person = if (earlier.person?.key == sender.key) sender else earlier.person
+                style.addMessage(
+                    MessagingStyle.Message(earlier.text, earlier.timestamp, person),
+                )
+            }
         style.addMessage(MessagingStyle.Message(message.text, message.timeMillis, sender))
         style.setGroupConversation(isGroup)
         style.setConversationTitle(if (isGroup) title else null)
