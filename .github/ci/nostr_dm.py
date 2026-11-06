@@ -239,7 +239,7 @@ def test_invoice(memo, amount="1u", expiry=3600):
         return out
 
     memo_words = to_words(memo.encode())
-    expiry_words = words_of(expiry, 2)
+    expiry_words = words_of(expiry, 3)  # 3600 needs three 5-bit words
     words = (words_of(int(time.time()), 7)
              + [13] + words_of(len(memo_words), 2) + memo_words
              + [6] + words_of(len(expiry_words), 2) + expiry_words
