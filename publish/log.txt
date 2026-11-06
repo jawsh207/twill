@@ -1,0 +1,191 @@
+Performing Streamed Install
+Success
+first-run: topResumedActivity=ActivityRecord{160679595 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+first-run-sent: topResumedActivity=ActivityRecord{35578186 u0 app.twill.perf/com.android.messaging.ui.MainActivity
+nostr test peer: npub1vp5tzpl9h2kwjrwraw5x4fm7s0ev2mhqhm4ynhdsy24ftrzf0kus52e76x
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 3726
+WaitTime: 3731
+Complete
+nostr-1-key-dialog: topResumedActivity=ActivityRecord{36665474 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-2-signed-in: topResumedActivity=ActivityRecord{36665474 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-3-picker: topResumedActivity=ActivityRecord{36665474 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-4-new-chat: topResumedActivity=ActivityRecord{36665474 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-5-sent: topResumedActivity=ActivityRecord{36665474 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-6-inbox: topResumedActivity=ActivityRecord{36665474 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 2064
+WaitTime: 2200
+Complete
+nostr-7-suggestions: topResumedActivity=ActivityRecord{265590494 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wss://relay.damus.io failed: server rejected WebSocket connection: HTTP 503
+wss://relay.primal.net ["OK","ee438a20df72e32bf1913d226dc0dc14a58f230d12f45f4c7ee5e72aef90d96f",true,""]
+wss://nos.lol ["OK","ee438a20df72e32bf1913d226dc0dc14a58f230d12f45f4c7ee5e72aef90d96f",true,""]
+wss://nos.lol ["OK","f6542788a491a15a6edda9e3aef4f9449cab49ca92711382769bd315bf750c6f",true,""]
+wss://relay.primal.net ["OK","f6542788a491a15a6edda9e3aef4f9449cab49ca92711382769bd315bf750c6f",true,""]
+wss://relay.damus.io ["OK","b928a748896696c906d8d5506351bbc42ddf9be339897500f4287a2dcc94e792",true,""]
+wss://relay.damus.io ["OK","6e6f389d2d87d343fb5e441ac9ff0695a868343450f9b720b83aa367a2a1f6ac",true,""]
+wss://nos.lol ["OK","b928a748896696c906d8d5506351bbc42ddf9be339897500f4287a2dcc94e792",true,"duplicate: have this event"]
+wss://relay.primal.net ["OK","b928a748896696c906d8d5506351bbc42ddf9be339897500f4287a2dcc94e792",true,"duplicate: have this event"]
+wss://nos.lol ["OK","6e6f389d2d87d343fb5e441ac9ff0695a868343450f9b720b83aa367a2a1f6ac",true,""]
+wss://relay.primal.net ["OK","6e6f389d2d87d343fb5e441ac9ff0695a868343450f9b720b83aa367a2a1f6ac",true,""]
+wss://relay.damus.io ["OK","9a72ba1df96040c04dee7bcbfc2c56ed647f99f371ef9bc140b689a667b8c109",true,""]
+wss://relay.damus.io ["OK","8cfe075aa0d1ab35bc1a20a1227fb8c225569e658f8e58ff40c70bd76753aa49",true,""]
+wss://nos.lol ["OK","9a72ba1df96040c04dee7bcbfc2c56ed647f99f371ef9bc140b689a667b8c109",true,""]
+wss://nos.lol ["OK","8cfe075aa0d1ab35bc1a20a1227fb8c225569e658f8e58ff40c70bd76753aa49",true,""]
+wss://relay.primal.net ["OK","9a72ba1df96040c04dee7bcbfc2c56ed647f99f371ef9bc140b689a667b8c109",true,""]
+wss://relay.primal.net ["OK","8cfe075aa0d1ab35bc1a20a1227fb8c225569e658f8e58ff40c70bd76753aa49",true,""]
+nostr-8-notification: topResumedActivity=ActivityRecord{265590494 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-9-reply-typing: topResumedActivity=ActivityRecord{265590494 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-10-replied: topResumedActivity=ActivityRecord{265590494 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+nostr-8a-bubble: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+nostr-8b-bubble-open: topResumedActivity=ActivityRecord{70526251 u0 app.twill.perf/com.android.messaging.ui.conversation.ConversationActivity
+nostr-8c-bubble-closed: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Warning: Activity not started, its current task has been brought to the front
+Status: ok
+LaunchState: HOT
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 1158
+WaitTime: 1160
+Complete
+nostr-11-chat-after-reply: topResumedActivity=ActivityRecord{265590494 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 1582
+WaitTime: 1583
+Complete
+bottom-bar-1-setting: topResumedActivity=ActivityRecord{12299611 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+bottom-bar-2-sms: topResumedActivity=ActivityRecord{12299611 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+bottom-bar-3-nostr-swiped: topResumedActivity=ActivityRecord{12299611 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+bottom-bar-4-start-chat: topResumedActivity=ActivityRecord{12299611 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+bottom-bar-5-back-to-sms: topResumedActivity=ActivityRecord{12299611 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+bottom-bar-6-nostr-tapped: topResumedActivity=ActivityRecord{12299611 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+widget-list-picker-search: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+widget-list-picker: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+widget-list-picked: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+widget-list-added: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+widget-conversation-picker-search: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+widget-conversation-picker: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+widget-conversation-picked: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+widget-conversation-picker: topResumedActivity=ActivityRecord{205913997 u0 app.twill.perf/com.android.messaging.ui.WidgetPickConversationActivity
+widget-conversation-added: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+{"android.theme.customization.theme_style":"MONOCHROMATIC","android.theme.customization.color_source":"preset","android.theme.customization.system_palette":"808080","android.theme.customization.accent_color":"808080","_applied_timestamp":1793932719713}
+other-light-00-system-settings: topResumedActivity=ActivityRecord{100492699 u0 com.android.settings/.homepage.SettingsHomepageActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 2021
+WaitTime: 2049
+Complete
+other-light-01-conversation-list: topResumedActivity=ActivityRecord{70385447 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-02-search: topResumedActivity=ActivityRecord{70385447 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-02-search-opened: topResumedActivity=ActivityRecord{70385447 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 2325
+WaitTime: 2357
+Complete
+other-light-03-twill-settings: topResumedActivity=ActivityRecord{255228814 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-04-sms-settings: topResumedActivity=ActivityRecord{255228814 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-04-archived: topResumedActivity=ActivityRecord{255228814 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-04-blocked: topResumedActivity=ActivityRecord{255228814 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-05-nostr-settings: topResumedActivity=ActivityRecord{255228814 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-06-deltachat-settings: topResumedActivity=ActivityRecord{255228814 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-07-conversation: topResumedActivity=ActivityRecord{255228814 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-light-08-widgets: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+other-light-09-widgets-page-2: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+other-dark-00-system-settings: topResumedActivity=ActivityRecord{116558609 u0 com.android.settings/.homepage.SettingsHomepageActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 1502
+WaitTime: 1521
+Complete
+other-dark-01-conversation-list: topResumedActivity=ActivityRecord{242199477 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-02-search: topResumedActivity=ActivityRecord{242199477 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-02-search-opened: topResumedActivity=ActivityRecord{242199477 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 2042
+WaitTime: 2120
+Complete
+other-dark-03-twill-settings: topResumedActivity=ActivityRecord{152138512 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-04-sms-settings: topResumedActivity=ActivityRecord{152138512 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-04-archived: topResumedActivity=ActivityRecord{152138512 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-04-blocked: topResumedActivity=ActivityRecord{152138512 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-05-nostr-settings: topResumedActivity=ActivityRecord{152138512 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-06-deltachat-settings: topResumedActivity=ActivityRecord{152138512 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-07-conversation: topResumedActivity=ActivityRecord{152138512 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+other-dark-08-widgets: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+other-dark-09-widgets-page-2: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+{"android.theme.customization.theme_style":"TONAL_SPOT","android.theme.customization.color_source":"home_wallpaper","_applied_timestamp":1793932891460}
+wallpaper-light-00-system-settings: topResumedActivity=ActivityRecord{259267631 u0 com.android.settings/.homepage.SettingsHomepageActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 2046
+WaitTime: 2078
+Complete
+wallpaper-light-01-conversation-list: topResumedActivity=ActivityRecord{3753795 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-02-search: topResumedActivity=ActivityRecord{3753795 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-02-search-opened: topResumedActivity=ActivityRecord{3753795 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 1960
+WaitTime: 1962
+Complete
+wallpaper-light-03-twill-settings: topResumedActivity=ActivityRecord{244114445 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-04-sms-settings: topResumedActivity=ActivityRecord{244114445 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-04-archived: topResumedActivity=ActivityRecord{244114445 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-04-blocked: topResumedActivity=ActivityRecord{244114445 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-05-nostr-settings: topResumedActivity=ActivityRecord{244114445 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-06-deltachat-settings: topResumedActivity=ActivityRecord{244114445 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-07-conversation: topResumedActivity=ActivityRecord{244114445 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-light-08-widgets: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+wallpaper-light-09-widgets-page-2: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+wallpaper-dark-00-system-settings: topResumedActivity=ActivityRecord{48710399 u0 com.android.settings/.homepage.SettingsHomepageActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 1838
+WaitTime: 1860
+Complete
+wallpaper-dark-01-conversation-list: topResumedActivity=ActivityRecord{84210115 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-02-search: topResumedActivity=ActivityRecord{84210115 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-02-search-opened: topResumedActivity=ActivityRecord{84210115 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=app.twill.perf }
+Status: ok
+LaunchState: COLD
+Activity: app.twill.perf/com.android.messaging.ui.MainActivity
+TotalTime: 1978
+WaitTime: 2121
+Complete
+wallpaper-dark-03-twill-settings: topResumedActivity=ActivityRecord{201074784 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-04-sms-settings: topResumedActivity=ActivityRecord{201074784 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-04-archived: topResumedActivity=ActivityRecord{201074784 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-04-blocked: topResumedActivity=ActivityRecord{201074784 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-05-nostr-settings: topResumedActivity=ActivityRecord{201074784 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-06-deltachat-settings: topResumedActivity=ActivityRecord{201074784 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-07-conversation: topResumedActivity=ActivityRecord{201074784 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity
+wallpaper-dark-08-widgets: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+wallpaper-dark-09-widgets-page-2: topResumedActivity=ActivityRecord{152330315 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity
+{"android.theme.customization.theme_style":"TONAL_SPOT","android.theme.customization.color_source":"home_wallpaper","_applied_timestamp":1793932891460}
