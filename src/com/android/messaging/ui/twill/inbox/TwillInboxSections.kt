@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -64,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import com.android.messaging.R
 import com.android.messaging.twill.TwillChat
 import com.android.messaging.twill.TwillGroupResult
+import com.android.messaging.twill.TwillInvoices
 import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
@@ -488,11 +490,14 @@ private fun ChatRow(
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
     val isUnread = chat.unreadCount > 0
+    val context = LocalContext.current
     val last = chat.lastMessage
     val attachment = last?.attachment
     val body = when {
         last == null -> ""
-        last.text.isNotEmpty() -> last.text.replace('\n', ' ')
+        last.text.isNotEmpty() -> remember(last.text) {
+            TwillInvoices.summarize(context, last.text).replace('\n', ' ')
+        }
         attachment?.isImage == true -> stringResource(R.string.nostr_photo)
         attachment != null -> stringResource(R.string.nostr_file)
         else -> ""

@@ -164,7 +164,9 @@ internal object TwillNotifications {
                     MessagingStyle.Message(earlier.text, earlier.timestamp, person),
                 )
             }
-        style.addMessage(MessagingStyle.Message(message.text, message.timeMillis, sender))
+        // Invoices in one line, as in Struthio ("Lightning invoice for 100 sats").
+        val text = TwillInvoices.summarize(context, message.text)
+        style.addMessage(MessagingStyle.Message(text, message.timeMillis, sender))
         style.setGroupConversation(isGroup)
         style.setConversationTitle(if (isGroup) title else null)
         val ids = (shownIds + message.id).takeLast(MAX_MESSAGES)

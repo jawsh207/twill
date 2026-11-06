@@ -17,6 +17,7 @@ import com.android.messaging.datamodel.data.ConversationListData
 import com.android.messaging.datamodel.data.ConversationListItemData
 import com.android.messaging.datamodel.data.ConversationMessageData
 import com.android.messaging.twill.TwillChat
+import com.android.messaging.twill.TwillInvoices
 import com.android.messaging.twill.TwillMessage
 import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocolId
@@ -212,7 +213,7 @@ internal class TwillWidgetData(
         val attachment = last?.attachment
         val body = when {
             last == null -> ""
-            last.text.isNotEmpty() -> last.text.replace('\n', ' ')
+            last.text.isNotEmpty() -> TwillInvoices.summarize(context, last.text).replace('\n', ' ')
             attachment?.isImage == true -> context.getString(R.string.nostr_photo)
             attachment != null -> context.getString(R.string.nostr_file)
             else -> ""

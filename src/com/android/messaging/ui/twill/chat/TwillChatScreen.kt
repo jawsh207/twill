@@ -92,6 +92,7 @@ import com.android.messaging.twill.TwillAttachment
 import com.android.messaging.twill.TwillChatDetails
 import com.android.messaging.twill.TwillError
 import com.android.messaging.twill.TwillImages
+import com.android.messaging.twill.TwillInvoices
 import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
 import com.android.messaging.twill.TwillProtocolId
@@ -515,11 +516,31 @@ private fun MessageBubble(
                             onClick = if (attachment.isDownloaded) onSaveFile else onDownload,
                         )
                     }
-                    if (message.text.isNotEmpty()) {
+                    // Lightning invoices show as cards, as in Struthio, below any other text.
+                    val invoices = remember(message.text) { TwillInvoices.invoicesIn(message.text) }
+                    val text = remember(message.text, invoices) {
+                        if (invoices.isEmpty()) {
+                            message.text
+                        } else {
+                            TwillInvoices.replace(message.text) { "" }.trim()
+                        }
+                    }
+                    if (text.isNotEmpty()) {
                         Text(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            text = message.text.withTwillSearchHighlight(),
+                            text = text.withTwillSearchHighlight(),
                             style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                    invoices.forEachIndexed { index, invoice ->
+                        TwillInvoiceCard(
+                            invoice = invoice,
+                            modifier = Modifier.padding(
+                                start = 8.dp,
+                                end = 8.dp,
+                                top = if (text.isEmpty() && index == 0) 8.dp else 0.dp,
+                                bottom = 8.dp,
+                            ),
                         )
                     }
                 }

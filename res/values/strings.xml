@@ -1030,6 +1030,16 @@
     <string name="nostr_file_too_large">That file is too large. The limit is 25 MB</string>
     <string name="nostr_download_failed">Couldn\'t download the attachment</string>
     <string name="nostr_media_header">Media</string>
+    <!-- Lightning invoices in messages (worded as in Struthio) -->
+    <string name="twill_invoice_title">Lightning invoice</string>
+    <string name="twill_invoice_summary">Lightning invoice for <xliff:g id="amount">%s</xliff:g></string>
+    <string name="twill_invoice_any_amount">Any amount</string>
+    <string name="twill_invoice_expired">Expired</string>
+    <string name="twill_invoice_expires_in">Expires in <xliff:g id="time">%s</xliff:g></string>
+    <string name="twill_invoice_open">Open in wallet</string>
+    <string name="twill_invoice_copy">Copy</string>
+    <string name="twill_invoice_copied">Invoice copied</string>
+    <string name="twill_invoice_no_wallet">No wallet app found. Copy the invoice instead.</string>
     <string name="nostr_people_header">Finding people</string>
     <string name="nostr_search_relays">Search relays for people</string>
     <string name="nostr_search_relays_summary">In Start chat, also finds people you haven\'t followed or talked to. What you type is sent to a search relay</string>

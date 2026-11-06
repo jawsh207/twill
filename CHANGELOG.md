@@ -4,6 +4,12 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.17
+
+- Lightning invoices in messages show as a card, the same as in Struthio: the amount, when it
+  expires, its note, and buttons to open it in your wallet app or copy it. Notifications and
+  the inbox say "Lightning invoice for 100 sats" instead of the long code.
+
 ## 1.0.16
 
 - Nostr and Delta Chat notifications now look and work like SMS ones: the conversation's last

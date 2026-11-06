@@ -132,6 +132,9 @@ adb shell cmd notification set_bubbles "$PKG" 1 >> "$OUT/log.txt" 2>&1 || true
 python3 .github/ci/nostr_dm.py send "$KEYS" "Hi, are we still on for lunch?" >> "$OUT/log.txt" 2>&1
 sleep 8
 python3 .github/ci/nostr_dm.py send "$KEYS" "I can do 12:30 at the usual place" >> "$OUT/log.txt" 2>&1
+sleep 6
+# A Lightning invoice: a card in the chat, one line in the notification.
+python3 .github/ci/nostr_dm.py send "$KEYS" "{invoice}" >> "$OUT/log.txt" 2>&1
 sleep 10
 adb shell cmd statusbar expand-notifications
 sleep 2

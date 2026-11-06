@@ -176,6 +176,24 @@ async def publish(events):
 CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 
 
+def bech32_words(hrp, out):
+    expanded = [ord(c) >> 5 for c in hrp] + [0] + [ord(c) & 31 for c in hrp]
+    mod = polymod(expanded + out + [0] * 6) ^ 1
+    checksum = [(mod >> 5 * (5 - i)) & 31 for i in range(6)]
+    return hrp + "1" + "".join(CHARSET[d] for d in out + checksum)
+
+
+def polymod(values):
+    gen = [0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3]
+    chk = 1
+    for v in values:
+        top = chk >> 25
+        chk = (chk & 0x1FFFFFF) << 5 ^ v
+        for i in range(5):
+            chk ^= gen[i] if (top >> i) & 1 else 0
+    return chk
+
+
 def bech32(hrp, data):
     def polymod(values):
         gen = [0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3]
@@ -202,6 +220,33 @@ def bech32(hrp, data):
     return hrp + "1" + "".join(CHARSET[d] for d in out + checksum)
 
 
+def test_invoice(memo, amount="1u", expiry=3600):
+    """A well-formed BOLT-11 invoice (valid bech32, random signature) for display tests."""
+    def words_of(number, count):
+        return [(number >> (5 * (count - 1 - i))) & 31 for i in range(count)]
+
+    def to_words(data):
+        acc = bits = 0
+        out = []
+        for byte in data:
+            acc = (acc << 8) | byte
+            bits += 8
+            while bits >= 5:
+                bits -= 5
+                out.append((acc >> bits) & 31)
+        if bits:
+            out.append((acc << (5 - bits)) & 31)
+        return out
+
+    memo_words = to_words(memo.encode())
+    expiry_words = words_of(expiry, 2)
+    words = (words_of(int(time.time()), 7)
+             + [13] + words_of(len(memo_words), 2) + memo_words
+             + [6] + words_of(len(expiry_words), 2) + expiry_words
+             + [secrets.randbelow(32) for _ in range(104)])
+    return bech32_words("lnbc" + amount, words)
+
+
 def main():
     command, keyfile = sys.argv[1], sys.argv[2]
     if command == "account":
@@ -215,7 +260,8 @@ def main():
             keys = json.load(f)
         account, sender = int(keys["account"], 16), int(keys["sender"], 16)
         profile = signed(sender, 0, json.dumps({"name": SENDER_NAME}), [])
-        dm = gift_wrap(sender, xonly(account).hex(), sys.argv[3])
+        text = sys.argv[3].replace("{invoice}", test_invoice("Lunch money"))
+        dm = gift_wrap(sender, xonly(account).hex(), text)
         asyncio.run(publish([profile, dm]))
 
 
