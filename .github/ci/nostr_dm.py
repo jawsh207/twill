@@ -265,32 +265,40 @@ def test_invoice(memo, amount="1u", expiry=3600):
     return bech32_words("lnbc" + amount, words)
 
 
-WALLET_RELAYS = ["wss://nos.lol", "wss://relay.primal.net", "wss://relay.damus.io"]
+WALLET_RELAYS = ["wss://nos.lol", "wss://relay.primal.net", "wss://relay.damus.io",
+                 "wss://relay.nostr.band"]
 
 
 async def run_wallet(wallet, client_secret, seconds, linkfile):
+    """Serves NIP-47 on every relay that lets it in; the link lists them all."""
     import websockets
 
     me = xonly(wallet).hex()
     client = xonly(client_secret).hex()
     info = signed(wallet, 13194, "pay_invoice get_balance get_info",
                   [["encryption", "nip44_v2"]])
-    # The first relay that lets us in; the link names it.
-    ws = None
+    sockets = {}
     for relay in WALLET_RELAYS:
         try:
             ws = await websockets.connect(relay, open_timeout=10)
-            break
+            await ws.send(json.dumps(["EVENT", info]))
+            reply = await asyncio.wait_for(ws.recv(), 10)
+            print("wallet info on", relay, reply[:120], flush=True)
+            if '"OK"' in reply and "true" in reply:
+                sockets[relay] = ws
+            else:
+                await ws.close()
         except Exception as exc:  # noqa: BLE001
             print("wallet relay", relay, "failed:", exc, flush=True)
-    if ws is None:
+    if not sockets:
         return
+    relays = "".join("&relay=" + r for r in sockets)
     with open(linkfile, "w") as f:
-        f.write("nostr+walletconnect://" + me + "?relay=" + relay
+        f.write("nostr+walletconnect://" + me + "?" + relays.lstrip("&")
                 + "&secret=" + client_secret.to_bytes(32, "big").hex())
-    print("wallet on", relay, flush=True)
-    async with ws:
-        await ws.send(json.dumps(["EVENT", info]))
+    answered = set()
+
+    async def serve(relay, ws):
         await ws.send(json.dumps(["REQ", "nwc", {"kinds": [23194], "#p": [me],
                                                   "since": int(time.time()) - 60}]))
         deadline = time.time() + seconds
@@ -299,28 +307,38 @@ async def run_wallet(wallet, client_secret, seconds, linkfile):
                 message = json.loads(await asyncio.wait_for(ws.recv(), 5))
             except asyncio.TimeoutError:
                 continue
-            print("wallet relay:", str(message)[:160], flush=True)
+            except Exception as exc:  # noqa: BLE001
+                print("wallet relay", relay, "closed:", exc, flush=True)
+                return
+            print("wallet relay", relay, str(message)[:160], flush=True)
             if message[0] != "EVENT" or message[2].get("pubkey") != client:
                 continue
             request = message[2]
+            if request["id"] in answered:
+                continue
+            answered.add(request["id"])
             body = json.loads(nip44_decrypt(request["content"], wallet, client))
             method = body.get("method")
             print("wallet request:", method, flush=True)
             if method == "get_info":
-                result = {"alias": "Twill Test Wallet", "methods": ["pay_invoice", "get_balance"]}
+                reply = {"result_type": method, "result": {
+                    "alias": "Twill Test Wallet", "methods": ["pay_invoice", "get_balance"]}}
             elif method == "get_balance":
-                result = {"balance": 21_000_000}
+                reply = {"result_type": method, "result": {"balance": 21_000_000}}
             elif method == "pay_invoice":
-                result = {"preimage": "00" * 32}
+                reply = {"result_type": method, "result": {"preimage": "00" * 32}}
             else:
                 reply = {"result_type": method, "error": {"code": "NOT_IMPLEMENTED",
                                                           "message": "Not here"}}
-                result = None
-            if result is not None:
-                reply = {"result_type": method, "result": result}
             response = signed(wallet, 23195, nip44_encrypt(json.dumps(reply), wallet, client),
                               [["e", request["id"]], ["p", client]])
-            await ws.send(json.dumps(["EVENT", response]))
+            for other in sockets.values():
+                try:
+                    await other.send(json.dumps(["EVENT", response]))
+                except Exception:  # noqa: BLE001
+                    pass
+
+    await asyncio.gather(*(serve(r, ws) for r, ws in sockets.items()))
 
 
 def main():
