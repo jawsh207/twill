@@ -32,6 +32,8 @@ internal class NostrAccountStore @Inject constructor(
     private val _autoDownloadMedia = MutableStateFlow(false)
     private val _loadProfilePictures = MutableStateFlow(false)
     private val _searchRelays = MutableStateFlow(false)
+    private val _searchRelayUrls = MutableStateFlow(NostrDefaults.SEARCH_RELAYS)
+    private val _hasWallet = MutableStateFlow(false)
     private var isLoaded = false
     private val lock = Any()
 
@@ -91,6 +93,61 @@ internal class NostrAccountStore @Inject constructor(
             ensureLoaded()
             return _searchRelays.asStateFlow()
         }
+
+    /** The NIP-50 search relays (people search, and finding profiles and follow lists). */
+    val searchRelayUrls: StateFlow<List<String>>
+        get() {
+            ensureLoaded()
+            return _searchRelayUrls.asStateFlow()
+        }
+
+    fun addSearchRelay(url: String) = updateSearchRelays { (it + url).distinct() }
+
+    fun removeSearchRelay(url: String) = updateSearchRelays { it - url }
+
+    private fun updateSearchRelays(transform: (List<String>) -> List<String>) {
+        synchronized(lock) {
+            ensureLoaded()
+            val updated = transform(_searchRelayUrls.value)
+            prefs.edit()
+                .putString(KEY_SEARCH_RELAY_URLS, updated.joinToString(RELAY_SEPARATOR))
+                .commit()
+            _searchRelayUrls.value = updated
+        }
+    }
+
+    /** A Nostr Wallet Connect link is saved (see NostrWallet). */
+    val hasWallet: StateFlow<Boolean>
+        get() {
+            ensureLoaded()
+            return _hasWallet.asStateFlow()
+        }
+
+    /** The saved Nostr Wallet Connect link, decrypted; null when there is none. */
+    fun walletLink(): String? {
+        val stored = prefs.getString(KEY_ENCRYPTED_WALLET, null) ?: return null
+        return runCatching {
+            String(KeystoreCipher.decrypt(stored, KeystoreCipher.WALLET_ALIAS), Charsets.UTF_8)
+        }.getOrNull()
+    }
+
+    /** Saves [link] encrypted, or forgets the wallet when null. */
+    fun setWalletLink(link: String?) {
+        synchronized(lock) {
+            ensureLoaded()
+            if (link == null) {
+                prefs.edit().remove(KEY_ENCRYPTED_WALLET).commit()
+                runCatching { KeystoreCipher.deleteKey(KeystoreCipher.WALLET_ALIAS) }
+            } else {
+                val encrypted = KeystoreCipher.encrypt(
+                    link.toByteArray(Charsets.UTF_8),
+                    KeystoreCipher.WALLET_ALIAS,
+                )
+                prefs.edit().putString(KEY_ENCRYPTED_WALLET, encrypted).commit()
+            }
+            _hasWallet.value = link != null
+        }
+    }
 
     fun setSearchRelays(enabled: Boolean) {
         synchronized(lock) {
@@ -158,6 +215,8 @@ internal class NostrAccountStore @Inject constructor(
     }
 
     fun signOut() {
+        // The wallet connection belongs to this account's settings: forget it too.
+        setWalletLink(null)
         synchronized(lock) {
             clearLocalKey()
             prefs.edit()
@@ -205,6 +264,11 @@ internal class NostrAccountStore @Inject constructor(
             _autoDownloadMedia.value = prefs.getBoolean(KEY_AUTO_DOWNLOAD, false)
             _loadProfilePictures.value = prefs.getBoolean(KEY_LOAD_PICTURES, false)
             _searchRelays.value = prefs.getBoolean(KEY_SEARCH_RELAYS, false)
+            _searchRelayUrls.value = prefs.getString(KEY_SEARCH_RELAY_URLS, null)
+                ?.split(RELAY_SEPARATOR)
+                ?.filter { it.isNotBlank() }
+                ?: NostrDefaults.SEARCH_RELAYS
+            _hasWallet.value = prefs.contains(KEY_ENCRYPTED_WALLET)
             isLoaded = true
         }
     }
@@ -237,6 +301,8 @@ internal class NostrAccountStore @Inject constructor(
         const val KEY_AUTO_DOWNLOAD = "auto_download_media"
         const val KEY_LOAD_PICTURES = "load_profile_pictures"
         const val KEY_SEARCH_RELAYS = "search_relays"
+        const val KEY_SEARCH_RELAY_URLS = "search_relay_urls"
+        const val KEY_ENCRYPTED_WALLET = "encrypted_wallet"
         const val METHOD_EXTERNAL = "external"
         const val METHOD_LOCAL = "local"
         const val RELAY_SEPARATOR = "\n"

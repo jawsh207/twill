@@ -4,6 +4,16 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.18
+
+- Wallet: connect your Lightning wallet with Nostr Wallet Connect (Nostr settings > Wallet).
+  Invoice cards then get a Pay button, which asks first, and show "Paid" afterwards. Your
+  funds stay in your wallet.
+- Zap: a ⚡ button at the top of Nostr chats, beside search, zaps the person you're chatting
+  with. It pays from your connected wallet, or opens your wallet app if none is connected.
+- Relays: Nostr settings now has exactly two kinds, Message relays and Search relays, and
+  both can be edited. Twill no longer uses any other relays behind the scenes.
+
 ## 1.0.17
 
 - Lightning invoices in messages show as a card, the same as in Struthio: the amount, when it

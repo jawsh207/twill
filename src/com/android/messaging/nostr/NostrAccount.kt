@@ -29,17 +29,9 @@ internal object NostrDefaults {
     )
 
     /**
-     * Where follow lists and profiles are usually found (besides the user's own relays and
-     * NIP-65 outbox relays): an index relay for lists and profiles, and big public relays.
+     * Search relays until the user changes them: they answer NIP-50 people search (when that
+     * is on) and, as indexers, hold profiles and follow lists.
      */
-    val DIRECTORY_RELAYS = listOf(
-        "wss://purplepag.es",
-        "wss://relay.damus.io",
-        "wss://nos.lol",
-        "wss://relay.primal.net",
-    )
-
-    /** Relays that answer NIP-50 search for profiles, used when relay search is on. */
     val SEARCH_RELAYS = listOf(
         "wss://relay.nostr.band",
         "wss://search.nos.today",

@@ -24,6 +24,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
@@ -45,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -62,8 +64,10 @@ import com.android.messaging.R
 import com.android.messaging.nostr.NostrAccount
 import com.android.messaging.nostr.NostrProfile
 import com.android.messaging.nostr.NostrSignerProvider
+import com.android.messaging.twill.TwillActionError
 import com.android.messaging.twill.TwillAvatar
 import com.android.messaging.twill.TwillDeliveryMode
+import com.android.messaging.twill.TwillInvoices
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
@@ -74,8 +78,18 @@ import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.twill.TwillAvatarImage
 import com.android.messaging.util.UiUtils
+import kotlinx.coroutines.launch
 
-private enum class NostrSettingsDialog { None, PrivateKey, SignOut, AddRelay, MediaServer }
+private enum class NostrSettingsDialog {
+    None,
+    PrivateKey,
+    SignOut,
+    AddRelay,
+    AddSearchRelay,
+    MediaServer,
+    ConnectWallet,
+    DisconnectWallet,
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -243,6 +257,45 @@ internal fun NostrSettingsScreen(
                 }
             }
 
+            // Wallet (Nostr Wallet Connect): pays invoice cards and zaps.
+            if (uiState.account != null) {
+                item(key = "wallet_divider", contentType = SettingsGroupBreak) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                item(key = "wallet_header", contentType = SettingsGroupTitle) {
+                    SettingsCategoryHeader(title = stringResource(R.string.nostr_wallet_header))
+                }
+                if (uiState.hasWallet) {
+                    item(key = "wallet_connected") {
+                        val info = uiState.walletInfo
+                        SettingsClickableItem(
+                            title = info?.alias ?: stringResource(R.string.nostr_wallet_connected),
+                            summary = info?.balanceMsats?.let {
+                                stringResource(
+                                    R.string.nostr_wallet_balance,
+                                    TwillInvoices.formatSats(it),
+                                )
+                            } ?: stringResource(R.string.nostr_wallet_connected_summary),
+                            onClick = viewModel::refreshWallet,
+                        )
+                    }
+                    item(key = "wallet_disconnect") {
+                        SettingsClickableItem(
+                            title = stringResource(R.string.nostr_wallet_disconnect),
+                            onClick = { dialog = NostrSettingsDialog.DisconnectWallet },
+                        )
+                    }
+                } else {
+                    item(key = "wallet_connect") {
+                        SettingsClickableItem(
+                            title = stringResource(R.string.nostr_wallet_connect),
+                            summary = stringResource(R.string.nostr_wallet_connect_summary),
+                            onClick = { dialog = NostrSettingsDialog.ConnectWallet },
+                        )
+                    }
+                }
+            }
+
             item(key = "delivery_divider", contentType = SettingsGroupBreak) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
@@ -307,6 +360,7 @@ internal fun NostrSettingsScreen(
             item(key = "relays_divider", contentType = SettingsGroupBreak) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
+            // The only relays Twill uses: message relays and search relays.
             item(key = "relays_header", contentType = SettingsGroupTitle) {
                 SettingsCategoryHeader(title = stringResource(R.string.nostr_relays_header))
             }
@@ -328,6 +382,29 @@ internal fun NostrSettingsScreen(
                     title = stringResource(R.string.nostr_add_relay),
                     summary = stringResource(R.string.nostr_relays_summary),
                     onClick = { dialog = NostrSettingsDialog.AddRelay },
+                )
+            }
+            item(key = "search_relays_header", contentType = SettingsGroupTitle) {
+                SettingsCategoryHeader(title = stringResource(R.string.nostr_search_relays_header))
+            }
+            items(items = uiState.searchRelayUrls, key = { "search_relay:$it" }) { relay ->
+                ListItem(
+                    headlineContent = { Text(text = relay) },
+                    trailingContent = {
+                        IconButton(onClick = { viewModel.removeSearchRelay(relay) }) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = stringResource(R.string.nostr_remove_relay),
+                            )
+                        }
+                    },
+                )
+            }
+            item(key = "add_search_relay") {
+                SettingsClickableItem(
+                    title = stringResource(R.string.nostr_add_search_relay),
+                    summary = stringResource(R.string.nostr_search_relays_list_summary),
+                    onClick = { dialog = NostrSettingsDialog.AddSearchRelay },
                 )
             }
         }
@@ -380,16 +457,46 @@ internal fun NostrSettingsScreen(
             onDismiss = { dialog = NostrSettingsDialog.None },
         )
 
-        NostrSettingsDialog.AddRelay -> AddRelayDialog(
-            onAdd = { input ->
-                if (viewModel.addRelay(input)) {
-                    dialog = NostrSettingsDialog.None
-                    true
-                } else {
-                    false
+        NostrSettingsDialog.AddRelay, NostrSettingsDialog.AddSearchRelay -> {
+            val isSearch = dialog == NostrSettingsDialog.AddSearchRelay
+            AddRelayDialog(
+                title = stringResource(
+                    if (isSearch) R.string.nostr_add_search_relay else R.string.nostr_add_relay,
+                ),
+                onAdd = { input ->
+                    if (viewModel.addRelay(input, isSearch)) {
+                        dialog = NostrSettingsDialog.None
+                        true
+                    } else {
+                        false
+                    }
+                },
+                onDismiss = { dialog = NostrSettingsDialog.None },
+            )
+        }
+
+        NostrSettingsDialog.ConnectWallet -> ConnectWalletDialog(
+            onConnect = viewModel::connectWallet,
+            onDismiss = { dialog = NostrSettingsDialog.None },
+        )
+
+        NostrSettingsDialog.DisconnectWallet -> AlertDialog(
+            onDismissRequest = { dialog = NostrSettingsDialog.None },
+            title = { Text(text = stringResource(R.string.nostr_wallet_disconnect_title)) },
+            text = { Text(text = stringResource(R.string.nostr_wallet_disconnect_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.disconnectWallet()
+                        dialog = NostrSettingsDialog.None
+                    },
+                ) { Text(text = stringResource(R.string.nostr_wallet_disconnect)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { dialog = NostrSettingsDialog.None }) {
+                    Text(text = stringResource(android.R.string.cancel))
                 }
             },
-            onDismiss = { dialog = NostrSettingsDialog.None },
         )
     }
 }
@@ -651,8 +758,93 @@ private fun MediaServerDialog(
     )
 }
 
+/**
+ * Pasting a Nostr Wallet Connect link. Twill asks the wallet about itself before saving, so a
+ * wrong or offline link is caught here.
+ */
+@Composable
+private fun ConnectWalletDialog(
+    onConnect: suspend (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var input by rememberSaveable { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var isConnecting by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = { if (!isConnecting) onDismiss() },
+        title = { Text(text = stringResource(R.string.nostr_wallet_connect)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(text = stringResource(R.string.nostr_wallet_connect_explanation))
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = input,
+                    onValueChange = {
+                        input = it
+                        error = null
+                    },
+                    enabled = !isConnecting,
+                    placeholder = { Text(text = "nostr+walletconnect://…") },
+                    isError = error != null,
+                    supportingText = error?.let { { Text(text = it) } },
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    trailingIcon = if (isConnecting) {
+                        { CircularProgressIndicator(modifier = Modifier.size(20.dp)) }
+                    } else {
+                        {
+                            IconButton(
+                                onClick = {
+                                    context.getSystemService(ClipboardManager::class.java)
+                                        ?.primaryClip
+                                        ?.takeIf { it.itemCount > 0 }
+                                        ?.getItemAt(0)
+                                        ?.coerceToText(context)
+                                        ?.let { input = it.toString().trim() }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.ContentPaste,
+                                    contentDescription = stringResource(R.string.nostr_paste),
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = input.isNotBlank() && !isConnecting,
+                onClick = {
+                    isConnecting = true
+                    scope.launch {
+                        try {
+                            onConnect(input)
+                            onDismiss()
+                        } catch (failure: TwillActionError) {
+                            error = context.getString(failure.messageRes, *failure.args)
+                        } finally {
+                            isConnecting = false
+                        }
+                    }
+                },
+            ) { Text(text = stringResource(R.string.nostr_wallet_connect_button)) }
+        },
+        dismissButton = {
+            TextButton(enabled = !isConnecting, onClick = onDismiss) {
+                Text(text = stringResource(android.R.string.cancel))
+            }
+        },
+    )
+}
+
 @Composable
 private fun AddRelayDialog(
+    title: String,
     onAdd: (String) -> Boolean,
     onDismiss: () -> Unit,
 ) {
@@ -661,7 +853,7 @@ private fun AddRelayDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(R.string.nostr_add_relay)) },
+        title = { Text(text = title) },
         text = {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),

@@ -92,7 +92,7 @@ internal class NostrDirectory @Inject constructor(
         val text = query.trim()
         if (!accountStore.searchRelays.value || text.length < MIN_SEARCH_LENGTH) return@withContext
         if (accountStore.account.value == null) return@withContext
-        val relays = messenger.normalizedRelays(NostrDefaults.SEARCH_RELAYS)
+        val relays = messenger.normalizedRelays(accountStore.searchRelayUrls.value)
         val events = try {
             messenger.fetchAll(
                 relays,
@@ -142,7 +142,7 @@ internal class NostrDirectory @Inject constructor(
         store.addPeople(store.chatPeople(), NostrPeopleSource.CHAT)
 
         val baseRelays = messenger.normalizedRelays(
-            accountStore.relays.value + NostrDefaults.DIRECTORY_RELAYS,
+            accountStore.relays.value + accountStore.searchRelayUrls.value,
         )
         if (baseRelays.isEmpty()) return
 

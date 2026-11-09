@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -453,6 +454,48 @@ internal class NostrMessenger @Inject constructor(
             client.unsubscribe(subscriptionId)
         }
         return events.toList()
+    }
+
+    /**
+     * Publishes [request] to [relays] and waits for the first event matching [response]
+     * (a Nostr Wallet Connect reply, say). Null if no relay took the request, or no answer
+     * came within [timeoutMillis]. Connects for the moment if Twill isn't connected.
+     */
+    suspend fun request(
+        relays: List<NormalizedRelayUrl>,
+        request: Event,
+        response: Filter,
+        timeoutMillis: Long,
+    ): Event? = withContext(Dispatchers.IO) {
+        val wasConnected = _isConnected.value
+        if (!wasConnected) client.connect()
+        val answer = CompletableDeferred<Event>()
+        val subscriptionId = "twill-request-" + fetchCounter.incrementAndGet()
+        val listener = object : SubscriptionListener {
+            override suspend fun onEvent(
+                event: Event,
+                isLive: Boolean,
+                relay: NormalizedRelayUrl,
+                forFilters: List<Filter>?,
+            ) {
+                answer.complete(event)
+            }
+        }
+        try {
+            client.subscribe(subscriptionId, relays.associateWith { listOf(response) }, listener)
+            val accepted = try {
+                client.publishAndConfirm(event = request, relayList = relays.toSet())
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                false
+            }
+            if (!accepted) return@withContext null
+            withTimeoutOrNull(timeoutMillis) { answer.await() }
+        } finally {
+            client.unsubscribe(subscriptionId)
+            if (!wasConnected && !_isConnected.value) client.disconnect()
+        }
     }
 
     /**

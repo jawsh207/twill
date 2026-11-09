@@ -48,6 +48,7 @@ internal class NostrProtocol @Inject constructor(
     private val messenger: NostrMessenger,
     private val media: NostrMedia,
     private val directory: NostrDirectory,
+    private val wallet: NostrWallet,
     @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
 ) : TwillProtocol {
 
@@ -233,6 +234,16 @@ internal class NostrProtocol @Inject constructor(
     }
 
     override fun onNewChatOpened() = directory.refreshIfStale()
+
+    override fun canZap(chatId: String): Boolean {
+        val me = accountStore.account.value?.pubKeyHex ?: return false
+        return !NostrChatKey.isGroup(chatId) && chatId != me
+    }
+
+    override suspend fun zap(chatId: String, sats: Long, comment: String): String? {
+        val name = store.profile(chatId).first()?.name ?: NostrSignerProvider.shortNpub(chatId)
+        return wallet.zap(pubKey = chatId, name = name, sats = sats, comment = comment)
+    }
 
     override suspend fun searchContacts(query: String) = directory.search(query)
 

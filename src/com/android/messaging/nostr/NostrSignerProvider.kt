@@ -114,6 +114,7 @@ internal class NostrSignerProvider @Inject constructor(
 
     companion object {
         private const val PRIVATE_KEY_HEX_LENGTH = 64
+        private const val ZAP_REQUEST_KIND = 9734
 
         private val EXTERNAL_SIGNER_PERMISSIONS = listOf(
             // NIP-17: the user signs the seal; the outer gift wrap uses a throwaway key.
@@ -124,6 +125,8 @@ internal class NostrSignerProvider @Inject constructor(
             Permission(CommandType.SIGN_EVENT, BlossomAuthorizationEvent.KIND),
             // Publishing the user's DM relay list (NIP-17 kind 10050).
             Permission(CommandType.SIGN_EVENT, DmRelayListEvent.KIND),
+            // Zap requests (NIP-57), from the zap button in chats.
+            Permission(CommandType.SIGN_EVENT, ZAP_REQUEST_KIND),
             Permission(CommandType.NIP44_ENCRYPT),
             Permission(CommandType.NIP44_DECRYPT),
         )

@@ -267,6 +267,16 @@ internal interface TwillProtocol {
      */
     suspend fun sendFromNotification(chatId: String, text: String) = send(chatId, text)
 
+    /** Whether the person in [chatId] can be zapped (Nostr one-to-one chats). */
+    fun canZap(chatId: String): Boolean = false
+
+    /**
+     * Zaps the person in [chatId]. Returns null once paid from the connected wallet, or the
+     * invoice for a wallet app. Throws [TwillActionError] when it can't.
+     */
+    suspend fun zap(chatId: String, sats: Long, comment: String): String? =
+        throw UnsupportedOperationException()
+
     /** A chat id for what the user typed (address, key, invite link), or null if invalid. */
     suspend fun startChat(input: String): String?
 
