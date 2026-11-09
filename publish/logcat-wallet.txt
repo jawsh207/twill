@@ -1,0 +1,677 @@
+11-09 10:19:20.020  4142  4142 D AndroidRuntime: Shutting down VM
+11-09 10:19:38.345  4483  4483 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:19:38.369  4483  4483 I AndroidRuntime: Using default boot image
+11-09 10:19:38.371  4483  4483 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:19:38.948  4483  4483 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:19:40.171  4483  4483 D AndroidRuntime: Shutting down VM
+11-09 10:19:50.250  4595  4595 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:19:50.274  4595  4595 I AndroidRuntime: Using default boot image
+11-09 10:19:50.274  4595  4595 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:19:50.748  4595  4595 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:19:51.909  4595  4595 D AndroidRuntime: Shutting down VM
+11-09 10:20:12.321  5034  5034 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:12.329  5034  5034 I AndroidRuntime: Using default boot image
+11-09 10:20:12.329  5034  5034 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:12.478  5034  5034 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:20:13.551  5034  5034 D AndroidRuntime: Shutting down VM
+11-09 10:20:14.606  5059  5059 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:14.610  5059  5059 I AndroidRuntime: Using default boot image
+11-09 10:20:14.610  5059  5059 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:14.748  5059  5059 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:20:15.804  5059  5059 D AndroidRuntime: Shutting down VM
+11-09 10:20:18.768  5081  5081 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:18.771  5081  5081 I AndroidRuntime: Using default boot image
+11-09 10:20:18.771  5081  5081 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:18.853  5081  5081 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:20:19.907  5081  5081 D AndroidRuntime: Shutting down VM
+11-09 10:20:25.174  5116  5116 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:25.177  5116  5116 I AndroidRuntime: Using default boot image
+11-09 10:20:25.177  5116  5116 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:25.270  5116  5116 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:20:26.331  5116  5116 D AndroidRuntime: Shutting down VM
+11-09 10:20:35.502  5233  5233 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:35.510  5233  5233 I AndroidRuntime: Using default boot image
+11-09 10:20:35.510  5233  5233 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:35.657  5233  5233 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:20:36.727  5233  5233 D AndroidRuntime: Shutting down VM
+11-09 10:20:37.625  4976  4999 I TwillRelays: connecting
+11-09 10:20:38.262  4976  5463 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:20:38.388  4976  5464 I TwillRelays: wss://nos.lol connected
+11-09 10:20:38.427  4976  5474 I TwillRelays: wss://relay.noswhere.com connected
+11-09 10:20:38.433  4976  5473 I TwillRelays: wss://search.nos.today connected
+11-09 10:20:38.484  4976  5465 I TwillRelays: wss://relay.primal.net connected
+11-09 10:20:38.707  4976  5473 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:20:42.734  5538  5538 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:42.737  5538  5538 I AndroidRuntime: Using default boot image
+11-09 10:20:42.738  5538  5538 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:42.820  5538  5538 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:20:43.664  4976  5551 I TwillRelays: wss://relay.damus.io connected
+11-09 10:20:43.738  4976  5551 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:20:43.811  4976  5551 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:20:43.860  5538  5538 D AndroidRuntime: Shutting down VM
+11-09 10:20:46.003  4976  5472 I TwillRelays: wss://relay.nostr.band connection: failed to connect to relay.nostr.band/95.216.33.150 (port 443) from /10.0.2.16 (port 42504) after 8000ms
+11-09 10:20:46.079  4976  5551 I TwillRelays: wss://relay.damus.io closed: ERROR: auth-required: requested filter requires authentication
+11-09 10:20:46.241  4976  5473 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:20:46.359  4976  5473 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:20:46.479  4976  5473 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:20:46.587  4976  5551 I TwillRelays: wss://relay.damus.io closed: ERROR: auth-required: requested filter requires authentication
+11-09 10:20:46.600  4976  5473 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:20:46.720  4976  5473 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:20:51.171  5592  5592 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:51.174  5592  5592 I AndroidRuntime: Using default boot image
+11-09 10:20:51.174  5592  5592 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:51.266  5592  5592 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:20:52.298  5592  5592 D AndroidRuntime: Shutting down VM
+11-09 10:20:54.017  4976  5568 I TwillRelays: wss://relay.nostr.band connection: failed to connect to relay.nostr.band/95.216.33.150 (port 443) from /10.0.2.16 (port 58198) after 8000ms
+11-09 10:20:59.089  5639  5639 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:20:59.092  5639  5639 I AndroidRuntime: Using default boot image
+11-09 10:20:59.092  5639  5639 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:20:59.184  5639  5639 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:21:00.226  5639  5639 D AndroidRuntime: Shutting down VM
+11-09 10:21:02.188  5662  5662 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:21:02.191  5662  5662 I AndroidRuntime: Using default boot image
+11-09 10:21:02.191  5662  5662 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:21:02.276  5662  5662 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:21:03.315  5662  5662 D AndroidRuntime: Shutting down VM
+11-09 10:21:06.288  5685  5685 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:21:06.291  5685  5685 I AndroidRuntime: Using default boot image
+11-09 10:21:06.291  5685  5685 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:21:06.373  5685  5685 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:21:07.399  5685  5685 D AndroidRuntime: Shutting down VM
+11-09 10:21:17.972  5729  5729 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:21:17.975  5729  5729 I AndroidRuntime: Using default boot image
+11-09 10:21:17.975  5729  5729 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:21:18.076  5729  5729 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:21:19.138  5729  5729 D AndroidRuntime: Shutting down VM
+11-09 10:21:28.095  5753  5753 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:21:28.097  5753  5753 I AndroidRuntime: Using default boot image
+11-09 10:21:28.097  5753  5753 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:21:28.178  5753  5753 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:21:29.224  5753  5753 D AndroidRuntime: Shutting down VM
+11-09 10:21:34.954  5841  5841 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:21:34.957  5841  5841 I AndroidRuntime: Using default boot image
+11-09 10:21:34.957  5841  5841 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:21:35.043  5841  5841 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:21:36.073  5841  5841 D AndroidRuntime: Shutting down VM
+11-09 10:21:37.210  4976  5473 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:21:44.992  4976  5864 I TwillRelays: wss://relay.nostr.band connection: failed to connect to relay.nostr.band/95.216.33.150 (port 443) from /10.0.2.16 (port 56764) after 8000ms
+11-09 10:22:01.362  5906  5932 I TwillRelays: connecting
+11-09 10:22:01.532  5906  5936 I TwillRelays: wss://relay.damus.io connected
+11-09 10:22:01.652  5906  5937 I TwillRelays: wss://nos.lol connected
+11-09 10:22:01.741  5906  5936 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:22:01.792  5906  5938 I TwillRelays: wss://relay.primal.net connected
+11-09 10:22:01.825  5906  5936 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:22:05.211  6021  6021 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:22:05.215  6021  6021 I AndroidRuntime: Using default boot image
+11-09 10:22:05.215  6021  6021 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:22:05.310  6021  6021 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:22:06.370  6021  6021 D AndroidRuntime: Shutting down VM
+11-09 10:22:10.853  6047  6047 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:22:10.856  6047  6047 I AndroidRuntime: Using default boot image
+11-09 10:22:10.856  6047  6047 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:22:10.938  6047  6047 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:22:11.972  6047  6047 D AndroidRuntime: Shutting down VM
+11-09 10:22:13.938  6069  6069 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:22:13.941  6069  6069 I AndroidRuntime: Using default boot image
+11-09 10:22:13.941  6069  6069 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:22:14.025  6069  6069 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:22:15.056  6069  6069 D AndroidRuntime: Shutting down VM
+11-09 10:22:18.018  6092  6092 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:22:18.021  6092  6092 I AndroidRuntime: Using default boot image
+11-09 10:22:18.021  6092  6092 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:22:18.139  6092  6092 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:22:19.178  6092  6092 D AndroidRuntime: Shutting down VM
+11-09 10:22:27.309  6135  6135 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:22:27.313  6135  6135 I AndroidRuntime: Using default boot image
+11-09 10:22:27.313  6135  6135 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:22:27.408  6135  6135 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:22:28.447  6135  6135 D AndroidRuntime: Shutting down VM
+11-09 10:23:33.412  6287  6287 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:23:33.416  6287  6287 I AndroidRuntime: Using default boot image
+11-09 10:23:33.416  6287  6287 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:23:33.510  6287  6287 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:23:34.643  6287  6287 D AndroidRuntime: Shutting down VM
+11-09 10:23:35.572  6304  6304 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:23:35.575  6304  6304 I AndroidRuntime: Using default boot image
+11-09 10:23:35.575  6304  6304 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:23:35.659  6304  6304 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:23:36.767  6304  6304 D AndroidRuntime: Shutting down VM
+11-09 10:23:43.802  6359  6359 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:23:43.806  6359  6359 I AndroidRuntime: Using default boot image
+11-09 10:23:43.806  6359  6359 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:23:43.927  6359  6359 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:23:45.109  6359  6359 D AndroidRuntime: Shutting down VM
+11-09 10:23:46.350  5906  6383 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:23:46.814  5906  6385 I TwillRelays: wss://search.nos.today connected
+11-09 10:23:47.033  5906  6387 I TwillRelays: wss://relay.noswhere.com connected
+11-09 10:23:47.070  5906  6385 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:23:50.565  5906  6471 I TwillRelays: wss://relay.damus.io connected
+11-09 10:23:54.063  5906  6384 I TwillRelays: wss://relay.nostr.band connection: failed to connect to relay.nostr.band/95.216.33.150 (port 443) from /10.0.2.16 (port 38738) after 8000ms
+11-09 10:24:05.271  6526  6526 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:24:05.275  6526  6526 I AndroidRuntime: Using default boot image
+11-09 10:24:05.275  6526  6526 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:24:05.369  6526  6526 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:24:06.443  6526  6526 D AndroidRuntime: Shutting down VM
+11-09 10:24:17.858  6571  6571 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:24:17.861  6571  6571 I AndroidRuntime: Using default boot image
+11-09 10:24:17.862  6571  6571 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:24:17.953  6571  6571 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:24:19.014  6571  6571 D AndroidRuntime: Shutting down VM
+11-09 10:24:25.965  5906  6385 I TwillRelays: wss://search.nos.today connection: Software caused connection abort
+11-09 10:24:25.966  5906  6387 I TwillRelays: wss://relay.noswhere.com connection: Software caused connection abort
+11-09 10:24:25.966  5906  5937 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-09 10:24:25.966  5906  6471 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-09 10:24:25.967  5906  5938 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-09 10:24:29.113  5906  6612 I TwillRelays: wss://relay.primal.net connected
+11-09 10:24:29.219  5906  6620 I TwillRelays: wss://nos.lol connected
+11-09 10:24:31.142  6625  6625 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:24:31.146  6625  6625 I AndroidRuntime: Using default boot image
+11-09 10:24:31.146  6625  6625 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:24:31.241  6625  6625 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:24:32.275  6625  6625 D AndroidRuntime: Shutting down VM
+11-09 10:25:02.549   644  1014 I ActivityTaskManager: START u0 {act=android.intent.action.VIEW dat=nostr+walletconnect://5b358e41bc35740f9372bc364c4b033636d672f48a1fbbf9111296dacb983a18/... flg=0x10000000 xflg=0x4 cmp=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity} with LAUNCH_MULTIPLE from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+11-09 10:25:02.549  1023  1055 V WindowManagerShell: Transition requested (#20): android.os.BinderProxy@7c57630 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=10 effectiveUid=10216 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity } baseActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} topActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity} origActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} realActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} numActivities=2 lastActiveTime=453240 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@23622a9} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{752702e com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=true isActivityStackTransparent=false lastNonFullscreenBounds=Rect(276, 696 - 805, 1776) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 20 }
+11-09 10:25:02.570   644  1946 D CoreBackPreview: Window{7d90714 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@cca05b2, mPriority=-1, mIsAnimationCallback=false, mOverrideBehavior=0}
+11-09 10:25:02.596   644  1946 D CoreBackPreview: Window{8c98080 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@58624ac, mPriority=-1, mIsAnimationCallback=false, mOverrideBehavior=0}
+11-09 10:25:02.596   644  1946 D CoreBackPreview: Window{8c98080 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@2523575, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+11-09 10:25:02.676   644   673 I ActivityTaskManager: Displayed app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity for user 0: +129ms
+11-09 10:25:02.676   644   673 V WindowManager: Sent Transition (#20) createdAt=11-09 10:25:02.545 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=10 effectiveUid=10216 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity } baseActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} topActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity} origActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} realActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} numActivities=2 lastActiveTime=453240 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{5c96884 Task{70e2573 #10 type=standard A=10216:app.twill.perf}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=ActivityInfo{9d65d44 com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=true isActivityStackTransparent=false lastNonFullscreenBounds=Rect(276, 696 - 805, 1776) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 20 }
+11-09 10:25:02.677   644   673 V WindowManager:         {m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xfdf3bd6 sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}
+11-09 10:25:02.693  1023  1055 V WindowManagerShell:         {m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xddbf7cf sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}
+11-09 10:25:02.698  1023  1055 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=20 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xddbf7cf sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}]}
+11-09 10:25:02.699  1023  1055 V WindowManagerShell: start default transition animation, info = {id=20 t=OPEN f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=OPEN f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xddbf7cf sb=Rect(0, 0 - 0, 0) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=-1->0 r=-1->0:-1 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}]}
+11-09 10:25:08.095  6674  6674 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:08.099  6674  6674 I AndroidRuntime: Using default boot image
+11-09 10:25:08.099  6674  6674 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:08.190  6674  6674 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:09.243  6674  6674 D AndroidRuntime: Shutting down VM
+11-09 10:25:10.416  5906  6696 I TwillRelays: wss://relay.damus.io connected
+11-09 10:25:10.507  5906  6494 I TwillWallet: open: 2 relays, info=true
+11-09 10:25:10.508  5906  6494 I TwillWallet: call get_info: request 3221f966
+11-09 10:25:10.742  5906  6495 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:25:11.224  5906  6706 I TwillWallet: call get_info: response b12f5999
+11-09 10:25:11.235  5906  6706 I TwillWallet: call get_info: request 5f053da8
+11-09 10:25:11.437  5906  6706 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:25:11.831  5906  6497 I TwillWallet: call get_info: response 19b54437
+11-09 10:25:11.832  5906  6497 I TwillWallet: call get_balance: request cdcd39fb
+11-09 10:25:12.034  5906  5933 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:25:12.531  5906  6497 I TwillWallet: call get_balance: response 52523252
+11-09 10:25:12.573   644   673 V WindowManager:         {m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xfdf3bd6 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}
+11-09 10:25:12.577  1023  1055 V WindowManagerShell:         {m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xa209da8 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}
+11-09 10:25:12.578  1023  1055 V WindowManagerShell: Transition doesn't have explicit remote, search filters for match for {id=21 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xa209da8 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}]}
+11-09 10:25:12.578  1023  1055 V WindowManagerShell: start default transition animation, info = {id=21 t=CLOSE f=0x0 trk=0 r=[0@Point(0, 0)] c=[{m=CLOSE f=TRANSLUCENT|FILLS_TASK leash=Surface(name=ActivityRecord{35884136 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity)/@0xa209da8 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 bc=ffffffff component=app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity opt={t=FROM_STYLE mUserId=0}}]}
+11-09 10:25:12.618  5906  5906 D VRI[NostrWalletLinkActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-09 10:25:12.618  5906  5906 D VRI[NostrWalletLinkActivity]: visibilityChanged oldVisibility=true newVisibility=false
+11-09 10:25:12.640   644  1238 D CoreBackPreview: Window{8c98080 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity}: Setting back callback null
+11-09 10:25:12.643   644  1238 D CoreBackPreview: Window{7d90714 u0 app.twill.perf/com.android.messaging.ui.nostr.wallet.NostrWalletLinkActivity}: Setting back callback null
+11-09 10:25:23.816  6726  6726 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:23.819  6726  6726 I AndroidRuntime: Using default boot image
+11-09 10:25:23.819  6726  6726 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:23.916  6726  6726 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:24.967  6726  6726 D AndroidRuntime: Shutting down VM
+11-09 10:25:36.194  6749  6749 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:36.197  6749  6749 I AndroidRuntime: Using default boot image
+11-09 10:25:36.197  6749  6749 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:36.291  6749  6749 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:37.362  6749  6749 D AndroidRuntime: Shutting down VM
+11-09 10:25:38.309  6765  6765 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:38.312  6765  6765 I AndroidRuntime: Using default boot image
+11-09 10:25:38.312  6765  6765 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:38.394  6765  6765 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:39.441  6765  6765 D AndroidRuntime: Shutting down VM
+11-09 10:25:42.355  6781  6781 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:42.357  6781  6781 I AndroidRuntime: Using default boot image
+11-09 10:25:42.357  6781  6781 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:42.437  6781  6781 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:43.477  6781  6781 D AndroidRuntime: Shutting down VM
+11-09 10:25:46.382  6796  6796 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:46.385  6796  6796 I AndroidRuntime: Using default boot image
+11-09 10:25:46.385  6796  6796 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:46.465  6796  6796 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:47.497  6796  6796 D AndroidRuntime: Shutting down VM
+11-09 10:25:50.407  6812  6812 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:50.410  6812  6812 I AndroidRuntime: Using default boot image
+11-09 10:25:50.410  6812  6812 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:50.490  6812  6812 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:51.523  6812  6812 D AndroidRuntime: Shutting down VM
+11-09 10:25:54.428  6828  6828 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:54.431  6828  6828 I AndroidRuntime: Using default boot image
+11-09 10:25:54.431  6828  6828 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:54.512  6828  6828 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:55.547  6828  6828 D AndroidRuntime: Shutting down VM
+11-09 10:25:58.457  6844  6844 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:25:58.460  6844  6844 I AndroidRuntime: Using default boot image
+11-09 10:25:58.460  6844  6844 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:25:58.542  6844  6844 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:25:59.577  6844  6844 D AndroidRuntime: Shutting down VM
+11-09 10:26:05.540  6865  6865 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:26:05.543  6865  6865 I AndroidRuntime: Using default boot image
+11-09 10:26:05.543  6865  6865 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:26:05.625  6865  6865 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:26:06.654  6865  6865 D AndroidRuntime: Shutting down VM
+11-09 10:26:07.689  6888  6888 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:26:07.694  6888  6888 I AndroidRuntime: Using default boot image
+11-09 10:26:07.695  6888  6888 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:26:07.898  6888  6888 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:26:08.940  6888  6888 D AndroidRuntime: Shutting down VM
+11-09 10:26:09.826  5906  6496 I TwillWallet: call get_info: request 394f4b6a
+11-09 10:26:10.067  5906  6706 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:26:10.268  5906  6910 I TwillRelays: wss://relay.damus.io connected
+11-09 10:26:10.622  5906  5940 I TwillWallet: call get_info: response 589a1d48
+11-09 10:26:10.623  5906  5940 I TwillWallet: call get_balance: request b745efb7
+11-09 10:26:10.820  5906  5940 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:26:11.158  5906  5940 I TwillWallet: call get_balance: response a8aae451
+11-09 10:26:29.001  6958  6958 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:26:29.005  6958  6958 I AndroidRuntime: Using default boot image
+11-09 10:26:29.005  6958  6958 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:26:29.101  6958  6958 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:26:30.146  6958  6958 D AndroidRuntime: Shutting down VM
+11-09 10:26:45.259  7010  7010 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:26:45.262  7010  7010 I AndroidRuntime: Using default boot image
+11-09 10:26:45.262  7010  7010 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:26:45.354  7010  7010 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:26:46.405  7010  7010 D AndroidRuntime: Shutting down VM
+11-09 10:26:50.369  7033  7033 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:26:50.372  7033  7033 I AndroidRuntime: Using default boot image
+11-09 10:26:50.372  7033  7033 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:26:50.456  7033  7033 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:26:51.492  7033  7033 D AndroidRuntime: Shutting down VM
+11-09 10:26:56.752  7063  7063 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:26:56.756  7063  7063 I AndroidRuntime: Using default boot image
+11-09 10:26:56.756  7063  7063 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:26:56.849  7063  7063 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:26:57.895  7063  7063 D AndroidRuntime: Shutting down VM
+11-09 10:26:58.762  5906  6495 I TwillWallet: call pay_invoice: request 0e1c2302
+11-09 10:26:58.978  5906  6497 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:26:59.481  5906  6388 I TwillWallet: call pay_invoice: response 1e59ebff
+11-09 10:26:59.482  5906  6388 I TwillWallet: call get_info: request ad21800e
+11-09 10:26:59.678  5906  5933 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:27:00.130  5906  5933 I TwillWallet: call get_info: response 2ab7e9d4
+11-09 10:27:00.130  5906  5933 I TwillWallet: call get_balance: request 712ee879
+11-09 10:27:00.334  5906  6910 I TwillRelays: wss://relay.damus.io refused kind 23194: rate-limited: you are noting too much
+11-09 10:27:00.575  5906  6496 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:27:01.093  5906  6388 I TwillWallet: call get_balance: response 4e3c40fa
+11-09 10:27:14.459  7100  7100 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:27:14.464  7100  7100 I AndroidRuntime: Using default boot image
+11-09 10:27:14.464  7100  7100 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:27:14.572  7100  7100 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:27:15.619  7100  7100 D AndroidRuntime: Shutting down VM
+11-09 10:27:20.869  7132  7132 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:27:20.872  7132  7132 I AndroidRuntime: Using default boot image
+11-09 10:27:20.872  7132  7132 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:27:20.965  7132  7132 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:27:22.032  7132  7132 D AndroidRuntime: Shutting down VM
+11-09 10:27:23.793  5906  7154 I TwillRelays: wss://search.nos.today connected
+11-09 10:27:23.916  5906  7155 I TwillRelays: wss://relay.noswhere.com connected
+11-09 10:27:24.023  5906  7154 I TwillRelays: wss://search.nos.today closed: error: search filter is required
+11-09 10:27:31.330  5906  7153 I TwillRelays: wss://relay.nostr.band connection: failed to connect to relay.nostr.band/95.216.33.150 (port 443) from /10.0.2.16 (port 51656) after 8000ms
+11-09 10:27:48.857  7218  7241 I TwillRelays: connecting
+11-09 10:27:48.948  7218  7247 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:27:49.274  7218  7248 I TwillRelays: wss://nos.lol connected
+11-09 10:27:49.298  7218  7249 I TwillRelays: wss://relay.primal.net connected
+11-09 10:27:51.752  7311  7311 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:27:51.756  7311  7311 I AndroidRuntime: Using default boot image
+11-09 10:27:51.756  7311  7311 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:27:51.846  7311  7311 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:27:52.929  7311  7311 D AndroidRuntime: Shutting down VM
+11-09 10:27:53.632  7218  7345 I TwillRelays: wss://relay.damus.io connected
+11-09 10:27:53.706  7218  7345 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:27:53.780  7218  7345 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:27:54.901  7384  7384 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:27:54.904  7384  7384 I AndroidRuntime: Using default boot image
+11-09 10:27:54.904  7384  7384 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:27:54.997  7384  7384 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:27:56.050  7384  7384 D AndroidRuntime: Shutting down VM
+11-09 10:28:10.548  7439  7439 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:28:10.551  7439  7439 I AndroidRuntime: Using default boot image
+11-09 10:28:10.551  7439  7439 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:28:10.644  7439  7439 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:28:11.700  7439  7439 D AndroidRuntime: Shutting down VM
+11-09 10:28:24.313  7488  7488 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:28:24.317  7488  7488 I AndroidRuntime: Using default boot image
+11-09 10:28:24.317  7488  7488 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:28:24.409  7488  7488 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:28:25.456  7488  7488 D AndroidRuntime: Shutting down VM
+11-09 10:28:30.713  7519  7519 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:28:30.717  7519  7519 I AndroidRuntime: Using default boot image
+11-09 10:28:30.717  7519  7519 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:28:30.811  7519  7519 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:28:31.857  7519  7519 D AndroidRuntime: Shutting down VM
+11-09 10:28:39.546  7564  7564 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:28:39.549  7564  7564 I AndroidRuntime: Using default boot image
+11-09 10:28:39.549  7564  7564 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:28:39.630  7564  7564 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:28:40.657  7564  7564 D AndroidRuntime: Shutting down VM
+11-09 10:28:44.613  7596  7596 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:28:44.616  7596  7596 I AndroidRuntime: Using default boot image
+11-09 10:28:44.616  7596  7596 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:28:44.698  7596  7596 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:28:45.736  7596  7596 D AndroidRuntime: Shutting down VM
+11-09 10:28:53.664  7644  7644 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:28:53.667  7644  7644 I AndroidRuntime: Using default boot image
+11-09 10:28:53.667  7644  7644 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:28:53.782  7644  7644 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:28:54.824  7644  7644 D AndroidRuntime: Shutting down VM
+11-09 10:29:01.126  7675  7675 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:29:01.130  7675  7675 I AndroidRuntime: Using default boot image
+11-09 10:29:01.130  7675  7675 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:29:01.224  7675  7675 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:29:02.302  7675  7675 D AndroidRuntime: Shutting down VM
+11-09 10:29:07.620  7704  7704 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:29:07.623  7704  7704 I AndroidRuntime: Using default boot image
+11-09 10:29:07.623  7704  7704 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:29:07.717  7704  7704 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:29:08.758  7704  7704 D AndroidRuntime: Shutting down VM
+11-09 10:29:10.433  7728  7758 I TwillRelays: wss://relay.damus.io connected
+11-09 10:29:10.563  7728  7759 I TwillRelays: wss://nos.lol connected
+11-09 10:29:10.690  7728  7760 I TwillRelays: wss://relay.primal.net connected
+11-09 10:29:23.969  7808  7808 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:29:23.972  7808  7808 I AndroidRuntime: Using default boot image
+11-09 10:29:23.972  7808  7808 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:29:24.062  7808  7808 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:29:25.091  7808  7808 D AndroidRuntime: Shutting down VM
+11-09 10:29:29.054  7831  7831 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:29:29.060  7831  7831 I AndroidRuntime: Using default boot image
+11-09 10:29:29.060  7831  7831 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:29:29.154  7831  7831 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:29:30.192  7831  7831 D AndroidRuntime: Shutting down VM
+11-09 10:29:38.660  7867  7867 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:29:38.670  7867  7867 I AndroidRuntime: Using default boot image
+11-09 10:29:38.670  7867  7867 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:29:38.771  7867  7867 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:29:39.805  7867  7867 D AndroidRuntime: Shutting down VM
+11-09 10:29:46.132  7898  7898 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:29:46.136  7898  7898 I AndroidRuntime: Using default boot image
+11-09 10:29:46.136  7898  7898 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:29:46.225  7898  7898 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:29:47.299  7898  7898 D AndroidRuntime: Shutting down VM
+11-09 10:29:52.603  7927  7927 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:29:52.606  7927  7927 I AndroidRuntime: Using default boot image
+11-09 10:29:52.606  7927  7927 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:29:52.700  7927  7927 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:29:53.788  7927  7927 D AndroidRuntime: Shutting down VM
+11-09 10:29:56.240  7728  7756 I TwillRelays: connecting
+11-09 10:29:56.411  7728  7957 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:29:56.598  7728  7958 I TwillRelays: wss://nos.lol connected
+11-09 10:29:56.783  7728  7959 I TwillRelays: wss://relay.primal.net connected
+11-09 10:30:01.741  7728  7986 I TwillRelays: wss://relay.damus.io connected
+11-09 10:30:01.825  7728  7986 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:30:01.916  7728  7986 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:30:02.047  8002  8002 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:30:02.050  8002  8002 I AndroidRuntime: Using default boot image
+11-09 10:30:02.050  8002  8002 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:30:02.144  8002  8002 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:30:03.223  8002  8002 D AndroidRuntime: Shutting down VM
+11-09 10:30:09.820  7728  7958 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-09 10:30:09.820  7728  7959 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-09 10:30:09.820  7728  7986 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-09 10:30:13.880  7728  8077 I TwillRelays: wss://nos.lol connection: Unable to resolve host "nos.lol": No address associated with hostname
+11-09 10:30:14.409  7728  8079 I TwillRelays: wss://relay.primal.net connection: Unable to resolve host "relay.primal.net": No address associated with hostname
+11-09 10:30:32.166  8131  8165 I TwillRelays: connecting
+11-09 10:30:32.459  8131  8166 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:30:32.596  8131  8167 I TwillRelays: wss://nos.lol connected
+11-09 10:30:32.706  8131  8168 I TwillRelays: wss://relay.primal.net connected
+11-09 10:30:35.229  8200  8200 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:30:35.232  8200  8200 I AndroidRuntime: Using default boot image
+11-09 10:30:35.232  8200  8200 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:30:35.322  8200  8200 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:30:36.392  8200  8200 D AndroidRuntime: Shutting down VM
+11-09 10:30:37.338  8131  8214 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:30:45.496  8248  8248 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:30:45.500  8248  8248 I AndroidRuntime: Using default boot image
+11-09 10:30:45.500  8248  8248 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:30:45.611  8248  8248 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:30:46.314  8131  8262 I TwillRelays: wss://relay.damus.io connected
+11-09 10:30:46.396  8131  8262 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:30:46.473  8131  8262 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:30:46.670  8248  8248 D AndroidRuntime: Shutting down VM
+11-09 10:30:54.768  8299  8326 I TwillRelays: connecting
+11-09 10:30:54.978  8299  8334 I TwillRelays: wss://relay.damus.io connected
+11-09 10:30:55.184  8299  8335 I TwillRelays: wss://nos.lol connected
+11-09 10:30:55.227  8299  8336 I TwillRelays: wss://relay.primal.net connected
+11-09 10:30:55.257  8299  8334 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:30:55.328  8299  8334 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:30:57.561  8361  8361 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:30:57.564  8361  8361 I AndroidRuntime: Using default boot image
+11-09 10:30:57.564  8361  8361 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:30:57.657  8361  8361 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:30:58.746  8361  8361 D AndroidRuntime: Shutting down VM
+11-09 10:31:02.002  8392  8392 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:31:02.005  8392  8392 I AndroidRuntime: Using default boot image
+11-09 10:31:02.005  8392  8392 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:31:02.102  8392  8392 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:31:03.156  8392  8392 D AndroidRuntime: Shutting down VM
+11-09 10:31:06.405  8421  8421 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:31:06.410  8421  8421 I AndroidRuntime: Using default boot image
+11-09 10:31:06.410  8421  8421 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:31:06.507  8421  8421 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:31:07.559  8421  8421 D AndroidRuntime: Shutting down VM
+11-09 10:31:11.840  8455  8455 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:31:11.844  8455  8455 I AndroidRuntime: Using default boot image
+11-09 10:31:11.844  8455  8455 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:31:11.937  8455  8455 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:31:12.982  8455  8455 D AndroidRuntime: Shutting down VM
+11-09 10:31:18.288  8494  8494 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:31:18.291  8494  8494 I AndroidRuntime: Using default boot image
+11-09 10:31:18.291  8494  8494 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:31:18.385  8494  8494 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:31:19.422  8494  8494 D AndroidRuntime: Shutting down VM
+11-09 10:31:20.450  8299  8326 I TwillWallet: open: 2 relays, info=true
+11-09 10:31:20.455  8299  8326 I TwillWallet: call get_info: request a6ae3dba
+11-09 10:31:20.681  8299  8326 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:31:22.720  8299  8325 I TwillWallet: call get_balance: request d737e221
+11-09 10:31:23.710  8529  8529 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:31:23.713  8529  8529 I AndroidRuntime: Using default boot image
+11-09 10:31:23.713  8529  8529 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:31:23.806  8529  8529 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:31:24.839  8529  8529 D AndroidRuntime: Shutting down VM
+11-09 10:31:30.136  8568  8568 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:31:30.139  8568  8568 I AndroidRuntime: Using default boot image
+11-09 10:31:30.139  8568  8568 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:31:30.231  8568  8568 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:31:31.277  8568  8568 D AndroidRuntime: Shutting down VM
+11-09 10:31:39.873  8299  8334 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-09 10:31:39.873  8299  8336 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-09 10:31:39.873  8299  8335 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-09 10:31:42.187  8299  8620 I TwillRelays: wss://relay.primal.net connection: Unable to resolve host "relay.primal.net": No address associated with hostname
+11-09 10:31:42.778  8299  8622 I TwillRelays: wss://nos.lol connection: Unable to resolve host "nos.lol": No address associated with hostname
+11-09 10:31:54.238  8714  8749 I TwillRelays: connecting
+11-09 10:31:54.459  8714  8751 I TwillRelays: wss://relay.damus.io connected
+11-09 10:31:54.584  8714  8752 I TwillRelays: wss://nos.lol connected
+11-09 10:31:54.612  8714  8753 I TwillRelays: wss://relay.primal.net connected
+11-09 10:31:54.670  8714  8751 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:31:54.747  8714  8751 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:31:57.383  8786  8786 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:31:57.386  8786  8786 I AndroidRuntime: Using default boot image
+11-09 10:31:57.386  8786  8786 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:31:57.479  8786  8786 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:31:58.555  8786  8786 D AndroidRuntime: Shutting down VM
+11-09 10:32:06.760  8825  8825 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:06.763  8825  8825 I AndroidRuntime: Using default boot image
+11-09 10:32:06.763  8825  8825 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:06.905  8825  8825 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:07.957  8825  8825 D AndroidRuntime: Shutting down VM
+11-09 10:32:15.475  8870  8891 I TwillRelays: connecting
+11-09 10:32:15.682  8870  8902 I TwillRelays: wss://relay.damus.io connected
+11-09 10:32:15.778  8870  8902 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:32:15.867  8870  8903 I TwillRelays: wss://nos.lol connected
+11-09 10:32:15.869  8870  8902 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:32:15.955  8870  8904 I TwillRelays: wss://relay.primal.net connected
+11-09 10:32:18.325  8938  8938 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:18.329  8938  8938 I AndroidRuntime: Using default boot image
+11-09 10:32:18.329  8938  8938 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:18.424  8938  8938 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:19.475  8938  8938 D AndroidRuntime: Shutting down VM
+11-09 10:32:22.776  8969  8969 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:22.780  8969  8969 I AndroidRuntime: Using default boot image
+11-09 10:32:22.780  8969  8969 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:22.878  8969  8969 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:23.918  8969  8969 D AndroidRuntime: Shutting down VM
+11-09 10:32:27.208  8998  8998 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:27.211  8998  8998 I AndroidRuntime: Using default boot image
+11-09 10:32:27.211  8998  8998 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:27.307  8998  8998 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:28.355  8998  8998 D AndroidRuntime: Shutting down VM
+11-09 10:32:32.646  9032  9032 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:32.649  9032  9032 I AndroidRuntime: Using default boot image
+11-09 10:32:32.649  9032  9032 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:32.746  9032  9032 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:33.810  9032  9032 D AndroidRuntime: Shutting down VM
+11-09 10:32:39.113  9071  9071 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:39.117  9071  9071 I AndroidRuntime: Using default boot image
+11-09 10:32:39.117  9071  9071 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:39.214  9071  9071 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:40.256  9071  9071 D AndroidRuntime: Shutting down VM
+11-09 10:32:41.279  8870  8891 I TwillWallet: open: 2 relays, info=true
+11-09 10:32:41.281  8870  8891 I TwillWallet: call get_info: request 70a55874
+11-09 10:32:41.502  8870  8891 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:32:43.511  8870  8895 I TwillWallet: call get_balance: request 38c10469
+11-09 10:32:44.538  9106  9106 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:44.541  9106  9106 I AndroidRuntime: Using default boot image
+11-09 10:32:44.541  9106  9106 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:44.636  9106  9106 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:45.675  9106  9106 D AndroidRuntime: Shutting down VM
+11-09 10:32:50.980  9145  9145 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:32:50.983  9145  9145 I AndroidRuntime: Using default boot image
+11-09 10:32:50.983  9145  9145 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:32:51.077  9145  9145 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:32:52.134  9145  9145 D AndroidRuntime: Shutting down VM
+11-09 10:33:00.522  8870  8902 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-09 10:33:00.523  8870  8904 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-09 10:33:00.524  8870  8903 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-09 10:33:02.804  8870  9198 I TwillRelays: wss://nos.lol connection: Unable to resolve host "nos.lol": No address associated with hostname
+11-09 10:33:03.519  8870  9200 I TwillRelays: wss://relay.primal.net connection: Unable to resolve host "relay.primal.net": No address associated with hostname
+11-09 10:33:26.164  9331  9358 I TwillRelays: connecting
+11-09 10:33:26.305  9331  9368 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:33:26.656  9331  9370 I TwillRelays: wss://relay.primal.net connected
+11-09 10:33:26.772  9331  9369 I TwillRelays: wss://nos.lol connected
+11-09 10:33:29.278  9403  9403 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:33:29.282  9403  9403 I AndroidRuntime: Using default boot image
+11-09 10:33:29.282  9403  9403 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:33:29.392  9403  9403 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:33:30.493  9403  9403 D AndroidRuntime: Shutting down VM
+11-09 10:33:31.210  9331  9417 I TwillRelays: wss://relay.damus.io connected
+11-09 10:33:31.285  9331  9417 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:33:31.356  9331  9417 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:33:39.454  9451  9451 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:33:39.457  9451  9451 I AndroidRuntime: Using default boot image
+11-09 10:33:39.457  9451  9451 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:33:39.547  9451  9451 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:33:40.587  9451  9451 D AndroidRuntime: Shutting down VM
+11-09 10:33:48.121  9494  9528 I TwillRelays: connecting
+11-09 10:33:48.281  9494  9532 I TwillRelays: wss://relay.damus.io connected
+11-09 10:33:48.471  9494  9533 I TwillRelays: wss://nos.lol connected
+11-09 10:33:48.486  9494  9532 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:33:48.568  9494  9534 I TwillRelays: wss://relay.primal.net connected
+11-09 10:33:48.568  9494  9532 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:33:50.951  9560  9560 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:33:50.954  9560  9560 I AndroidRuntime: Using default boot image
+11-09 10:33:50.954  9560  9560 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:33:51.048  9560  9560 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:33:52.115  9560  9560 D AndroidRuntime: Shutting down VM
+11-09 10:33:55.418  9591  9591 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:33:55.422  9591  9591 I AndroidRuntime: Using default boot image
+11-09 10:33:55.422  9591  9591 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:33:55.514  9591  9591 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:33:56.558  9591  9591 D AndroidRuntime: Shutting down VM
+11-09 10:33:59.836  9634  9634 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:33:59.839  9634  9634 I AndroidRuntime: Using default boot image
+11-09 10:33:59.839  9634  9634 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:33:59.933  9634  9634 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:34:00.989  9634  9634 D AndroidRuntime: Shutting down VM
+11-09 10:34:05.265  9668  9668 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:34:05.269  9668  9668 I AndroidRuntime: Using default boot image
+11-09 10:34:05.269  9668  9668 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:34:05.362  9668  9668 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:34:06.417  9668  9668 D AndroidRuntime: Shutting down VM
+11-09 10:34:11.711  9707  9707 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:34:11.714  9707  9707 I AndroidRuntime: Using default boot image
+11-09 10:34:11.714  9707  9707 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:34:11.811  9707  9707 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:34:12.852  9707  9707 D AndroidRuntime: Shutting down VM
+11-09 10:34:13.944  9494  9530 I TwillWallet: open: 2 relays, info=true
+11-09 10:34:13.945  9494  9530 I TwillWallet: call get_info: request 85d564c1
+11-09 10:34:14.151  9494  9521 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:34:16.164  9494  9528 I TwillWallet: call get_balance: request 0dcdd9fd
+11-09 10:34:17.137  9742  9742 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:34:17.140  9742  9742 I AndroidRuntime: Using default boot image
+11-09 10:34:17.140  9742  9742 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:34:17.231  9742  9742 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:34:18.286  9742  9742 D AndroidRuntime: Shutting down VM
+11-09 10:34:23.577  9782  9782 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:34:23.580  9782  9782 I AndroidRuntime: Using default boot image
+11-09 10:34:23.580  9782  9782 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:34:23.674  9782  9782 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:34:24.705  9782  9782 D AndroidRuntime: Shutting down VM
+11-09 10:34:33.068  9494  9533 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-09 10:34:33.069  9494  9534 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-09 10:34:33.070  9494  9532 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-09 10:34:35.369  9494  9835 I TwillRelays: wss://relay.primal.net connection: Unable to resolve host "relay.primal.net": No address associated with hostname
+11-09 10:34:35.664  9494  9837 I TwillRelays: wss://nos.lol connection: Unable to resolve host "nos.lol": No address associated with hostname
+11-09 10:34:47.807  9927  9953 I TwillRelays: connecting
+11-09 10:34:47.948  9927  9962 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-09 10:34:48.203  9927  9963 I TwillRelays: wss://nos.lol connected
+11-09 10:34:48.212  9927  9964 I TwillRelays: wss://relay.primal.net connected
+11-09 10:34:50.919  9997  9997 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:34:50.923  9997  9997 I AndroidRuntime: Using default boot image
+11-09 10:34:50.923  9997  9997 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:34:51.016  9997  9997 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:34:52.084  9997  9997 D AndroidRuntime: Shutting down VM
+11-09 10:34:53.576  9927 10011 I TwillRelays: wss://relay.damus.io connected
+11-09 10:34:53.701  9927 10011 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:34:53.800  9927 10011 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:34:59.899 10045 10045 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:34:59.902 10045 10045 I AndroidRuntime: Using default boot image
+11-09 10:34:59.902 10045 10045 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:34:59.997 10045 10045 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:01.081 10045 10045 D AndroidRuntime: Shutting down VM
+11-09 10:35:08.998 10087 10116 I TwillRelays: connecting
+11-09 10:35:09.146 10087 10120 I TwillRelays: wss://relay.damus.io connected
+11-09 10:35:09.224 10087 10120 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-09 10:35:09.297 10087 10120 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-09 10:35:09.340 10087 10122 I TwillRelays: wss://nos.lol connected
+11-09 10:35:09.382 10087 10123 I TwillRelays: wss://relay.primal.net connected
+11-09 10:35:11.848 10151 10151 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:35:11.852 10151 10151 I AndroidRuntime: Using default boot image
+11-09 10:35:11.852 10151 10151 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:35:11.943 10151 10151 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:13.009 10151 10151 D AndroidRuntime: Shutting down VM
+11-09 10:35:16.271 10182 10182 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:35:16.274 10182 10182 I AndroidRuntime: Using default boot image
+11-09 10:35:16.275 10182 10182 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:35:16.366 10182 10182 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:17.411 10182 10182 D AndroidRuntime: Shutting down VM
+11-09 10:35:20.674 10211 10211 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:35:20.677 10211 10211 I AndroidRuntime: Using default boot image
+11-09 10:35:20.677 10211 10211 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:35:20.771 10211 10211 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:21.821 10211 10211 D AndroidRuntime: Shutting down VM
+11-09 10:35:26.091 10246 10246 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:35:26.094 10246 10246 I AndroidRuntime: Using default boot image
+11-09 10:35:26.094 10246 10246 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:35:26.186 10246 10246 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:27.223 10246 10246 D AndroidRuntime: Shutting down VM
+11-09 10:35:32.508 10285 10285 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:35:32.512 10285 10285 I AndroidRuntime: Using default boot image
+11-09 10:35:32.512 10285 10285 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:35:32.603 10285 10285 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:33.640 10285 10285 D AndroidRuntime: Shutting down VM
+11-09 10:35:34.655 10087 10112 I TwillWallet: open: 2 relays, info=true
+11-09 10:35:34.660 10087 10112 I TwillWallet: call get_info: request 45ac04fc
+11-09 10:35:34.861 10087 10113 I NostrMessenger: Request kind 23194 to 2 relays: accepted
+11-09 10:35:36.884 10087 10113 I TwillWallet: call get_balance: request 32605876
+11-09 10:35:37.901 10320 10320 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:35:37.905 10320 10320 I AndroidRuntime: Using default boot image
+11-09 10:35:37.905 10320 10320 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:35:37.999 10320 10320 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:39.027 10320 10320 D AndroidRuntime: Shutting down VM
+11-09 10:35:44.320 10361 10361 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-09 10:35:44.323 10361 10361 I AndroidRuntime: Using default boot image
+11-09 10:35:44.323 10361 10361 I AndroidRuntime: Leaving lock profiling enabled
+11-09 10:35:44.414 10361 10361 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-09 10:35:45.464 10361 10361 D AndroidRuntime: Shutting down VM
+11-09 10:35:53.781 10087 10120 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-09 10:35:53.782 10087 10122 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-09 10:35:53.782 10087 10123 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-09 10:35:56.238 10087 10415 I TwillRelays: wss://relay.primal.net connection: Unable to resolve host "relay.primal.net": No address associated with hostname
+11-09 10:35:56.727 10087 10417 I TwillRelays: wss://nos.lol connection: Unable to resolve host "nos.lol": No address associated with hostname
