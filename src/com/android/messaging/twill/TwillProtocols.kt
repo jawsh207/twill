@@ -7,6 +7,7 @@ import android.os.Bundle
 import com.android.messaging.deltachat.DeltaChatProtocol
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.nostr.NostrProtocol
+import com.android.messaging.nostr.NostrWallet
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -48,6 +49,10 @@ internal abstract class TwillProtocolsModule {
     @Binds
     @IntoSet
     abstract fun bindDeltaChat(protocol: DeltaChatProtocol): TwillProtocol
+
+    /** The Lightning wallet: Nostr Wallet Connect, set up in Nostr settings. */
+    @Binds
+    abstract fun bindWallet(wallet: NostrWallet): TwillWallet
 }
 
 /**

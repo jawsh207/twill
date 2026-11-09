@@ -3,6 +3,7 @@ package com.android.messaging.ui.twill.chat
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.messaging.twill.TwillActionError
 import com.android.messaging.twill.TwillAppVisibility
 import com.android.messaging.twill.TwillChatDetails
 import com.android.messaging.twill.TwillError
@@ -12,6 +13,7 @@ import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocols
 import com.android.messaging.twill.TwillRuntime
 import com.android.messaging.twill.TwillSearchHit
+import com.android.messaging.twill.TwillWallet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,7 +33,23 @@ internal class TwillChatViewModel @Inject constructor(
     private val protocols: TwillProtocols,
     private val runtime: TwillRuntime,
     private val visibility: TwillAppVisibility,
+    private val wallet: TwillWallet,
 ) : ViewModel() {
+
+    val isWalletConnected: StateFlow<Boolean> = wallet.isConnected
+    val paidInvoices: StateFlow<Set<String>> = wallet.paidInvoices
+
+    /** Pays an invoice card's invoice; throws [TwillActionError]. */
+    suspend fun pay(invoice: String) = wallet.pay(invoice)
+
+    /** Whether the chat's person can be zapped. */
+    fun canZap(): Boolean = target.value?.let { it.protocol.canZap(it.chatId) } == true
+
+    /** Zaps the chat's person; see [TwillProtocol.zap]. */
+    suspend fun zap(sats: Long, comment: String): String? {
+        val current = target.value ?: return null
+        return current.protocol.zap(current.chatId, sats, comment)
+    }
 
     private data class Target(
         val protocol: TwillProtocol,

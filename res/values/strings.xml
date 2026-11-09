@@ -963,9 +963,10 @@
     <string name="nostr_sign_out_amber_note">Twill will stop sending and receiving Nostr messages. Your key stays safe in Amber.</string>
     <string name="nostr_copy_nsec">Copy private key to back it up</string>
     <string name="nostr_nsec_copied">Private key copied. Store it somewhere safe and clear your clipboard</string>
-    <string name="nostr_relays_header">Relays</string>
+    <string name="nostr_relays_header">Message relays</string>
     <string name="nostr_relays_summary">Servers that carry your messages. They can\'t read them, but can see your IP address</string>
-    <string name="nostr_add_relay">Add relay</string>
+    <string name="nostr_add_relay">Add message relay</string>
+    <string name="nostr_relays_section">Relays</string>
     <string name="nostr_add">Add</string>
     <string name="nostr_remove_relay">Remove relay</string>
     <string name="nostr_relay_invalid">That isn\'t a valid relay address</string>
@@ -1039,10 +1040,62 @@
     <string name="twill_invoice_open">Open in wallet</string>
     <string name="twill_invoice_copy">Copy</string>
     <string name="twill_invoice_copied">Invoice copied</string>
+    <string name="twill_invoice_paid">Paid</string>
+    <string name="twill_invoice_paying">Paying…</string>
+    <string name="twill_invoice_pay">Pay</string>
+    <string name="twill_invoice_pay_title">Pay <xliff:g id="amount">%s</xliff:g>?</string>
+    <string name="twill_invoice_pay_warning">This pays from your connected wallet and can\'t be undone.</string>
+    <string name="twill_invoice_paid_amount">Paid <xliff:g id="amount">%s</xliff:g></string>
     <string name="twill_invoice_no_wallet">No wallet app found. Copy the invoice instead.</string>
-    <string name="nostr_people_header">Finding people</string>
-    <string name="nostr_search_relays">Search relays for people</string>
-    <string name="nostr_search_relays_summary">In Start chat, also finds people you haven\'t followed or talked to. What you type is sent to a search relay</string>
+    <string name="nostr_search_relays">Search for people you don\'t know</string>
+    <string name="nostr_search_relays_summary">In Start chat, also asks your search relays for people you haven\'t followed or talked to. They see what you type</string>
+    <string name="nostr_search_relays_header">Search relays</string>
+    <string name="nostr_add_search_relay">Add search relay</string>
+    <string name="nostr_search_relays_list_summary">Used to find people and their profiles</string>
+    <string name="nostr_paste">Paste</string>
+
+    <!-- Wallet (Nostr Wallet Connect) -->
+    <string name="nostr_wallet_header">Wallet</string>
+    <string name="nostr_wallet_connect">Connect a wallet</string>
+    <string name="nostr_wallet_connect_summary">Pay Lightning invoices and zap people from Twill, with Nostr Wallet Connect</string>
+    <string name="nostr_wallet_connect_explanation">Paste a Nostr Wallet Connect link from your wallet (such as Alby Hub, Primal or Coinos). Your funds stay in your wallet; Twill only asks it to pay.</string>
+    <string name="nostr_wallet_connect_button">Connect</string>
+    <string name="nostr_wallet_connected">Wallet connected</string>
+    <string name="nostr_wallet_connected_summary">Pays invoices and zaps. Tap to check the balance</string>
+    <string name="nostr_wallet_balance">Balance: <xliff:g id="amount">%s</xliff:g></string>
+    <string name="nostr_wallet_disconnect">Disconnect wallet</string>
+    <string name="nostr_wallet_disconnect_title">Disconnect wallet?</string>
+    <string name="nostr_wallet_disconnect_text">Twill forgets the connection link. To pay from Twill again, you\'ll need a new link from your wallet.</string>
+    <string name="nostr_wallet_link_title">Connect this wallet?</string>
+    <string name="nostr_wallet_link_text">A wallet app wants to connect to Twill, so you can pay invoices and zap from Twill. Your funds stay in your wallet.</string>
+    <string name="nostr_wallet_link_replaces">This replaces the wallet you connected before.</string>
+    <string name="nostr_wallet_link_done">Wallet connected</string>
+    <string name="nostr_wallet_bad_link">That isn\'t a Nostr Wallet Connect link.</string>
+    <string name="nostr_wallet_no_relay">That link has no usable relay.</string>
+    <string name="nostr_wallet_no_answer">The wallet service didn\'t answer. Check that it\'s online.</string>
+    <string name="nostr_wallet_nip04_only">This wallet only offers older (NIP-04) encryption, which Twill doesn\'t support. Update the wallet, or use one that offers NIP-44.</string>
+    <string name="nostr_wallet_not_connected">Connect a wallet in Nostr settings first.</string>
+    <string name="nostr_wallet_no_response">The wallet didn\'t respond.</string>
+    <string name="nostr_wallet_error">The wallet said: <xliff:g id="message">%s</xliff:g></string>
+    <string name="nostr_wallet_signed_out">Sign in to Nostr first.</string>
+
+    <!-- Zaps (NIP-57) -->
+    <string name="nostr_zap">Zap</string>
+    <string name="nostr_zap_title">Zap <xliff:g id="name">%s</xliff:g></string>
+    <string name="nostr_zap_amount">Amount in sats</string>
+    <string name="nostr_zap_comment">Comment (optional)</string>
+    <string name="nostr_zap_zapping">Zapping…</string>
+    <string name="nostr_zap_sent">Zap sent</string>
+    <string name="nostr_zap_no_wallet_note">No wallet connected, so your wallet app opens to pay. Connect one in Nostr settings to zap from Twill.</string>
+    <string name="nostr_zap_no_profile">Couldn\'t load <xliff:g id="name">%s</xliff:g>\'s profile.</string>
+    <string name="nostr_zap_no_address"><xliff:g id="name">%s</xliff:g> has no Lightning address.</string>
+    <string name="nostr_zap_not_supported"><xliff:g id="name">%s</xliff:g>\'s Lightning address doesn\'t support zaps.</string>
+    <string name="nostr_zap_out_of_range">That amount is outside what this address accepts.</string>
+    <string name="nostr_zap_no_invoice">No invoice came back.</string>
+    <string name="nostr_zap_refused">The Lightning address said: <xliff:g id="message">%s</xliff:g></string>
+    <string name="nostr_zap_amount_mismatch">The invoice amount doesn\'t match.</string>
+    <string name="nostr_zap_sign_failed">Couldn\'t sign the zap request.</string>
+    <string name="nostr_zap_unreachable">Couldn\'t reach <xliff:g id="host">%s</xliff:g>.</string>
     <string name="nostr_load_pictures">Show profile pictures</string>
     <string name="nostr_load_pictures_summary">Loads pictures from the servers people chose for them, which can see your IP address</string>
     <string name="nostr_auto_download">Download attachments automatically</string>
@@ -1181,6 +1234,13 @@
     <string name="twill_sms_blocked_summary">People whose messages are blocked</string>
     <string name="twill_debug_summary">Developer options for this test build</string>
     <!-- Twill: inbox bottom bar option -->
+    <string name="twill_settings_services">Services</string>
+    <string name="twill_settings_inbox">Inbox</string>
+    <string name="twill_settings_about">About</string>
+    <string name="twill_settings_conversations">Conversations</string>
+    <string name="twill_settings_notifications_sounds">Notifications and sounds</string>
+    <string name="twill_settings_more">More</string>
+    <string name="deltachat_invite_header">Invite people</string>
     <string name="twill_bottom_bar">Bottom bar</string>
     <string name="twill_bottom_bar_summary">When more than one service is on, show a tab for each instead of sections</string>
     <!-- Twill: Delta Chat QR codes -->

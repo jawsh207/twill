@@ -1,13 +1,11 @@
 package com.android.messaging.nostr
 
 import com.android.messaging.di.core.ApplicationCoroutineScope
+import com.android.messaging.nostr.core.Event
+import com.android.messaging.nostr.core.Filter
+import com.android.messaging.nostr.core.Kind
+import com.android.messaging.nostr.core.normalizeRelay
 import com.android.messaging.util.LogUtil
-import com.vitorpamplona.quartz.nip01Core.core.Event
-import com.vitorpamplona.quartz.nip01Core.crypto.verify
-import com.vitorpamplona.quartz.nip01Core.metadata.MetadataEvent
-import com.vitorpamplona.quartz.nip01Core.relay.filters.Filter
-import com.vitorpamplona.quartz.nip01Core.relay.normalizer.NormalizedRelayUrl
-import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNull
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -92,11 +90,11 @@ internal class NostrDirectory @Inject constructor(
         val text = query.trim()
         if (!accountStore.searchRelays.value || text.length < MIN_SEARCH_LENGTH) return@withContext
         if (accountStore.account.value == null) return@withContext
-        val relays = messenger.normalizedRelays(NostrDefaults.SEARCH_RELAYS)
+        val relays = messenger.normalizedRelays(accountStore.searchRelayUrls.value)
         val events = try {
             messenger.fetchAll(
                 relays,
-                Filter(kinds = listOf(MetadataEvent.KIND), search = text, limit = SEARCH_LIMIT),
+                Filter(kinds = listOf(Kind.METADATA), search = text, limit = SEARCH_LIMIT),
                 timeoutMillis = SEARCH_TIMEOUT_MILLIS,
             )
         } catch (exception: CancellationException) {
@@ -142,7 +140,7 @@ internal class NostrDirectory @Inject constructor(
         store.addPeople(store.chatPeople(), NostrPeopleSource.CHAT)
 
         val baseRelays = messenger.normalizedRelays(
-            accountStore.relays.value + NostrDefaults.DIRECTORY_RELAYS,
+            accountStore.relays.value + accountStore.searchRelayUrls.value,
         )
         if (baseRelays.isEmpty()) return
 
@@ -153,7 +151,7 @@ internal class NostrDirectory @Inject constructor(
                 kinds = listOf(KIND_FOLLOWS, KIND_MUTES, KIND_RELAY_LIST),
                 authors = listOf(me),
             ),
-        ).filter { it.pubKey == me }
+        ).filter { it.pubkey == me }
         val newest = lists.groupBy { it.kind }.mapValues { (_, events) ->
             events.maxBy { it.createdAt }
         }
@@ -165,7 +163,7 @@ internal class NostrDirectory @Inject constructor(
         }
         val outbox = newest[KIND_RELAY_LIST]?.tags.orEmpty()
             .filter { it.size > 1 && it[0] == "r" }
-            .mapNotNull { it[1].normalizeRelayUrlOrNull() }
+            .mapNotNull { normalizeRelay(it[1]) }
             .take(MAX_OUTBOX_RELAYS)
         val relays = (baseRelays + outbox).distinct()
 
@@ -182,17 +180,17 @@ internal class NostrDirectory @Inject constructor(
             val fromMe = async { fetch(relays, recent(INTERACTION_KINDS, authors = listOf(me))) }
             val followers = async { fetch(relays, recent(listOf(KIND_FOLLOWS), tags = toMeTag)) }
 
-            val legacy = legacySent.await().filter { it.pubKey == me }.flatMap { it.pTags() } +
-                legacyReceived.await().map { it.pubKey }
+            val legacy = legacySent.await().filter { it.pubkey == me }.flatMap { it.pTags() } +
+                legacyReceived.await().map { it.pubkey }
             store.addPeople(legacy.filter { it != me }, NostrPeopleSource.LEGACY_DM)
 
             val interactions = toMe.await().mapNotNull { it.counterpart() } +
-                fromMe.await().filter { it.pubKey == me }.flatMap { it.pTags() }
+                fromMe.await().filter { it.pubkey == me }.flatMap { it.pTags() }
             val counts = interactions.filter { it != me }.groupingBy { it }.eachCount()
             store.addPeople(counts.keys, NostrPeopleSource.INTERACTION, counts = counts)
 
             store.addPeople(
-                followers.await().map { it.pubKey }.filter { it != me },
+                followers.await().map { it.pubkey }.filter { it != me },
                 NostrPeopleSource.FOLLOWER,
             )
         }
@@ -202,12 +200,12 @@ internal class NostrDirectory @Inject constructor(
     }
 
     /** Fetches missing or old profiles in batches, the people the user knows first. */
-    private suspend fun fetchProfiles(relays: List<NormalizedRelayUrl>) {
+    private suspend fun fetchProfiles(relays: List<String>) {
         val needed = store.peopleNeedingProfiles(PROFILE_MAX_AGE_MILLIS, MAX_PROFILES)
         needed.chunked(PROFILE_BATCH).forEach { batch ->
             val events = fetch(
                 relays,
-                Filter(kinds = listOf(MetadataEvent.KIND), authors = batch),
+                Filter(kinds = listOf(Kind.METADATA), authors = batch),
             )
             val found = newestProfiles(events)
             store.upsertProfiles(found)
@@ -216,10 +214,9 @@ internal class NostrDirectory @Inject constructor(
         }
     }
 
-    private suspend fun fetch(relays: List<NormalizedRelayUrl>, filter: Filter): List<Event> = try {
+    private suspend fun fetch(relays: List<String>, filter: Filter): List<Event> = try {
         messenger.fetchAll(relays, filter, timeoutMillis = FETCH_TIMEOUT_MILLIS)
             .distinctBy { it.id }
-            .filter { it.verify() }
     } catch (exception: CancellationException) {
         throw exception
     } catch (exception: Exception) {
@@ -228,10 +225,9 @@ internal class NostrDirectory @Inject constructor(
 
     /** The newest signed kind 0 profile per author in [events]. */
     private fun newestProfiles(events: List<Event>): List<NostrProfile> = events
-        .filter { it.kind == MetadataEvent.KIND && it.pubKey.length == PUBKEY_HEX_LENGTH }
+        .filter { it.kind == Kind.METADATA && it.pubkey.length == PUBKEY_HEX_LENGTH }
         .distinctBy { it.id }
-        .filter { it.verify() }
-        .groupBy { it.pubKey }
+        .groupBy { it.pubkey }
         .map { (pubKey, versions) ->
             val content = runCatching { JSONObject(versions.maxBy { it.createdAt }.content) }
                 .getOrNull() ?: JSONObject()
@@ -250,7 +246,7 @@ internal class NostrDirectory @Inject constructor(
     private fun recent(
         kinds: List<Int>,
         authors: List<String>? = null,
-        tags: Map<String, List<String>>? = null,
+        tags: Map<String, List<String>> = emptyMap(),
     ) = Filter(kinds = kinds, authors = authors, tags = tags, limit = LIMIT)
 
     private fun JSONObject.cleanString(key: String): String? =
@@ -263,7 +259,7 @@ internal class NostrDirectory @Inject constructor(
 
     /** Who an event aimed at the user came from; for zap receipts, the person who zapped. */
     private fun Event.counterpart(): String? {
-        if (kind != KIND_ZAP_RECEIPT) return pubKey
+        if (kind != KIND_ZAP_RECEIPT) return pubkey
         val request = tags.firstOrNull { it.size > 1 && it[0] == "description" }?.get(1)
             ?: return null
         return runCatching { JSONObject(request).optString("pubkey") }.getOrNull()

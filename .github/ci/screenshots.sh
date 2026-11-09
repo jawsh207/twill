@@ -175,6 +175,74 @@ sleep 3
 $UI tap "Robin Test" || $UI tapcontains "npub1" || $UI dump "$OUT/nostr-chat-after-reply.xml"
 sleep 3
 shot "nostr-11-chat-after-reply"
+
+# Wallet (Nostr Wallet Connect) with a test wallet service: connect it, pay the invoice card,
+# then open the zap sheet (the test sender has no Lightning address, so that zap is refused).
+LINK=$(mktemp)
+python3 .github/ci/nostr_dm.py wallet "$KEYS" "$LINK" 300 > "$OUT/wallet.txt" 2>&1 &
+WALLET_PID=$!
+for i in $(seq 1 20); do [ -s "$LINK" ] && break; sleep 1; done
+sleep 4
+# Wallets hand Twill a nostr+walletconnect:// link; it asks, then connects.
+adb shell "am start -W -a android.intent.action.VIEW -d '$(cat "$LINK")'" >> "$OUT/log.txt" 2>&1
+sleep 3
+shot "nostr-12-wallet-link"
+$UI tap "Connect" || $UI dump "$OUT/nostr-wallet-link.xml"
+sleep 3
+shot "nostr-12a-connecting"
+sleep 6
+shot "nostr-12b-connecting"
+$UI dump "$OUT/nostr-wallet-link-after.xml"
+sleep 8
+shot "nostr-12c-connected"
+$UI dump "$OUT/nostr-wallet-link-end.xml"
+# Close the dialog if it's still up (an error), then leave the chat.
+$UI tap "Cancel" || true
+sleep 1
+back
+sleep 1
+$UI tap "Settings"
+$UI tap "Nostr Settings"
+sleep 6
+shot "nostr-12-wallet-connected"
+# The settings pages, grouped: Nostr (scrolled to Relays), main Settings, SMS.
+adb shell input swipe 540 1900 540 500 400
+sleep 1
+adb shell input swipe 540 1900 540 500 400
+sleep 1
+shot "settings-nostr-relays"
+back
+sleep 2
+shot "settings-main"
+$UI tap "SMS Settings"
+sleep 3
+shot "settings-sms"
+adb shell input swipe 540 1900 540 700 400
+sleep 1
+shot "settings-sms-2"
+back
+sleep 1
+back
+sleep 2
+$UI tap "Robin Test" || $UI tapcontains "Robin" || $UI dump "$OUT/nostr-inbox-wallet.xml"
+sleep 3
+$UI tap "Pay" || $UI dump "$OUT/nostr-pay.xml"
+sleep 2
+shot "nostr-13-pay-confirm"
+$UI tap "Pay" || true
+sleep 1
+shot "nostr-14-paying"
+sleep 10
+shot "nostr-15-paid"
+$UI tap "Zap" || $UI dump "$OUT/nostr-zap.xml"
+sleep 2
+shot "nostr-16-zap-sheet"
+$UI tap "Zap" || true
+sleep 1
+shot "nostr-17-zapping"
+# The answer is a toast: catch it whenever it shows.
+for i in 1 2 3 4; do sleep 3; shot "nostr-18-zap-result-$i"; done
+kill "$WALLET_PID" 2>/dev/null || true
 adb shell am force-stop "$PKG"
 
 # The bottom bar (Settings option): turn it on now that SMS and Nostr are both on, then look
@@ -306,5 +374,6 @@ done
 
 adb shell settings get secure theme_customization_overlay_packages >> "$OUT/log.txt"
 adb logcat -d -b crash > "$OUT/crash.txt"
-adb logcat -d | grep -iE "AndroidRuntime|twill|FATAL" | tail -200 > "$OUT/logcat.txt"
+adb logcat -d | grep -iE "AndroidRuntime|twill|FATAL" | grep -v AccessibilityNodeInfoDumper | tail -300 > "$OUT/logcat.txt"
+adb logcat -d | grep -E "TwillWallet|TwillRelays|NostrWalletLink|NostrMessenger|FATAL|AndroidRuntime" > "$OUT/logcat-wallet.txt" || true
 python3 .github/ci/ui.py report "$OUT"

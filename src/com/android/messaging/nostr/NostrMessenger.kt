@@ -4,45 +4,40 @@ import android.content.Context
 import android.net.Uri
 import com.android.messaging.R
 import com.android.messaging.di.core.ApplicationCoroutineScope
+import com.android.messaging.nostr.core.Draft
+import com.android.messaging.nostr.core.Event
+import com.android.messaging.nostr.core.Filter
+import com.android.messaging.nostr.core.Hex
+import com.android.messaging.nostr.core.Keys
+import com.android.messaging.nostr.core.Kind
+import com.android.messaging.nostr.core.LocalSigner
+import com.android.messaging.nostr.core.Nip19
+import com.android.messaging.nostr.core.Nip44
+import com.android.messaging.nostr.core.Signer
+import com.android.messaging.nostr.core.Tags
+import com.android.messaging.nostr.core.normalizeRelay
+import com.android.messaging.nostr.core.nowSeconds
+import com.android.messaging.nostr.core.secureRandom
+import com.android.messaging.nostr.core.sha256
+import com.android.messaging.nostr.core.values
+import com.android.messaging.nostr.net.Http
+import com.android.messaging.nostr.net.RelayPool
+import com.android.messaging.nostr.net.Subscription
 import com.android.messaging.twill.TwillAppVisibility
 import com.android.messaging.twill.TwillError
 import com.android.messaging.twill.TwillNotificationMessage
 import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.util.LogUtil
-import com.vitorpamplona.quartz.nip01Core.core.Event
-import com.vitorpamplona.quartz.nip01Core.core.toHexKey
-import com.vitorpamplona.quartz.nip01Core.crypto.verify
-import com.vitorpamplona.quartz.nip01Core.metadata.MetadataEvent
-import com.vitorpamplona.quartz.nip01Core.relay.client.NostrClient
-import com.vitorpamplona.quartz.nip01Core.relay.client.accessories.publishAndConfirm
-import com.vitorpamplona.quartz.nip01Core.relay.client.reqs.SubscriptionListener
-import com.vitorpamplona.quartz.nip01Core.relay.filters.Filter
-import com.vitorpamplona.quartz.nip01Core.relay.normalizer.NormalizedRelayUrl
-import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNull
-import com.vitorpamplona.quartz.nip01Core.relay.sockets.okhttp.BasicOkHttpWebSocket
-import com.vitorpamplona.quartz.nip01Core.tags.people.PTag
-import com.vitorpamplona.quartz.nip05DnsIdentifiers.Nip05Client
-import com.vitorpamplona.quartz.nip05DnsIdentifiers.OkHttpNip05Fetcher
-import com.vitorpamplona.quartz.nip05DnsIdentifiers.resolveUserHexOrNull
-import com.vitorpamplona.quartz.nip17Dm.NIP17Factory
-import com.vitorpamplona.quartz.nip17Dm.files.ChatMessageEncryptedFileHeaderEvent
-import com.vitorpamplona.quartz.nip17Dm.messages.ChatMessageEvent
-import com.vitorpamplona.quartz.nip17Dm.messages.changeSubject
-import com.vitorpamplona.quartz.nip17Dm.settings.DmRelayListEvent
-import com.vitorpamplona.quartz.nip59Giftwrap.seals.SealEvent
-import com.vitorpamplona.quartz.nip59Giftwrap.wraps.GiftWrapEvent
-import com.vitorpamplona.quartz.nip94FileMetadata.tags.DimensionTag
-import com.vitorpamplona.quartz.utils.sha256.sha256
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import java.net.URLEncoder
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -56,16 +51,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONObject
 
 /**
@@ -85,41 +77,20 @@ internal class NostrMessenger @Inject constructor(
     private val visibility: TwillAppVisibility,
     @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
 ) {
-    private val okHttp: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .pingInterval(PING_INTERVAL_SECONDS, TimeUnit.SECONDS)
-            .build()
+    private val pool: RelayPool by lazy {
+        RelayPool(CoroutineScope(Dispatchers.IO + SupervisorJob()), signerProvider::signer)
     }
 
-    /**
-     * For relay connections opened while Twill is in the background ("always connected"):
-     * pinging less often keeps the radio asleep longer. Shares [okHttp]'s connection pool.
-     */
-    private val backgroundOkHttp: OkHttpClient by lazy {
-        okHttp.newBuilder()
-            .pingInterval(BACKGROUND_PING_INTERVAL_SECONDS, TimeUnit.SECONDS)
-            .build()
-    }
+    @Volatile
+    private var liveSub: Subscription? = null
 
-    private val client: NostrClient by lazy {
-        NostrClient(
-            // Chosen each time a relay connection is opened.
-            websocketBuilder = BasicOkHttpWebSocket.Builder {
-                if (visibility.isRecentlyVisible.value) okHttp else backgroundOkHttp
-            },
-            parentScope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
-        )
-    }
-
-    private val nip05Client: Nip05Client by lazy {
-        Nip05Client(fetcher = OkHttpNip05Fetcher { okHttp })
-    }
+    /** Gift wraps received and still being opened, so a one-off sync can wait for them. */
+    private val openingWraps = MutableStateFlow(0)
 
     private val processMutex = Mutex()
-    private val dmRelayCache = ConcurrentHashMap<String, Pair<Long, List<NormalizedRelayUrl>>>()
+    private val dmRelayCache = ConcurrentHashMap<String, Pair<Long, List<String>>>()
     private val profileRequests = ConcurrentHashMap.newKeySet<String>()
     private val profileFailures = ConcurrentHashMap<String, Long>()
-    private val fetchCounter = AtomicLong()
 
     /** Profiles whose fetch is running, so the settings page can show progress. */
     val refreshingProfiles = MutableStateFlow<Set<String>>(emptySet())
@@ -167,16 +138,6 @@ internal class NostrMessenger @Inject constructor(
                 .collectLatest { plan -> applyPlan(plan) }
         }
 
-        // Leaving Twill with "always connected" on: reopen the relay connections once, so
-        // they use the slower background ping. Subscriptions carry over.
-        appScope.launch {
-            visibility.isRecentlyVisible.drop(1).collect { visible ->
-                if (!visible && keepConnectedInBackground.value && _isConnected.value) {
-                    client.reconnect(onlyIfChanged = false, ignoreRetryDelays = true)
-                }
-            }
-        }
-
         appScope.launch {
             accountStore.account.collect { account ->
                 if (account == null) {
@@ -214,7 +175,7 @@ internal class NostrMessenger @Inject constructor(
     suspend fun resolveIdentifier(input: String): String? = withContext(Dispatchers.IO) {
         val cleaned = input.trim().removePrefix("nostr:")
         val pubKey = try {
-            resolveUserHexOrNull(cleaned, nip05Client)
+            Nip19.publicKey(cleaned) ?: nip05Owner(cleaned)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
@@ -232,23 +193,17 @@ internal class NostrMessenger @Inject constructor(
         val relays = normalizedRelays(accountStore.relays.value)
         if (relays.isEmpty()) return
 
-        val finishedRelays = MutableStateFlow(0)
-        val listener = WrapListener(account.pubKeyHex) { finishedRelays.value += 1 }
-        client.connect()
-        client.subscribe(
-            SYNC_SUB_ID,
-            relays.associateWith { listOf(dmFilter(account.pubKeyHex)) },
-            listener,
-        )
-        withTimeoutOrNull(timeoutMillis) {
-            finishedRelays.first { count -> count >= relays.size }
+        val me = account.pubKeyHex
+        pool.whileConnected {
+            pool.query(relays.toSet(), listOf(dmFilter(me)), timeoutMillis) { event, _ ->
+                onWrap(event, me)
+            }
+            withTimeoutOrNull(timeoutMillis) { openingWraps.first { it == 0 } }
+            // Let profile lookups started by new messages finish before hanging up.
+            withTimeoutOrNull(FETCH_TIMEOUT_MILLIS * 2) {
+                refreshingProfiles.first { it.isEmpty() }
+            }
         }
-        client.unsubscribe(SYNC_SUB_ID)
-        // Let profile lookups started by new messages finish before hanging up.
-        withTimeoutOrNull(FETCH_TIMEOUT_MILLIS * 2) {
-            refreshingProfiles.first { it.isEmpty() }
-        }
-        if (!_isConnected.value) client.disconnect()
     }
 
     /** Sends [text] to everyone in [chatKey]. The message shows immediately as sending. */
@@ -261,13 +216,7 @@ internal class NostrMessenger @Inject constructor(
      * for the moment if Twill isn't connected.
      */
     suspend fun sendNow(chatKey: String, text: String) = withContext(Dispatchers.IO) {
-        val wasConnected = _isConnected.value
-        if (!wasConnected) client.connect()
-        try {
-            sendText(chatKey = chatKey, text = text)
-        } finally {
-            if (!wasConnected && !_isConnected.value) client.disconnect()
-        }
+        pool.whileConnected { sendText(chatKey = chatKey, text = text) }
     }
 
     /** Encrypts, uploads and sends the file at [uri] to everyone in [chatKey]. */
@@ -393,10 +342,10 @@ internal class NostrMessenger @Inject constructor(
             ).distinct()
         if (relays.isEmpty()) return null
 
-        val filter = Filter(kinds = listOf(MetadataEvent.KIND), authors = listOf(pubKey))
+        val filter = Filter(kinds = listOf(Kind.METADATA), authors = listOf(pubKey))
         val events = fetchAll(relays, filter)
         val newest = events
-            .filter { it.kind == MetadataEvent.KIND && it.pubKey == pubKey && it.verify() }
+            .filter { it.kind == Kind.METADATA && it.pubkey == pubKey }
             .maxByOrNull { it.createdAt }
             ?: return null
         return runCatching { JSONObject(newest.content) }.getOrNull() ?: JSONObject()
@@ -407,94 +356,79 @@ internal class NostrMessenger @Inject constructor(
      * (EOSE, closed or unreachable) or the timeout passes.
      */
     suspend fun fetchAll(
-        relays: List<NormalizedRelayUrl>,
+        relays: List<String>,
         filter: Filter,
         timeoutMillis: Long = FETCH_TIMEOUT_MILLIS,
-    ): List<Event> {
+    ): List<Event> = withContext(Dispatchers.IO) {
         val events = Collections.synchronizedList(mutableListOf<Event>())
-        val finished = MutableStateFlow<Set<NormalizedRelayUrl>>(emptySet())
-        val subscriptionId = "twill-fetch-" + fetchCounter.incrementAndGet()
-        val listener = object : SubscriptionListener {
-            override suspend fun onEvent(
-                event: Event,
-                isLive: Boolean,
-                relay: NormalizedRelayUrl,
-                forFilters: List<Filter>?,
-            ) {
+        pool.whileConnected {
+            pool.query(relays.toSet(), listOf(filter), timeoutMillis) { event, _ ->
                 events.add(event)
             }
+        }
+        synchronized(events) { events.toList() }
+    }
 
-            override fun onEose(relay: NormalizedRelayUrl, forFilters: List<Filter>?) {
-                finished.value += relay
+    /**
+     * Publishes [request] to [relays] and waits for the first event matching [response]
+     * (a Nostr Wallet Connect reply, say). Null if no relay took the request, or no answer
+     * came within [timeoutMillis]. Connects for the moment if Twill isn't connected.
+     */
+    suspend fun request(
+        relays: List<String>,
+        request: Event,
+        response: Filter,
+        timeoutMillis: Long,
+    ): Event? = withContext(Dispatchers.IO) {
+        pool.whileConnected {
+            val answer = CompletableDeferred<Event>()
+            val sub = pool.subscribe(relays.toSet(), listOf(response)) { event, _ ->
+                answer.complete(event)
             }
-
-            override fun onClosed(
-                message: String,
-                relay: NormalizedRelayUrl,
-                forFilters: List<Filter>?,
-            ) {
-                finished.value += relay
-            }
-
-            override fun onCannotConnect(
-                relay: NormalizedRelayUrl,
-                message: String,
-                forFilters: List<Filter>?,
-            ) {
-                finished.value += relay
+            try {
+                val sent = pool.publishFirst(request, relays.toSet())
+                LogUtil.i(
+                    TAG,
+                    "Request kind ${request.kind} to ${relays.size} relays: " +
+                        if (sent.ok) "accepted" else "refused (${sent.message})",
+                )
+                if (!sent.ok) return@whileConnected null
+                withTimeoutOrNull(timeoutMillis) { answer.await() }
+            } finally {
+                pool.close(sub)
             }
         }
-        try {
-            client.subscribe(subscriptionId, relays.associateWith { listOf(filter) }, listener)
-            withTimeoutOrNull(timeoutMillis) {
-                finished.first { it.size >= relays.size }
-            }
-        } finally {
-            client.unsubscribe(subscriptionId)
-        }
-        return events.toList()
     }
 
     /**
      * Checks that [address] (name@domain) lists [pubKey], by fetching
      * https://domain/.well-known/nostr.json?name=name (NIP-05).
      */
-    suspend fun verifyNip05(address: String, pubKey: String): Boolean {
+    suspend fun verifyNip05(address: String, pubKey: String): Boolean =
+        withContext(Dispatchers.IO) {
+            withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
+                nip05Owner(address).equals(pubKey, ignoreCase = true)
+            } ?: false
+        }
+
+    /** Who a NIP-05 address (name@domain, or just domain) belongs to, according to its domain. */
+    private fun nip05Owner(address: String): String? {
         val trimmed = address.trim().lowercase()
         val at = trimmed.lastIndexOf('@')
         val name = if (at > 0) trimmed.substring(0, at) else "_"
         val domain = if (at >= 0) trimmed.substring(at + 1) else trimmed
-        if (domain.isBlank() || '.' !in domain || '/' in domain) return false
-
-        val url = runCatching {
-            HttpUrl.Builder()
-                .scheme("https")
-                .host(domain.substringBefore(':'))
-                .apply { domain.substringAfter(':', "").toIntOrNull()?.let(::port) }
-                .addPathSegments(".well-known/nostr.json")
-                .addQueryParameter("name", name)
-                .build()
-        }.getOrNull() ?: return false
-        return withTimeoutOrNull(FETCH_TIMEOUT_MILLIS) {
-            runCatching {
-                // NIP-05: clients must not follow redirects.
-                okHttp.newBuilder().followRedirects(false).followSslRedirects(false).build()
-                    .newCall(Request.Builder().url(url).get().build())
-                    .execute()
-                    .use { response ->
-                        if (!response.isSuccessful) return@use false
-                        val body = response.body.byteStream().use { stream ->
-                            String(stream.readNBytes(NIP05_MAX_BYTES), Charsets.UTF_8)
-                        }
-                        val names = JSONObject(body).optJSONObject("names")
-                            ?: return@use false
-                        val listed = names.keys().asSequence()
-                            .firstOrNull { it.equals(name, ignoreCase = true) }
-                            ?.let { names.optString(it) }
-                        listed.equals(pubKey, ignoreCase = true)
-                    }
-            }.getOrDefault(false)
-        } ?: false
+        if (domain.isBlank() || '.' !in domain || domain.any { it in "/?#@ " }) return null
+        return runCatching {
+            val url = "https://$domain/.well-known/nostr.json?name=" +
+                URLEncoder.encode(name, "UTF-8")
+            // NIP-05: clients must not follow redirects.
+            val names = Http.json(url, followRedirects = false).getJSONObject("names")
+            names.keys().asSequence()
+                .firstOrNull { it.equals(name, ignoreCase = true) }
+                ?.let { names.optString(it) }
+                ?.lowercase()
+                ?.takeIf(Hex::isKey)
+        }.getOrNull()
     }
 
     private fun JSONObject.optCleanString(key: String): String? =
@@ -503,49 +437,37 @@ internal class NostrMessenger @Inject constructor(
     private suspend fun sendText(chatKey: String, text: String) {
         val signer = signerProvider.signer() ?: return
         val members = NostrChatKey.members(chatKey)
-        val subject = if (NostrChatKey.isGroup(
-                chatKey
-            )
-        ) {
+        val subject = if (NostrChatKey.isGroup(chatKey)) {
             store.pendingGroupSubject(chatKey)
         } else {
             null
         }
 
-        val result = try {
-            NIP17Factory().createMessageNIP17(
-                template = ChatMessageEvent.build(
-                    msg = text,
-                    to = members.map { PTag(it) },
-                ) {
-                    if (subject != null) changeSubject(subject)
-                },
-                signer = signer,
-            )
-        } catch (exception: CancellationException) {
-            throw exception
-        } catch (exception: Exception) {
-            LogUtil.w(TAG, "Could not build message: ${exception.javaClass.simpleName}")
-            insertFailed(chatKey = chatKey, me = signer.pubKey, text = text)
-            return
-        }
+        val rumor = Draft(
+            pubkey = signer.pubkey,
+            createdAt = nowSeconds(),
+            kind = Kind.DM,
+            tags = members.map { listOf("p", it) } +
+                listOfNotNull(subject?.let { listOf("subject", it) }),
+            content = text,
+        )
 
         store.insertMessage(
             NostrMessage(
-                id = result.msg.id,
+                id = rumor.id,
                 chatKey = chatKey,
-                senderPubKey = signer.pubKey,
+                senderPubKey = signer.pubkey,
                 content = text,
-                createdAtSeconds = result.msg.createdAt,
+                createdAtSeconds = rumor.createdAt,
                 isOutgoing = true,
                 isRead = true,
                 status = NostrMessage.Status.Sending,
             ),
         )
-        val delivered = publishWraps(result.wraps, me = signer.pubKey)
+        val delivered = deliver(rumor, members, signer)
         if (delivered && subject != null) store.clearPendingGroupSubject(chatKey)
         store.updateStatus(
-            id = result.msg.id,
+            id = rumor.id,
             status = if (delivered) NostrMessage.Status.Sent else NostrMessage.Status.Failed,
         )
         members.forEach(::refreshProfile)
@@ -577,9 +499,9 @@ internal class NostrMessenger @Inject constructor(
         val pendingAttachment = NostrAttachment(
             url = "",
             mimeType = prepared.mimeType,
-            keyHex = prepared.cipher.keyBytes.toHexKey(),
-            nonceHex = prepared.cipher.nonce.toHexKey(),
-            algorithm = prepared.cipher.name(),
+            keyHex = Hex.encode(prepared.key),
+            nonceHex = Hex.encode(prepared.nonce),
+            algorithm = FILE_ALGORITHM,
             encryptedHash = null,
             size = prepared.encrypted.size.toLong(),
             width = prepared.width,
@@ -591,7 +513,7 @@ internal class NostrMessenger @Inject constructor(
             NostrMessage(
                 id = placeholderId,
                 chatKey = chatKey,
-                senderPubKey = signer.pubKey,
+                senderPubKey = signer.pubkey,
                 content = "",
                 createdAtSeconds = System.currentTimeMillis() / 1000,
                 isOutgoing = true,
@@ -607,21 +529,24 @@ internal class NostrMessenger @Inject constructor(
                 server = accountStore.mediaServer.value,
                 signer = signer,
             )
-            val template = ChatMessageEncryptedFileHeaderEvent.build(
-                to = members.map { PTag(it) },
-                url = url,
-                cipher = prepared.cipher,
-                mimeType = prepared.mimeType,
-                hash = sha256(prepared.encrypted).toHexKey(),
-                size = prepared.encrypted.size,
-                dimension = if (prepared.width != null && prepared.height != null) {
-                    DimensionTag(prepared.width, prepared.height)
-                } else {
-                    null
-                },
-                originalHash = prepared.originalHash,
+            val encryptedHash = Hex.encode(sha256(prepared.encrypted))
+            val tags = ArrayList<List<String>>()
+            members.forEach { tags += listOf("p", it) }
+            tags += listOf("file-type", prepared.mimeType)
+            tags += listOf("encryption-algorithm", FILE_ALGORITHM)
+            tags += listOf("decryption-key", Hex.encode(prepared.key))
+            tags += listOf("decryption-nonce", Hex.encode(prepared.nonce))
+            tags += listOf("x", encryptedHash)
+            tags += listOf("ox", prepared.originalHash)
+            tags += listOf("size", prepared.encrypted.size.toString())
+            if (prepared.width != null && prepared.height != null) {
+                tags += listOf("dim", "${prepared.width}x${prepared.height}")
+            }
+            Triple(
+                url,
+                encryptedHash,
+                Draft(signer.pubkey, nowSeconds(), Kind.FILE_DM, tags, url),
             )
-            url to NIP17Factory().createEncryptedFileNIP17(template = template, signer = signer)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
@@ -631,29 +556,29 @@ internal class NostrMessenger @Inject constructor(
             return
         }
 
-        val (url, built) = result
+        val (url, encryptedHash, rumor) = result
         // Swap the placeholder for the real message (same local file).
         store.insertMessage(
             NostrMessage(
-                id = built.msg.id,
+                id = rumor.id,
                 chatKey = chatKey,
-                senderPubKey = signer.pubKey,
+                senderPubKey = signer.pubkey,
                 content = "",
-                createdAtSeconds = built.msg.createdAt,
+                createdAtSeconds = rumor.createdAt,
                 isOutgoing = true,
                 isRead = true,
                 status = NostrMessage.Status.Sending,
                 attachment = pendingAttachment.copy(
                     url = url,
-                    encryptedHash = sha256(prepared.encrypted).toHexKey(),
+                    encryptedHash = encryptedHash,
                 ),
             ),
         )
         removePlaceholderKeepingFile(placeholderId)
 
-        val delivered = publishWraps(built.wraps, me = signer.pubKey)
+        val delivered = deliver(rumor, members, signer)
         store.updateStatus(
-            id = built.msg.id,
+            id = rumor.id,
             status = if (delivered) NostrMessage.Status.Sent else NostrMessage.Status.Failed,
         )
     }
@@ -664,91 +589,113 @@ internal class NostrMessenger @Inject constructor(
         store.deleteMessage(placeholderId)
     }
 
-    private fun insertFailed(chatKey: String, me: String, text: String) {
-        store.insertMessage(
-            NostrMessage(
-                id = "failed-" + System.nanoTime(),
-                chatKey = chatKey,
-                senderPubKey = me,
-                content = text,
-                createdAtSeconds = System.currentTimeMillis() / 1000,
-                isOutgoing = true,
-                isRead = true,
-                status = NostrMessage.Status.Failed,
+    /**
+     * Seals [rumor] for each member and for ourselves (NIP-59), and publishes each gift wrap to
+     * its recipient's DM relays. True if any other member's relays took it.
+     */
+    private suspend fun deliver(rumor: Draft, members: List<String>, signer: Signer): Boolean {
+        val me = signer.pubkey
+        val myRelays = normalizedRelays(accountStore.relays.value)
+        val json = rumor.toJson()
+        val others = members.filter { it != me }.distinct()
+        val ownCopy = try {
+            wrapFor(json, me, signer)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            LogUtil.w(TAG, "Could not seal message: ${exception.javaClass.simpleName}")
+            return false
+        }
+        // Our own copy comes back through the subscription; no need to open it.
+        store.markWrapSeen(ownCopy.id)
+
+        var deliveredToSomeone = false
+        for (recipient in others) {
+            val wrap = try {
+                wrapFor(json, recipient, signer)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                LogUtil.w(TAG, "Could not seal message: ${exception.javaClass.simpleName}")
+                continue
+            }
+            val targets = dmRelaysOf(recipient).ifEmpty { myRelays }
+            val result = pool.publishFirst(wrap, targets.toSet())
+            if (result.ok) deliveredToSomeone = true
+        }
+        val ownResult = pool.publishFirst(ownCopy, myRelays.toSet())
+        // Notes to self only have our own wrap.
+        return if (others.isEmpty()) ownResult.ok else deliveredToSomeone
+    }
+
+    /** A NIP-59 gift wrap of [rumorJson] for [recipient]: sealed by us, wrapped by a throwaway key. */
+    private suspend fun wrapFor(rumorJson: String, recipient: String, signer: Signer): Event {
+        val sealContent = signer.nip44Encrypt(rumorJson, recipient)
+        val seal = signer.sign(
+            Draft(signer.pubkey, pastTime(), Kind.SEAL, emptyList(), sealContent),
+        )
+        val ephemeral = Keys.generate()
+        val wrapper = LocalSigner(ephemeral)
+        val content = Nip44.encrypt(seal.toJson(), Nip44.conversationKey(ephemeral, recipient))
+        return wrapper.signNow(
+            Draft(
+                wrapper.pubkey,
+                pastTime(),
+                Kind.GIFT_WRAP,
+                listOf(listOf("p", recipient)),
+                content,
             ),
         )
     }
 
-    /** Publishes each gift wrap to its recipient's DM relays. True if any other member got it. */
-    private suspend fun publishWraps(wraps: List<GiftWrapEvent>, me: String): Boolean {
-        val myRelays = normalizedRelays(accountStore.relays.value)
-        var deliveredToSomeone = false
-        for (wrap in wraps) {
-            val recipient = wrap.recipientPubKey()
-            if (recipient == me) {
-                // Our own copy comes back through the subscription; no need to decrypt it.
-                store.markWrapSeen(wrap.id)
-            }
-            val targets = when (recipient) {
-                me, null -> myRelays
-                else -> dmRelaysOf(recipient).ifEmpty { myRelays }
-            }
-            val accepted = try {
-                client.publishAndConfirm(event = wrap, relayList = targets.toSet())
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Exception) {
-                false
-            }
-            if (recipient != me && accepted) deliveredToSomeone = true
-        }
-        // Notes to self only have our own wrap.
-        return deliveredToSomeone || wraps.all { it.recipientPubKey() == me }
-    }
+    /** Seals and wraps carry a random time in the last two days, hiding when it was sent. */
+    private fun pastTime() = nowSeconds() - secureRandom.nextInt(TWO_DAYS_SECONDS)
 
     /** The relays [pubKey] reads DMs from (NIP-17 kind 10050), cached for an hour. */
-    private suspend fun dmRelaysOf(pubKey: String): List<NormalizedRelayUrl> {
+    private suspend fun dmRelaysOf(pubKey: String): List<String> {
         dmRelayCache[pubKey]?.let { (fetchedAt, relays) ->
             if (System.currentTimeMillis() - fetchedAt < DM_RELAY_CACHE_MILLIS) return relays
         }
-        val myRelays = normalizedRelays(accountStore.relays.value)
-        if (myRelays.isEmpty()) return emptyList()
+        val lookup = normalizedRelays(
+            accountStore.relays.value + accountStore.searchRelayUrls.value,
+        )
+        if (lookup.isEmpty()) return emptyList()
 
-        val filter = Filter(kinds = listOf(DmRelayListEvent.KIND), authors = listOf(pubKey))
+        val filter = Filter(kinds = listOf(Kind.DM_RELAYS), authors = listOf(pubKey))
         val events = try {
-            fetchAll(myRelays, filter)
+            fetchAll(lookup, filter)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
             emptyList()
         }
         val relays = events
-            .filterIsInstance<DmRelayListEvent>()
-            .filter { it.pubKey == pubKey && it.verify() }
+            .filter { it.kind == Kind.DM_RELAYS && it.pubkey == pubKey }
             .maxByOrNull { it.createdAt }
-            ?.relays()
+            ?.tags
+            ?.values("relay")
+            ?.mapNotNull(::normalizeRelay)
+            ?.distinct()
             .orEmpty()
         dmRelayCache[pubKey] = System.currentTimeMillis() to relays
         return relays
     }
 
     private suspend fun applyPlan(plan: ConnectionPlan) {
-        if (!plan.shouldConnect || plan.account == null) {
-            client.unsubscribe(LIVE_SUB_ID)
-            client.disconnect()
+        liveSub?.let(pool::close)
+        liveSub = null
+        val relays = normalizedRelays(plan.relays)
+        if (!plan.shouldConnect || plan.account == null || relays.isEmpty()) {
+            pool.setActive(false)
             _isConnected.value = false
             return
         }
 
-        val relays = normalizedRelays(plan.relays)
-        if (relays.isEmpty()) return
-
-        client.connect()
-        client.subscribe(
-            LIVE_SUB_ID,
-            relays.associateWith { listOf(dmFilter(plan.account.pubKeyHex)) },
-            WrapListener(plan.account.pubKeyHex) {},
-        )
+        val me = plan.account.pubKeyHex
+        pool.setActive(true)
+        liveSub = pool.subscribe(relays.toSet(), listOf(dmFilter(me))) { event, _ ->
+            onWrap(event, me)
+        }
         _isConnected.value = true
 
         publishOwnDmRelayListIfNeeded(relays)
@@ -760,22 +707,32 @@ internal class NostrMessenger @Inject constructor(
         val since = store.lastSyncSeconds()?.minus(GIFT_WRAP_TIME_SKEW_SECONDS)
             ?: (now - FIRST_SYNC_LOOKBACK_SECONDS)
         return Filter(
-            kinds = listOf(GiftWrapEvent.KIND),
+            kinds = listOf(Kind.GIFT_WRAP),
             tags = mapOf("p" to listOf(me)),
             since = since,
         )
     }
 
     /** Tells other clients which relays to send our DMs to (NIP-17 kind 10050). */
-    private fun publishOwnDmRelayListIfNeeded(relays: List<NormalizedRelayUrl>) {
-        val key = relays.joinToString(",") { it.url }
+    private fun publishOwnDmRelayListIfNeeded(relays: List<String>) {
+        val key = relays.joinToString(",")
         if (store.readState(STATE_PUBLISHED_RELAYS) == key) return
 
         appScope.launch(Dispatchers.IO) {
             try {
                 val signer = signerProvider.signer() ?: return@launch
-                val event = DmRelayListEvent.create(relays = relays, signer = signer)
-                if (client.publishAndConfirm(event = event, relayList = relays.toSet())) {
+                val event = signer.sign(
+                    Draft(
+                        pubkey = signer.pubkey,
+                        createdAt = nowSeconds(),
+                        kind = Kind.DM_RELAYS,
+                        tags = relays.map { listOf("relay", it) },
+                        content = "",
+                    ),
+                    background = true,
+                )
+                val results = pool.whileConnected { pool.publish(event, relays.toSet()) }
+                if (results.values.any { it.ok }) {
                     store.writeState(STATE_PUBLISHED_RELAYS, key)
                 }
             } catch (exception: CancellationException) {
@@ -786,78 +743,63 @@ internal class NostrMessenger @Inject constructor(
         }
     }
 
-    private inner class WrapListener(
-        private val me: String,
-        private val onEose: () -> Unit,
-    ) : SubscriptionListener {
-        override suspend fun onEvent(
-            event: Event,
-            isLive: Boolean,
-            relay: NormalizedRelayUrl,
-            forFilters: List<Filter>?,
-        ) {
-            processMutex.withLock { processWrap(event = event, me = me) }
-        }
-
-        override fun onEose(
-            relay: NormalizedRelayUrl,
-            forFilters: List<Filter>?,
-        ) {
-            onEose()
-        }
-
-        override fun onCannotConnect(
-            relay: NormalizedRelayUrl,
-            message: String,
-            forFilters: List<Filter>?,
-        ) {
-            onEose()
+    /** Opens a received gift wrap off the socket thread, one at a time. */
+    private fun onWrap(event: Event, me: String) {
+        if (event.kind != Kind.GIFT_WRAP) return
+        openingWraps.update { it + 1 }
+        appScope.launch(Dispatchers.IO) {
+            try {
+                processMutex.withLock { processWrap(wrap = event, me = me) }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                LogUtil.w(TAG, "Could not read message: ${exception.javaClass.simpleName}")
+            } finally {
+                openingWraps.update { it - 1 }
+            }
         }
     }
 
-    private suspend fun processWrap(event: Event, me: String) {
-        val wrap = event as? GiftWrapEvent ?: return
+    private suspend fun processWrap(wrap: Event, me: String) {
         if (store.hasSeenWrap(wrap.id)) return
-        if (!wrap.verify()) return
-
         val signer = signerProvider.signer() ?: return
 
         // If decryption fails because the signer isn't available (e.g. Amber needs approval),
         // leave the wrap unseen so it is retried next time.
-        val seal = try {
-            wrap.unwrapThrowing(signer)
+        val sealJson = try {
+            signer.nip44Decrypt(wrap.content, wrap.pubkey)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
+            if (signer is LocalSigner) store.markWrapSeen(wrap.id)
             return
         }
 
-        val rumor = when {
-            seal !is SealEvent || !seal.verify() -> null
-            else -> try {
-                seal.unsealThrowing(signer)
+        val seal = Event.parse(sealJson)
+            ?.takeIf { it.kind == Kind.SEAL && it.tags.isEmpty() && it.isValid() }
+        val rumor = seal?.let {
+            try {
+                Event.parseRumor(signer.nip44Decrypt(it.content, it.pubkey))
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
                 null
             }
-        }
+        }?.takeIf { it.pubkey == seal.pubkey }
 
         store.markWrapSeen(wrap.id)
         store.setLastSyncSeconds(wrap.createdAt)
         if (rumor == null) return
-        if (rumor.kind != ChatMessageEvent.KIND &&
-            rumor.kind != ChatMessageEncryptedFileHeaderEvent.KIND
-        ) {
+        if (rumor.kind != Kind.DM && rumor.kind != Kind.FILE_DM) {
             return
         }
 
         val recipients = rumor.tags.valuesOf("p")
         val chatKey = NostrChatKey.forParticipants(
-            participants = recipients + rumor.pubKey,
+            participants = recipients + rumor.pubkey,
             me = me
         )
-        val isOutgoing = rumor.pubKey == me
+        val isOutgoing = rumor.pubkey == me
         val isNew = rumor.createdAt >= notifySinceSeconds()
         // Notes to self written in another client count as news; Twill's own sends are
         // already stored by the time their echo arrives, so they never get here as new.
@@ -870,7 +812,7 @@ internal class NostrMessenger @Inject constructor(
             }
         }
 
-        val attachment = if (rumor.kind == ChatMessageEncryptedFileHeaderEvent.KIND) {
+        val attachment = if (rumor.kind == Kind.FILE_DM) {
             parseAttachment(rumor) ?: return
         } else {
             null
@@ -879,7 +821,7 @@ internal class NostrMessenger @Inject constructor(
         val message = NostrMessage(
             id = rumor.id,
             chatKey = chatKey,
-            senderPubKey = rumor.pubKey,
+            senderPubKey = rumor.pubkey,
             content = if (attachment != null) "" else rumor.content,
             createdAtSeconds = rumor.createdAt,
             isOutgoing = isOutgoing,
@@ -893,16 +835,16 @@ internal class NostrMessenger @Inject constructor(
                 download(message)
             }
         }
-        refreshProfile(rumor.pubKey)
+        refreshProfile(rumor.pubkey)
         NostrChatKey.members(chatKey).forEach(::refreshProfile)
         store.addPeople(NostrChatKey.members(chatKey), NostrPeopleSource.CHAT)
     }
 
     /** Reads a kind 15 file message. Returns null if it can't be decrypted. */
-    private fun parseAttachment(rumor: Event): NostrAttachment? {
+    private fun parseAttachment(rumor: Draft): NostrAttachment? {
         val tags = rumor.tags
-        val algorithm = tags.valuesOf("encryption-algorithm").firstOrNull() ?: "aes-gcm"
-        if (!algorithm.equals("aes-gcm", ignoreCase = true)) return null
+        val algorithm = tags.valuesOf("encryption-algorithm").firstOrNull() ?: FILE_ALGORITHM
+        if (!algorithm.equals(FILE_ALGORITHM, ignoreCase = true)) return null
         val key = tags.valuesOf("decryption-key").firstOrNull() ?: return null
         val nonce = tags.valuesOf("decryption-nonce").firstOrNull() ?: return null
         val url = rumor.content.trim().takeIf { it.startsWith("https://", ignoreCase = true) }
@@ -927,7 +869,7 @@ internal class NostrMessenger @Inject constructor(
         )
     }
 
-    private fun Array<Array<String>>.valuesOf(name: String): List<String> =
+    private fun Tags.valuesOf(name: String): List<String> =
         filter { tag -> tag.size > 1 && tag[0] == name }.map { tag -> tag[1] }.distinct()
 
     private fun notifySinceSeconds(): Long =
@@ -978,8 +920,8 @@ internal class NostrMessenger @Inject constructor(
         return NostrChatKey.members(chatKey).take(3).map { nameOf(it) }.joinToString(", ")
     }
 
-    fun normalizedRelays(urls: List<String>): List<NormalizedRelayUrl> =
-        urls.mapNotNull { it.normalizeRelayUrlOrNull() }.distinct()
+    fun normalizedRelays(urls: List<String>): List<String> =
+        urls.mapNotNull(::normalizeRelay).distinct()
 
     private data class ConnectionPlan(
         val account: NostrAccount?,
@@ -989,15 +931,12 @@ internal class NostrMessenger @Inject constructor(
 
     private companion object {
         const val TAG = "NostrMessenger"
-        const val LIVE_SUB_ID = "twill-dms"
-        const val SYNC_SUB_ID = "twill-dms-sync"
         const val STATE_PUBLISHED_RELAYS = "published_dm_relays"
         const val STATE_NOTIFY_SINCE = "notify_since"
         const val PROFILE_RETRY_MILLIS = 10 * 60 * 1000L
-        const val NIP05_MAX_BYTES = 512 * 1024
         const val PUBKEY_HEX_LENGTH = 64
-        const val PING_INTERVAL_SECONDS = 30L
-        const val BACKGROUND_PING_INTERVAL_SECONDS = 180L
+        const val FILE_ALGORITHM = "aes-gcm"
+        const val TWO_DAYS_SECONDS = 2 * 24 * 60 * 60
         const val FETCH_TIMEOUT_MILLIS = 8_000L
         const val ONE_SHOT_SYNC_TIMEOUT_MILLIS = 25_000L
         const val DM_RELAY_CACHE_MILLIS = 60 * 60 * 1000L

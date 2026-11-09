@@ -4,6 +4,10 @@
   nostr_dm.py account <keyfile>       make the emulator account's key; prints its nsec
   nostr_dm.py send <keyfile> <text>   send <text> to that account from a test sender
                                       (named "Robin Test"), gift-wrapped (NIP-17/44/59)
+  nostr_dm.py wallet <keyfile> <linkfile> <seconds>
+                                      run a test Nostr Wallet Connect service (NIP-47) for
+                                      that long; writes its connection link to <linkfile>.
+                                      It "pays" every invoice and reports 21,000 sats.
 
 Needs `pip install cryptography websockets`. Keys are throwaway, made fresh for each run.
 """
@@ -115,6 +119,20 @@ def nip44_encrypt(text, priv, pub_hex):
     ciphertext = cipher.encryptor().update(padded)
     mac = hmac.new(hmac_key, nonce + ciphertext, hashlib.sha256).digest()
     return base64.b64encode(b"\x02" + nonce + ciphertext + mac).decode()
+
+
+def nip44_decrypt(payload, priv, pub_hex):
+    raw = base64.b64decode(payload)
+    assert raw[0] == 2
+    nonce, ciphertext, mac = raw[1:33], raw[33:-32], raw[-32:]
+    keys = hkdf_expand(conversation_key(priv, pub_hex), nonce, 76)
+    chacha_key, chacha_nonce, hmac_key = keys[:32], keys[32:44], keys[44:]
+    expected = hmac.new(hmac_key, nonce + ciphertext, hashlib.sha256).digest()
+    assert hmac.compare_digest(mac, expected)
+    cipher = Cipher(algorithms.ChaCha20(chacha_key, b"\0\0\0\0" + chacha_nonce), mode=None)
+    padded = cipher.decryptor().update(ciphertext)
+    length = int.from_bytes(padded[:2], "big")
+    return padded[2:2 + length].decode()
 
 
 # ---- Events ----
@@ -247,6 +265,82 @@ def test_invoice(memo, amount="1u", expiry=3600):
     return bech32_words("lnbc" + amount, words)
 
 
+WALLET_RELAYS = ["wss://nos.lol", "wss://relay.primal.net", "wss://relay.damus.io",
+                 "wss://relay.nostr.band"]
+
+
+async def run_wallet(wallet, client_secret, seconds, linkfile):
+    """Serves NIP-47 on every relay that lets it in; the link lists them all."""
+    import websockets
+
+    me = xonly(wallet).hex()
+    client = xonly(client_secret).hex()
+    info = signed(wallet, 13194, "pay_invoice get_balance get_info",
+                  [["encryption", "nip44_v2"]])
+    sockets = {}
+    for relay in WALLET_RELAYS:
+        try:
+            ws = await websockets.connect(relay, open_timeout=10)
+            await ws.send(json.dumps(["EVENT", info]))
+            reply = await asyncio.wait_for(ws.recv(), 10)
+            print("wallet info on", relay, reply[:120], flush=True)
+            if '"OK"' in reply and "true" in reply:
+                sockets[relay] = ws
+            else:
+                await ws.close()
+        except Exception as exc:  # noqa: BLE001
+            print("wallet relay", relay, "failed:", exc, flush=True)
+    if not sockets:
+        return
+    relays = "".join("&relay=" + r for r in sockets)
+    with open(linkfile, "w") as f:
+        f.write("nostr+walletconnect://" + me + "?" + relays.lstrip("&")
+                + "&secret=" + client_secret.to_bytes(32, "big").hex())
+    answered = set()
+
+    async def serve(relay, ws):
+        await ws.send(json.dumps(["REQ", "nwc", {"kinds": [23194], "#p": [me],
+                                                  "since": int(time.time()) - 60}]))
+        deadline = time.time() + seconds
+        while time.time() < deadline:
+            try:
+                message = json.loads(await asyncio.wait_for(ws.recv(), 5))
+            except asyncio.TimeoutError:
+                continue
+            except Exception as exc:  # noqa: BLE001
+                print("wallet relay", relay, "closed:", exc, flush=True)
+                return
+            print("wallet relay", relay, str(message)[:160], flush=True)
+            if message[0] != "EVENT" or message[2].get("pubkey") != client:
+                continue
+            request = message[2]
+            if request["id"] in answered:
+                continue
+            answered.add(request["id"])
+            body = json.loads(nip44_decrypt(request["content"], wallet, client))
+            method = body.get("method")
+            print("wallet request:", method, flush=True)
+            if method == "get_info":
+                reply = {"result_type": method, "result": {
+                    "alias": "Twill Test Wallet", "methods": ["pay_invoice", "get_balance"]}}
+            elif method == "get_balance":
+                reply = {"result_type": method, "result": {"balance": 21_000_000}}
+            elif method == "pay_invoice":
+                reply = {"result_type": method, "result": {"preimage": "00" * 32}}
+            else:
+                reply = {"result_type": method, "error": {"code": "NOT_IMPLEMENTED",
+                                                          "message": "Not here"}}
+            response = signed(wallet, 23195, nip44_encrypt(json.dumps(reply), wallet, client),
+                              [["e", request["id"]], ["p", client]])
+            for other in sockets.values():
+                try:
+                    await other.send(json.dumps(["EVENT", response]))
+                except Exception:  # noqa: BLE001
+                    pass
+
+    await asyncio.gather(*(serve(r, ws) for r, ws in sockets.items()))
+
+
 def main():
     command, keyfile = sys.argv[1], sys.argv[2]
     if command == "account":
@@ -255,6 +349,10 @@ def main():
         with open(keyfile, "w") as f:
             json.dump({"account": hex(account), "sender": hex(sender)}, f)
         print(bech32("nsec", account.to_bytes(32, "big")))
+    elif command == "wallet":
+        wallet = secrets.randbelow(N - 1) + 1
+        client = secrets.randbelow(N - 1) + 1
+        asyncio.run(run_wallet(wallet, client, int(sys.argv[4]), sys.argv[3]))
     elif command == "send":
         with open(keyfile) as f:
             keys = json.load(f)

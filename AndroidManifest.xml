@@ -319,6 +319,21 @@
             </intent-filter>
         </service>
 
+        <!-- Twill: Nostr Wallet Connect links from wallet apps -->
+        <activity
+            android:name=".ui.nostr.wallet.NostrWalletLinkActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/BugleTheme.ClassZeroActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="nostr+walletconnect" />
+                <data android:scheme="nostrnwc" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".ui.classzero.ClassZeroActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"

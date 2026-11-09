@@ -56,3 +56,7 @@
 
 # Twill: R8 optimizes and shortens names (about 10 MB smaller). Each release keeps its
 # mapping file so stack traces can be read.
+
+# Twill: libsecp256k1 binding for Nostr, loaded reflectively and called through JNI.
+-keep class fr.acinq.secp256k1.** { *; }
+-dontwarn fr.acinq.secp256k1.**

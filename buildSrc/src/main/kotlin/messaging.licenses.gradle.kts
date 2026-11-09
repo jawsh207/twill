@@ -14,16 +14,6 @@ tasks.register<GenerateLicensesTask>("generateLicenses") {
             copyright = "Copyright 2014 Google, Inc. All rights reserved.",
         ),
     )
-    // Twill: Nostr support (Quartz, the protocol library behind Amethyst).
-    listOf("com.vitorpamplona.quartz:*", "com.vitorpamplona.negentropy:*").forEach { group ->
-        copyrightOverrides.add(
-            CopyrightOverride(
-                coordinates = group,
-                copyright = "Copyright (c) 2025 Vitor Pamplona",
-            ),
-        )
-    }
-
     extraNotices.addAll(
         ExtraNotice(
             name = "AOSP",

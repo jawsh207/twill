@@ -10,9 +10,11 @@ import com.android.messaging.nostr.NostrMessageStore
 import com.android.messaging.nostr.NostrMessenger
 import com.android.messaging.nostr.NostrProfile
 import com.android.messaging.nostr.NostrSignerProvider
+import com.android.messaging.nostr.NostrWallet
+import com.android.messaging.nostr.NostrWalletInfo
+import com.android.messaging.nostr.core.normalizeRelay
 import com.android.messaging.twill.TwillDeliveryMode
 import com.android.messaging.twill.TwillRuntime
-import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +37,9 @@ internal data class NostrSettingsUiState(
     val autoDownloadMedia: Boolean = false,
     val loadProfilePictures: Boolean = false,
     val searchRelays: Boolean = false,
+    val searchRelayUrls: List<String> = emptyList(),
+    val hasWallet: Boolean = false,
+    val walletInfo: NostrWalletInfo? = null,
     val ownProfile: NostrProfile? = null,
     val isRefreshingProfile: Boolean = false,
 )
@@ -46,7 +51,24 @@ internal class NostrSettingsViewModel @Inject constructor(
     private val messenger: NostrMessenger,
     private val runtime: TwillRuntime,
     private val messageStore: NostrMessageStore,
+    private val wallet: NostrWallet,
 ) : ViewModel() {
+
+    private val relaySettings = combine(
+        accountStore.relays,
+        accountStore.searchRelayUrls,
+        accountStore.hasWallet,
+        wallet.info,
+    ) { relays, searchRelays, hasWallet, info ->
+        RelaySettings(relays, searchRelays, hasWallet, info)
+    }
+
+    private data class RelaySettings(
+        val relays: List<String>,
+        val searchRelays: List<String>,
+        val hasWallet: Boolean,
+        val walletInfo: NostrWalletInfo?,
+    )
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val ownProfile = accountStore.account.flatMapLatest { account ->
@@ -78,13 +100,13 @@ internal class NostrSettingsViewModel @Inject constructor(
 
     val uiState: StateFlow<NostrSettingsUiState> = combine(
         accountStore.account,
-        accountStore.relays,
+        relaySettings,
         accountStore.deliveryMode,
         mediaSettings,
         ownProfile,
     ) {
             account,
-            relays,
+            (relays, searchRelayUrls, hasWallet, walletInfo),
             deliveryMode,
             (server, autoDownload, loadPictures, search),
             (profile, refreshing),
@@ -98,6 +120,9 @@ internal class NostrSettingsViewModel @Inject constructor(
             autoDownloadMedia = autoDownload,
             loadProfilePictures = loadPictures,
             searchRelays = search,
+            searchRelayUrls = searchRelayUrls,
+            hasWallet = hasWallet,
+            walletInfo = walletInfo,
             ownProfile = profile,
             isRefreshingProfile = refreshing,
         )
@@ -111,6 +136,7 @@ internal class NostrSettingsViewModel @Inject constructor(
         // Settings can be the first screen opened after sign-in.
         runtime.start(markVisible = true)
         accountStore.account.value?.let { messenger.refreshProfile(it.pubKeyHex) }
+        if (accountStore.hasWallet.value) refreshWallet()
     }
 
     /** Fetches the user's own profile again, ignoring the cache. */
@@ -120,9 +146,8 @@ internal class NostrSettingsViewModel @Inject constructor(
 
     fun externalSignerLoginIntent(): Intent = signerProvider.externalSignerLoginIntent()
 
-    fun onExternalSignerResult(data: Intent?): Boolean = signerProvider.completeExternalSignerLogin(
-        data
-    )
+    fun onExternalSignerResult(data: Intent?, resultCode: Int): Boolean =
+        signerProvider.completeExternalSignerLogin(data, resultCode)
 
     fun signInWithPrivateKey(input: String): Boolean = signerProvider.signInWithPrivateKey(input)
 
@@ -136,16 +161,37 @@ internal class NostrSettingsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) { signerProvider.signOut() }
     }
 
-    /** Returns false if [input] isn't a valid relay address. */
-    fun addRelay(input: String): Boolean {
+    /** Adds a message relay, or a search relay; returns false if [input] isn't a relay address. */
+    fun addRelay(input: String, isSearch: Boolean = false): Boolean {
         val trimmed = input.trim()
         val withScheme = when {
             trimmed.startsWith("wss://") || trimmed.startsWith("ws://") -> trimmed
             else -> "wss://$trimmed"
         }
-        val normalized = withScheme.normalizeRelayUrlOrNull() ?: return false
-        viewModelScope.launch(Dispatchers.IO) { accountStore.addRelay(normalized.url) }
+        val normalized = normalizeRelay(withScheme) ?: return false
+        viewModelScope.launch(Dispatchers.IO) {
+            if (isSearch) {
+                accountStore.addSearchRelay(normalized)
+            } else {
+                accountStore.addRelay(normalized)
+            }
+        }
         return true
+    }
+
+    fun removeSearchRelay(url: String) {
+        viewModelScope.launch(Dispatchers.IO) { accountStore.removeSearchRelay(url) }
+    }
+
+    /** Connects a Nostr Wallet Connect link; throws [TwillActionError] if it doesn't work. */
+    suspend fun connectWallet(link: String) = wallet.connect(link)
+
+    fun disconnectWallet() {
+        viewModelScope.launch(Dispatchers.IO) { wallet.disconnect() }
+    }
+
+    fun refreshWallet() {
+        viewModelScope.launch { runCatching { wallet.refresh() } }
     }
 
     fun setDeliveryMode(mode: TwillDeliveryMode) {

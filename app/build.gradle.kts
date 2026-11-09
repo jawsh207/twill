@@ -214,13 +214,6 @@ androidComponents {
     }
 }
 
-// Twill: Quartz brings its own SQLite build for its optional event store and relay monitor,
-// which Twill doesn't use (Nostr messages are in Android's SQLite). About 1 MB.
-configurations.configureEach {
-    exclude(group = "androidx.sqlite", module = "sqlite-bundled")
-    exclude(group = "androidx.sqlite", module = "sqlite-bundled-android")
-}
-
 dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.camera.camera2)
@@ -268,9 +261,8 @@ dependencies {
 
     implementation(libs.libphonenumber)
 
-    // Twill: Nostr
-    implementation(libs.quartz)
-    implementation(libs.okhttp)
+    // Twill: Nostr (Schnorr signatures and ECDH; the rest of the protocol is Twill's own code)
+    implementation(libs.secp256k1.android)
 
     implementation(project(":lib:platform_frameworks_opt_vcard"))
 

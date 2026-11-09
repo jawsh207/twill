@@ -38,6 +38,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.QrCode2
@@ -126,6 +127,9 @@ internal fun TwillChatScreen(
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val details by viewModel.details.collectAsStateWithLifecycle()
     val downloading by viewModel.downloading.collectAsStateWithLifecycle()
+    val isWalletConnected by viewModel.isWalletConnected.collectAsStateWithLifecycle()
+    val paidInvoices by viewModel.paidInvoices.collectAsStateWithLifecycle()
+    var isZapSheetVisible by rememberSaveable { mutableStateOf(false) }
     var draft by rememberSaveable { mutableStateOf("") }
     var isInfoDialogVisible by rememberSaveable { mutableStateOf(false) }
     var viewerPath by remember { mutableStateOf<String?>(null) }
@@ -221,6 +225,15 @@ internal fun TwillChatScreen(
                             }
                         },
                         actions = {
+                            // Zap the person (Nostr one-to-one chats), beside search.
+                            if (info != null && viewModel.canZap()) {
+                                IconButton(onClick = { isZapSheetVisible = true }) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Bolt,
+                                        contentDescription = stringResource(R.string.nostr_zap),
+                                    )
+                                }
+                            }
                             if (messages.isNotEmpty()) TwillSearchAction(onClick = search::open)
                         },
                     )
@@ -326,6 +339,9 @@ internal fun TwillChatScreen(
                                 null
                             },
                             isDownloading = message.id in downloading,
+                            isWalletConnected = isWalletConnected,
+                            paidInvoices = paidInvoices,
+                            onPay = viewModel::pay,
                             onRetry = { viewModel.retry(message) },
                             onDownload = { viewModel.download(message) },
                             onOpenImage = { path -> viewerPath = path },
@@ -362,6 +378,15 @@ internal fun TwillChatScreen(
     }
 
     viewerPath?.let { path -> ImageViewer(path = path, onDismiss = { viewerPath = null }) }
+
+    if (isZapSheetVisible && info != null) {
+        TwillZapSheet(
+            name = info.title,
+            isWalletConnected = isWalletConnected,
+            onZap = viewModel::zap,
+            onDismiss = { isZapSheetVisible = false },
+        )
+    }
 }
 
 @Composable
@@ -436,6 +461,9 @@ private fun MessageBubble(
     protocol: TwillProtocolId,
     sender: TwillMember?,
     isDownloading: Boolean,
+    isWalletConnected: Boolean,
+    paidInvoices: Set<String>,
+    onPay: suspend (String) -> Unit,
     onRetry: () -> Unit,
     onDownload: () -> Unit,
     onOpenImage: (String) -> Unit,
@@ -535,6 +563,9 @@ private fun MessageBubble(
                     invoices.forEachIndexed { index, invoice ->
                         TwillInvoiceCard(
                             invoice = invoice,
+                            isWalletConnected = isWalletConnected,
+                            isPaid = invoice.text in paidInvoices,
+                            onPay = { onPay(invoice.text) },
                             modifier = Modifier.padding(
                                 start = 8.dp,
                                 end = 8.dp,

@@ -23,7 +23,7 @@ Twill can be used only for Nostr and Delta Chat, alongside another SMS app. Choo
 
 ## Nostr private messages
 
-Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: NIP-44 encryption inside NIP-59 gift wraps), using [Quartz](https://github.com/vitorpamplona/amethyst/tree/main/quartz), the protocol library behind Amethyst.
+Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: NIP-44 encryption inside NIP-59 gift wraps), using Twill's own Nostr code (shared with Struthio) and libsecp256k1 for signatures.
 
 - **Off until you sign in.** Nothing contacts a relay until you sign in under **Settings › Nostr Settings**.
 - **Sign in with Amber** (recommended): your key stays in the Amber signer app (NIP-55). Approve Twill's requests once in Amber and messages decrypt in the background.
@@ -57,7 +57,7 @@ Twill can send and receive [Delta Chat](https://delta.chat) messages: end-to-end
 
 ## How the protocols fit together
 
-SMS/MMS stays GrapheneOS Messaging's own code. Every other protocol plugs into one shared layer: the collapsible inbox sections, the chat screen, notifications and background delivery are written once, and each protocol only provides its chats and messages. Each protocol keeps its own engine: Nostr uses [Quartz](https://github.com/vitorpamplona/amethyst/tree/main/quartz), Delta Chat uses the [chatmail core](https://github.com/chatmail/core).
+SMS/MMS stays GrapheneOS Messaging's own code. Every other protocol plugs into one shared layer: the collapsible inbox sections, the chat screen, notifications and background delivery are written once, and each protocol only provides its chats and messages. Each protocol keeps its own engine: Nostr uses Twill's own code in `nostr/core` and `nostr/net`, Delta Chat uses the [chatmail core](https://github.com/chatmail/core).
 
 ### About website link previews
 
