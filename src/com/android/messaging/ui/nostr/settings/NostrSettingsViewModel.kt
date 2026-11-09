@@ -12,9 +12,9 @@ import com.android.messaging.nostr.NostrProfile
 import com.android.messaging.nostr.NostrSignerProvider
 import com.android.messaging.nostr.NostrWallet
 import com.android.messaging.nostr.NostrWalletInfo
+import com.android.messaging.nostr.core.normalizeRelay
 import com.android.messaging.twill.TwillDeliveryMode
 import com.android.messaging.twill.TwillRuntime
-import com.vitorpamplona.quartz.nip01Core.relay.normalizer.normalizeRelayUrlOrNull
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -146,9 +146,8 @@ internal class NostrSettingsViewModel @Inject constructor(
 
     fun externalSignerLoginIntent(): Intent = signerProvider.externalSignerLoginIntent()
 
-    fun onExternalSignerResult(data: Intent?): Boolean = signerProvider.completeExternalSignerLogin(
-        data
-    )
+    fun onExternalSignerResult(data: Intent?, resultCode: Int): Boolean =
+        signerProvider.completeExternalSignerLogin(data, resultCode)
 
     fun signInWithPrivateKey(input: String): Boolean = signerProvider.signInWithPrivateKey(input)
 
@@ -169,12 +168,12 @@ internal class NostrSettingsViewModel @Inject constructor(
             trimmed.startsWith("wss://") || trimmed.startsWith("ws://") -> trimmed
             else -> "wss://$trimmed"
         }
-        val normalized = withScheme.normalizeRelayUrlOrNull() ?: return false
+        val normalized = normalizeRelay(withScheme) ?: return false
         viewModelScope.launch(Dispatchers.IO) {
             if (isSearch) {
-                accountStore.addSearchRelay(normalized.url)
+                accountStore.addSearchRelay(normalized)
             } else {
-                accountStore.addRelay(normalized.url)
+                accountStore.addRelay(normalized)
             }
         }
         return true

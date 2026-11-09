@@ -108,7 +108,7 @@ internal fun NostrSettingsScreen(
     val signerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        if (!viewModel.onExternalSignerResult(result.data)) {
+        if (!viewModel.onExternalSignerResult(result.data, result.resultCode)) {
             UiUtils.showToastAtBottom(R.string.nostr_sign_in_failed)
         }
     }

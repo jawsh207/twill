@@ -7,36 +7,35 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Base64
 import android.util.LruCache
 import android.webkit.MimeTypeMap
-import com.vitorpamplona.quartz.nip01Core.core.hexToByteArray
-import com.vitorpamplona.quartz.nip01Core.core.toHexKey
-import com.vitorpamplona.quartz.nip01Core.signers.NostrSigner
-import com.vitorpamplona.quartz.nipB7Blossom.BlossomAuthorizationEvent
-import com.vitorpamplona.quartz.utils.ciphers.AESGCM
-import com.vitorpamplona.quartz.utils.sha256.sha256
+import com.android.messaging.nostr.core.Draft
+import com.android.messaging.nostr.core.FileCipher
+import com.android.messaging.nostr.core.Hex
+import com.android.messaging.nostr.core.Kind
+import com.android.messaging.nostr.core.Signer
+import com.android.messaging.nostr.core.nowSeconds
+import com.android.messaging.nostr.core.randomBytes
+import com.android.messaging.nostr.core.sha256
+import com.android.messaging.nostr.net.Http
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 
 /** A file ready to send: already encrypted, with what the recipient needs to decrypt it. */
 internal data class PreparedUpload(
     val encrypted: ByteArray,
-    val cipher: AESGCM,
+    val key: ByteArray,
+    val nonce: ByteArray,
     val mimeType: String,
     val fileName: String?,
     val width: Int?,
@@ -59,14 +58,6 @@ internal data class PreparedUpload(
 internal class NostrMedia @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) {
-    private val http: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(20, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(120, TimeUnit.SECONDS)
-            .build()
-    }
-
     private val mediaDir: File
         get() = File(context.filesDir, "nostr_media").apply { mkdirs() }
 
@@ -94,21 +85,23 @@ internal class NostrMedia @Inject constructor(
             Triple(raw, declaredType, bounds)
         }
 
-        val cipher = AESGCM()
-        val encrypted = cipher.encrypt(bytes)
+        val key = randomBytes(FILE_KEY_BYTES)
+        val nonce = randomBytes(FILE_NONCE_BYTES)
+        val encrypted = FileCipher.encrypt(bytes, key, nonce)
         val localCopy = File(mediaDir, "out-" + System.nanoTime())
         localCopy.writeBytes(bytes)
 
         PreparedUpload(
             encrypted = encrypted,
-            cipher = cipher,
+            key = key,
+            nonce = nonce,
             mimeType = mimeType,
             fileName = name?.let {
                 if (isReencodableImage) it.substringBeforeLast('.') + ".jpg" else it
             },
             width = size?.first,
             height = size?.second,
-            originalHash = sha256(bytes).toHexKey(),
+            originalHash = Hex.encode(sha256(bytes)),
             localCopy = localCopy,
         )
     }
@@ -117,37 +110,45 @@ internal class NostrMedia @Inject constructor(
     suspend fun upload(
         encrypted: ByteArray,
         server: String,
-        signer: NostrSigner,
+        signer: Signer,
     ): String {
-        val hash = sha256(encrypted).toHexKey()
-        val auth = BlossomAuthorizationEvent.createUploadAuth(
-            hash = hash,
-            size = encrypted.size.toLong(),
-            alt = "Upload encrypted file",
-            signer = signer,
-            servers = listOf(server),
+        val hash = Hex.encode(sha256(encrypted))
+        val now = nowSeconds()
+        val auth = signer.sign(
+            Draft(
+                pubkey = signer.pubkey,
+                createdAt = now,
+                kind = Kind.BLOSSOM_AUTH,
+                tags = listOf(
+                    listOf("t", "upload"),
+                    listOf("x", hash),
+                    listOf("size", encrypted.size.toString()),
+                    listOf("expiration", (now + BLOSSOM_AUTH_SECONDS).toString()),
+                ) + listOfNotNull(serverHost(server)?.let { listOf("server", it) }),
+                content = "Upload encrypted file",
+            ),
         )
+        val header = "Nostr " + Base64.encodeToString(auth.toJson().toByteArray(), Base64.NO_WRAP)
 
         return withContext(Dispatchers.IO) {
-            val request = Request.Builder()
-                .url(server.trimEnd('/') + "/upload")
-                .header("Authorization", auth.toAuthorizationHeader())
-                .header("X-SHA-256", hash)
-                .put(encrypted.toRequestBody("application/octet-stream".toMediaTypeOrNull()))
-                .build()
-
-            http.newCall(request).execute().use { response ->
-                val body = response.body.string()
-                if (!response.isSuccessful) {
-                    val reason = response.header("X-Reason") ?: "HTTP ${response.code}"
-                    throw IOException("Upload failed: $reason")
-                }
-                val url = JSONObject(body).optString("url")
-                if (url.isNullOrBlank()) throw IOException("Upload failed: no URL returned")
-                url
+            val reply = try {
+                Http.put(
+                    url = server.trimEnd('/') + "/upload",
+                    body = encrypted,
+                    type = "application/octet-stream",
+                    headers = mapOf("Authorization" to header, "X-SHA-256" to hash),
+                )
+            } catch (e: Http.StatusException) {
+                throw IOException("Upload failed: ${e.message}", e)
             }
+            val url = reply.optString("url")
+            if (url.isNullOrBlank()) throw IOException("Upload failed: no URL returned")
+            url
         }
     }
+
+    private fun serverHost(server: String): String? =
+        runCatching { Uri.parse(server).host?.lowercase() }.getOrNull()
 
     /** Downloads, verifies and decrypts [attachment]. Returns the local file. */
     suspend fun download(messageId: String, attachment: NostrAttachment): File =
@@ -155,23 +156,21 @@ internal class NostrMedia @Inject constructor(
             if (!attachment.url.startsWith("https://", ignoreCase = true)) {
                 throw IOException("Only https attachments are supported")
             }
-            val request = Request.Builder().url(attachment.url).get().build()
-            val encrypted = http.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
-                response.body.byteStream().use { readLimited(it, MAX_DOWNLOAD_BYTES) }
-            }
+            val encrypted = Http.bytes(attachment.url, MAX_DOWNLOAD_BYTES)
 
             attachment.encryptedHash?.let { expected ->
-                if (!sha256(encrypted).toHexKey().equals(expected, ignoreCase = true)) {
+                if (!Hex.encode(sha256(encrypted)).equals(expected, ignoreCase = true)) {
                     throw IOException("File doesn't match its hash")
                 }
             }
 
-            val cipher = AESGCM(
-                keyBytes = attachment.keyHex.hexToByteArray(),
-                nonce = attachment.nonceHex.hexToByteArray(),
-            )
-            val plain = cipher.decryptOrNull(encrypted) ?: throw IOException("Can't decrypt file")
+            val plain = runCatching {
+                FileCipher.decrypt(
+                    encrypted,
+                    Hex.decode(attachment.keyHex),
+                    Hex.decode(attachment.nonceHex),
+                )
+            }.getOrNull() ?: throw IOException("Can't decrypt file")
             val file = File(mediaDir, "in-" + messageId.take(32))
             file.writeBytes(plain)
             file
@@ -194,31 +193,20 @@ internal class NostrMedia @Inject constructor(
         return lock.withLock {
             avatarMemory.get(url)?.let { return@withLock it }
             withContext(Dispatchers.IO) {
-                val cacheFile = File(avatarDir, sha256(url.toByteArray()).toHexKey())
+                val cacheFile = File(avatarDir, Hex.encode(sha256(url.toByteArray())))
                 val bytes = if (cacheFile.exists()) {
                     cacheFile.readBytes()
                 } else {
-                    runCatching {
-                        http.newCall(Request.Builder().url(url).get().build()).execute()
-                            .use { response ->
-                                // Many hosts label pictures as octet-stream (or not at
-                                // all), so only rule out pages; decoding decides the rest.
-                                val type = response.header("Content-Type").orEmpty()
-                                if (!response.isSuccessful || type.startsWith("text/")) {
-                                    null
-                                } else {
-                                    response.body.byteStream().use {
-                                        readLimited(it, MAX_AVATAR_BYTES)
-                                    }
+                    // Many hosts label pictures as octet-stream (or not at all), so only
+                    // pages are ruled out; decoding decides the rest.
+                    runCatching { Http.media(url, MAX_AVATAR_BYTES) }.getOrNull()
+                        ?.also { downloaded ->
+                            decodeSampled(downloaded, AVATAR_SIDE)?.let { small ->
+                                cacheFile.outputStream().use { out ->
+                                    small.compress(Bitmap.CompressFormat.WEBP_LOSSY, 85, out)
                                 }
                             }
-                    }.getOrNull()?.also { downloaded ->
-                        decodeSampled(downloaded, AVATAR_SIDE)?.let { small ->
-                            cacheFile.outputStream().use { out ->
-                                small.compress(Bitmap.CompressFormat.WEBP_LOSSY, 85, out)
-                            }
                         }
-                    }
                 }
                 bytes?.let { decodeSampled(it, AVATAR_SIDE) }?.also { avatarMemory.put(url, it) }
             }
@@ -312,6 +300,9 @@ internal class NostrMedia @Inject constructor(
         private const val AVATAR_SIDE = 160
         private const val AVATAR_MEMORY_ENTRIES = 100
         private const val JPEG_QUALITY = 88
+        private const val FILE_KEY_BYTES = 32
+        private const val FILE_NONCE_BYTES = 16
+        private const val BLOSSOM_AUTH_SECONDS = 300L
 
         private val REENCODABLE_IMAGE_TYPES = setOf(
             "image/jpeg",

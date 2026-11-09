@@ -1,5 +1,6 @@
 package com.android.messaging.ui.nostr
 
+import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -9,14 +10,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.android.messaging.nostr.NostrAccount
 import com.android.messaging.nostr.NostrAccountStore
 import com.android.messaging.nostr.NostrSignerProvider
-import com.vitorpamplona.quartz.nip01Core.signers.NostrSigner
-import com.vitorpamplona.quartz.nip55AndroidSigner.client.NostrSignerExternal
+import com.android.messaging.nostr.SignerBridge
+import com.android.messaging.nostr.SignerReply
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CompletableDeferred
 
 /**
  * When Amber hasn't pre-approved a request, it needs to show its own approval screen. This
@@ -24,19 +27,29 @@ import dagger.hilt.components.SingletonComponent
  * and are retried later.
  */
 @Composable
-internal fun NostrSignerForegroundHost(signer: NostrSigner?) {
-    val external = signer as? NostrSignerExternal ?: return
-
+internal fun NostrSignerForegroundHost() {
+    val pending = remember { arrayOfNulls<CompletableDeferred<SignerReply>>(1) }
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        result.data?.let(external::newResponse)
+        pending[0]?.complete(
+            SignerReply.from(result.resultCode == Activity.RESULT_OK, result.data),
+        )
+        pending[0] = null
     }
 
-    DisposableEffect(external) {
-        val launch: (Intent) -> Unit = { intent -> launcher.launch(intent) }
-        external.registerForegroundLauncher(launch)
-        onDispose { external.unregisterForegroundLauncher(launch) }
+    DisposableEffect(launcher) {
+        val launch: (Intent, CompletableDeferred<SignerReply>) -> Unit = { intent, reply ->
+            pending[0]?.completeExceptionally(IllegalStateException("superseded"))
+            pending[0] = reply
+            launcher.launch(intent)
+        }
+        SignerBridge.register(launch)
+        onDispose {
+            SignerBridge.unregister(launch)
+            pending[0]?.completeExceptionally(IllegalStateException("screen closed"))
+            pending[0] = null
+        }
     }
 }
 
@@ -59,7 +72,5 @@ internal fun NostrForegroundHost() {
         )
     }
     val account by entryPoint.nostrAccountStore().account.collectAsStateWithLifecycle()
-    NostrSignerForegroundHost(
-        signer = remember(account) { entryPoint.nostrSignerProvider().signer() },
-    )
+    if (account is NostrAccount.ExternalSigner) NostrSignerForegroundHost()
 }

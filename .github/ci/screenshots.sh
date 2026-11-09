@@ -375,5 +375,5 @@ done
 adb shell settings get secure theme_customization_overlay_packages >> "$OUT/log.txt"
 adb logcat -d -b crash > "$OUT/crash.txt"
 adb logcat -d | grep -iE "AndroidRuntime|twill|FATAL" | grep -v AccessibilityNodeInfoDumper | tail -300 > "$OUT/logcat.txt"
-adb logcat -d | grep -E -A12 "TwillWallet|NostrWalletLink|publishAndConfirm|FATAL|AndroidRuntime" > "$OUT/logcat-wallet.txt" || true
+adb logcat -d | grep -E "TwillWallet|TwillRelays|NostrWalletLink|NostrMessenger|FATAL|AndroidRuntime" > "$OUT/logcat-wallet.txt" || true
 python3 .github/ci/ui.py report "$OUT"

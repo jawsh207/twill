@@ -4,20 +4,22 @@ import android.content.Context
 import android.util.Log
 import com.android.messaging.R
 import com.android.messaging.di.core.ApplicationCoroutineScope
+import com.android.messaging.nostr.core.Bech32
+import com.android.messaging.nostr.core.Draft
+import com.android.messaging.nostr.core.Filter
+import com.android.messaging.nostr.core.Hex
+import com.android.messaging.nostr.core.Kind
+import com.android.messaging.nostr.core.LocalSigner
+import com.android.messaging.nostr.core.Nip44
+import com.android.messaging.nostr.core.nowSeconds
+import com.android.messaging.nostr.net.Http
 import com.android.messaging.twill.TwillActionError
 import com.android.messaging.twill.TwillInvoices
 import com.android.messaging.twill.TwillWallet
-import com.vitorpamplona.quartz.nip01Core.core.Event
-import com.vitorpamplona.quartz.nip01Core.crypto.KeyPair
-import com.vitorpamplona.quartz.nip01Core.crypto.verify
-import com.vitorpamplona.quartz.nip01Core.relay.filters.Filter
-import com.vitorpamplona.quartz.nip01Core.signers.NostrSignerInternal
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -28,8 +30,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONObject
 
 /** What the connected wallet told Twill about itself. */
@@ -41,8 +41,8 @@ internal data class NostrWalletInfo(
 /**
  * Nostr Wallet Connect (NIP-47), as in Struthio: the user pastes a connection link from their
  * wallet (Alby Hub, Primal, Coinos, …); Twill keeps it encrypted on the phone and asks the
- * wallet over its relay to pay invoices. Funds and keys stay with the wallet. NIP-44 is used
- * when the wallet offers it, else NIP-04 (older wallets).
+ * wallet over its relay to pay invoices. Funds and keys stay with the wallet. Requests are
+ * encrypted with NIP-44, as in Struthio; wallets that only know NIP-04 aren't supported.
  *
  * Also zaps (NIP-57): a signed zap request to the person's Lightning address, paid with the
  * wallet, or handed to a wallet app when none is connected.
@@ -61,13 +61,11 @@ internal class NostrWallet @Inject constructor(
         val secret: ByteArray,
         /** What the wallet's info event offers; null when it published none. */
         val methods: Set<String>?,
-        val useNip44: Boolean,
     ) {
         fun offers(method: String) = methods == null || method in methods
 
-        fun withNip04() = Connection(walletPubKey, relays, secret, methods, useNip44 = false)
-
-        val signer = NostrSignerInternal(KeyPair(privKey = secret))
+        val signer = LocalSigner(secret)
+        val conversationKey: ByteArray by lazy { Nip44.conversationKey(secret, walletPubKey) }
     }
 
     private var connection: Connection? = null
@@ -81,13 +79,6 @@ internal class NostrWallet @Inject constructor(
 
     /** Balance and name, when the wallet shares them. */
     val info: StateFlow<NostrWalletInfo?> = _info.asStateFlow()
-
-    private val http: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .readTimeout(HTTP_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .build()
-    }
 
     init {
         _paidInvoices.value = prefs.getStringSet(KEY_PAID, emptySet()).orEmpty()
@@ -109,35 +100,25 @@ internal class NostrWallet @Inject constructor(
      * [TwillActionError] if it's no good.
      */
     suspend fun connect(link: String) = withContext(Dispatchers.IO) {
-        val opened = open(link.trim(), isNew = true)
-        val working = probe(opened)
-        // Remembered for next time, when a wallet without info only answered NIP-04.
-        prefs.edit().putBoolean(KEY_NIP04, !working.useNip44).apply()
-        connection = working
+        val opened = open(link.trim())
+        probe(opened)
+        connection = opened
         accountStore.setWalletLink(link.trim())
         refresh()
     }
 
     /**
      * Asks the wallet for its info, so a wrong or offline wallet shows up now rather than at the
-     * first payment. A wallet without an info event may be an older one that only knows NIP-04:
-     * if it doesn't answer NIP-44, it's asked again that way. Any answer, even an error, will do.
+     * first payment. Any answer, even an error, will do.
      */
-    private suspend fun probe(opened: Connection): Connection {
-        val attempts = if (opened.methods == null && opened.useNip44) {
-            listOf(opened, opened.withNip04())
-        } else {
-            listOf(opened)
-        }
-        for (attempt in attempts) {
-            try {
-                call("get_info", connection = attempt, timeoutMillis = PROBE_TIMEOUT_MILLIS)
-                return attempt
-            } catch (error: TwillActionError) {
-                if (error.messageRes != R.string.nostr_wallet_no_response) return attempt
+    private suspend fun probe(opened: Connection) {
+        try {
+            call("get_info", connection = opened, timeoutMillis = PROBE_TIMEOUT_MILLIS)
+        } catch (error: TwillActionError) {
+            if (error.messageRes == R.string.nostr_wallet_no_response) {
+                throw TwillActionError(R.string.nostr_wallet_no_answer)
             }
         }
-        throw TwillActionError(R.string.nostr_wallet_no_answer)
     }
 
     fun disconnect() {
@@ -184,7 +165,7 @@ internal class NostrWallet @Inject constructor(
                 ?: throw TwillActionError(R.string.nostr_zap_no_address, name)
             val pay = getJson(endpoint)
             // NIP-57: the address must accept zap requests and name the key it signs receipts with.
-            if (!pay.optBoolean("allowsNostr") || !pay.optString("nostrPubkey").isHexKey()) {
+            if (!pay.optBoolean("allowsNostr") || !Hex.isKey(pay.optString("nostrPubkey"))) {
                 throw TwillActionError(R.string.nostr_zap_not_supported, name)
             }
             val callback = pay.optString("callback").takeIf { it.startsWith("https://") }
@@ -197,16 +178,16 @@ internal class NostrWallet @Inject constructor(
 
             val signer = signerProvider.signer()
                 ?: throw TwillActionError(R.string.nostr_wallet_signed_out)
-            val lnurl = bech32Encode("lnurl", endpoint.toByteArray())
+            val lnurl = Bech32.encode("lnurl", endpoint.toByteArray())
             val receiptRelays = accountStore.relays.value.take(MAX_RECEIPT_RELAYS)
-            val tags = arrayOf(
-                arrayOf("relays", *receiptRelays.toTypedArray()),
-                arrayOf("amount", msats.toString()),
-                arrayOf("lnurl", lnurl),
-                arrayOf("p", pubKey),
+            val tags = listOf(
+                listOf("relays") + receiptRelays,
+                listOf("amount", msats.toString()),
+                listOf("lnurl", lnurl),
+                listOf("p", pubKey),
             )
             val request = try {
-                signer.sign<Event>(nowSeconds(), KIND_ZAP_REQUEST, tags, comment)
+                signer.sign(Draft(signer.pubkey, nowSeconds(), Kind.ZAP_REQUEST, tags, comment))
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -244,35 +225,30 @@ internal class NostrWallet @Inject constructor(
         return open(link).also { connection = it }
     }
 
-    /**
-     * Parses [link] and looks for what the wallet service offers (its kind 13194 info). Some
-     * wallets publish none, or not where it's found: then NIP-44 is tried first (see [probe]).
-     */
-    private suspend fun open(link: String, isNew: Boolean = false): Connection {
+    /** Parses [link] and looks for what the wallet service offers (its kind 13194 info). */
+    private suspend fun open(link: String): Connection {
         val uri = parseLink(link) ?: throw TwillActionError(R.string.nostr_wallet_bad_link)
         val relays = messenger.normalizedRelays(uri.relays)
         if (relays.isEmpty()) throw TwillActionError(R.string.nostr_wallet_no_relay)
         val info = messenger.fetchAll(
             relays,
-            Filter(kinds = listOf(KIND_INFO), authors = listOf(uri.wallet), limit = 1),
+            Filter(kinds = listOf(Kind.NWC_INFO), authors = listOf(uri.wallet), limit = 1),
         )
-            .filter { it.pubKey == uri.wallet && it.verify() }
+            .filter { it.kind == Kind.NWC_INFO && it.pubkey == uri.wallet }
             .maxByOrNull { it.createdAt }
-        Log.i(TAG, "open: relays=${relays.map { it.url }} info=${info != null}")
+        Log.i(TAG, "open: ${relays.size} relays, info=${info != null}")
         val encryptions = info?.tags?.firstOrNull { it.size > 1 && it[0] == "encryption" }
             ?.get(1)
             ?.split(' ')
+        // An info event without nip44_v2 is an older wallet that only speaks NIP-04.
+        if (info != null && (encryptions == null || NIP44 !in encryptions)) {
+            throw TwillActionError(R.string.nostr_wallet_nip04_only)
+        }
         return Connection(
             walletPubKey = uri.wallet,
-            relays = uri.relays,
+            relays = relays,
             secret = uri.secret,
             methods = info?.content?.split(' ')?.filter { it.isNotBlank() }?.toSet(),
-            useNip44 = when {
-                info == null -> isNew || !prefs.getBoolean(KEY_NIP04, false)
-                // An info event without an encryption tag: an older wallet (NIP-04 only).
-                encryptions == null -> false
-                else -> NIP44 in encryptions
-            },
         )
     }
 
@@ -285,23 +261,21 @@ internal class NostrWallet @Inject constructor(
         val current = connection ?: requireConnection()
         val signer = current.signer
         val body = JSONObject().put("method", method).put("params", params).toString()
-        val content = if (current.useNip44) {
-            signer.nip44Encrypt(body, current.walletPubKey)
-        } else {
-            signer.nip04Encrypt(body, current.walletPubKey)
-        }
-        val tags = buildList {
-            add(arrayOf("p", current.walletPubKey))
-            if (current.useNip44) add(arrayOf("encryption", NIP44))
-            add(arrayOf("expiration", (nowSeconds() + REQUEST_EXPIRY_SECONDS).toString()))
-        }.toTypedArray()
-        val request = signer.sign<Event>(nowSeconds(), KIND_REQUEST, tags, content)
-        Log.i(TAG, "call $method: request ${request.id.take(8)} nip44=${current.useNip44}")
+        val content = Nip44.encrypt(body, current.conversationKey)
+        val tags = listOf(
+            listOf("p", current.walletPubKey),
+            listOf("encryption", NIP44),
+            listOf("expiration", (nowSeconds() + REQUEST_EXPIRY_SECONDS).toString()),
+        )
+        val request = signer.signNow(
+            Draft(signer.pubkey, nowSeconds(), Kind.NWC_REQUEST, tags, content),
+        )
+        Log.i(TAG, "call $method: request ${request.id.take(8)}")
         val response = messenger.request(
-            relays = messenger.normalizedRelays(current.relays),
+            relays = current.relays,
             request = request,
             response = Filter(
-                kinds = listOf(KIND_RESPONSE),
+                kinds = listOf(Kind.NWC_RESPONSE),
                 authors = listOf(current.walletPubKey),
                 tags = mapOf("e" to listOf(request.id)),
             ),
@@ -311,14 +285,11 @@ internal class NostrWallet @Inject constructor(
             throw TwillActionError(R.string.nostr_wallet_no_response)
         }
         Log.i(TAG, "call $method: response ${response.id.take(8)}")
-        if (!response.verify()) throw TwillActionError(R.string.nostr_wallet_no_response)
-        val plain = runCatching {
-            if (current.useNip44) {
-                signer.nip44Decrypt(response.content, current.walletPubKey)
-            } else {
-                signer.nip04Decrypt(response.content, current.walletPubKey)
-            }
-        }.getOrNull() ?: throw TwillActionError(R.string.nostr_wallet_no_response)
+        if (response.pubkey != current.walletPubKey) {
+            throw TwillActionError(R.string.nostr_wallet_no_response)
+        }
+        val plain = runCatching { Nip44.decrypt(response.content, current.conversationKey) }
+            .getOrNull() ?: throw TwillActionError(R.string.nostr_wallet_no_response)
         val json = JSONObject(plain)
         json.optJSONObject("error")?.let { error ->
             val message = error.optString("message").ifBlank { error.optString("code") }
@@ -347,8 +318,8 @@ internal class NostrWallet @Inject constructor(
         }
         val relays = params.filter { it.first == "relay" }.map { it.second }
         val secret = params.first { it.first == "secret" }.second.lowercase()
-        require(wallet.isHexKey() && secret.isHexKey() && relays.isNotEmpty())
-        Link(wallet, relays, secret.chunked(2).map { it.toInt(16).toByte() }.toByteArray())
+        require(Hex.isKey(wallet) && Hex.isKey(secret) && relays.isNotEmpty())
+        Link(wallet, relays, Hex.decode(secret))
     }.getOrNull()
 
     // Zaps
@@ -365,9 +336,9 @@ internal class NostrWallet @Inject constructor(
         )
         val newest = messenger.fetchAll(
             relays,
-            Filter(kinds = listOf(KIND_METADATA), authors = listOf(pubKey), limit = 1),
+            Filter(kinds = listOf(Kind.METADATA), authors = listOf(pubKey), limit = 1),
         )
-            .filter { it.pubKey == pubKey && it.verify() }
+            .filter { it.kind == Kind.METADATA && it.pubkey == pubKey }
             .maxByOrNull { it.createdAt }
             ?: return null
         val content = runCatching { JSONObject(newest.content) }.getOrNull() ?: return null
@@ -386,14 +357,16 @@ internal class NostrWallet @Inject constructor(
                 return "https://$domain/.well-known/lnurlp/$user"
             }
         }
-        return profile.lud06?.let(::bech32DecodeText)?.takeIf { it.startsWith("https://") }
+        return profile.lud06?.let(::lnurlText)?.takeIf { it.startsWith("https://") }
     }
 
+    /** An LNURL (lud06) back to its URL. */
+    private fun lnurlText(input: String): String? = runCatching {
+        String(Bech32.decode(input.trim().removePrefix("lightning:")).second, Charsets.UTF_8)
+    }.getOrNull()
+
     private fun getJson(url: String): JSONObject = try {
-        http.newCall(Request.Builder().url(url).get().build()).execute().use { response ->
-            val body = response.body.byteStream().use { String(it.readNBytes(MAX_JSON_BYTES)) }
-            JSONObject(body)
-        }
+        Http.json(url)
     } catch (exception: Exception) {
         val host = runCatching { URI(url).host }.getOrNull() ?: url
         throw TwillActionError(R.string.nostr_zap_unreachable, host)
@@ -403,86 +376,13 @@ internal class NostrWallet @Inject constructor(
         const val TAG = "TwillWallet"
         const val PREFS_NAME = "nostr_wallet"
         const val KEY_PAID = "paid_invoices"
-        const val KEY_NIP04 = "uses_nip04"
         const val MAX_PAID = 200
-        const val KIND_METADATA = 0
-        const val KIND_ZAP_REQUEST = 9734
-        const val KIND_INFO = 13194
-        const val KIND_REQUEST = 23194
-        const val KIND_RESPONSE = 23195
         const val NIP44 = "nip44_v2"
         const val CALL_TIMEOUT_MILLIS = 30_000L
         const val PROBE_TIMEOUT_MILLIS = 15_000L
         const val PAY_TIMEOUT_MILLIS = 60_000L
         const val REQUEST_EXPIRY_SECONDS = 60L
-        const val HTTP_TIMEOUT_SECONDS = 15L
-        const val MAX_JSON_BYTES = 256 * 1024
         const val MAX_RECEIPT_RELAYS = 6
         const val MSATS_PER_SAT = 1000L
-        const val CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
-        val GEN = intArrayOf(0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3)
-
-        fun nowSeconds() = System.currentTimeMillis() / 1000
-
-        fun String.isHexKey() = length == 64 && all { it in '0'..'9' || it in 'a'..'f' }
-
-        fun polymod(values: IntArray): Int {
-            var check = 1
-            for (value in values) {
-                val top = check ushr 25
-                check = ((check and 0x1ffffff) shl 5) xor value
-                for (i in 0 until 5) if ((top ushr i) and 1 == 1) check = check xor GEN[i]
-            }
-            return check
-        }
-
-        fun hrpExpand(hrp: String) = IntArray(hrp.length * 2 + 1).also { out ->
-            hrp.forEachIndexed { i, c ->
-                out[i] = c.code ushr 5
-                out[hrp.length + 1 + i] = c.code and 31
-            }
-        }
-
-        fun convertBits(data: ByteArray, from: Int, to: Int, pad: Boolean): ByteArray {
-            var accumulator = 0
-            var bits = 0
-            val out = ByteArrayOutputStream()
-            val max = (1 shl to) - 1
-            for (byte in data) {
-                accumulator = (accumulator shl from) or (byte.toInt() and 0xff)
-                bits += from
-                while (bits >= to) {
-                    bits -= to
-                    out.write((accumulator ushr bits) and max)
-                }
-                accumulator = accumulator and ((1 shl bits) - 1)
-            }
-            if (pad && bits > 0) out.write((accumulator shl (to - bits)) and max)
-            return out.toByteArray()
-        }
-
-        /** Bech32 with no length limit (LNURLs are long). */
-        fun bech32Encode(hrp: String, data: ByteArray): String {
-            val words = convertBits(data, 8, 5, true).map { it.toInt() }.toIntArray()
-            val mod = polymod(hrpExpand(hrp) + words + IntArray(6)) xor 1
-            val checksum = IntArray(6) { (mod ushr (5 * (5 - it))) and 31 }
-            return buildString {
-                append(hrp).append('1')
-                (words + checksum).forEach { append(CHARSET[it]) }
-            }
-        }
-
-        /** An LNURL (lud06) back to its URL. */
-        fun bech32DecodeText(input: String): String? = runCatching {
-            val text = input.lowercase().removePrefix("lightning:")
-            val separator = text.lastIndexOf('1')
-            val hrp = text.substring(0, separator)
-            val values = IntArray(text.length - separator - 1) {
-                CHARSET.indexOf(text[separator + 1 + it]).also { value -> require(value >= 0) }
-            }
-            require(polymod(hrpExpand(hrp) + values) == 1)
-            val words = values.copyOf(values.size - 6).map { it.toByte() }.toByteArray()
-            String(convertBits(words, 5, 8, false), Charsets.UTF_8)
-        }.getOrNull()
     }
 }

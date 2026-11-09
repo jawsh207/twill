@@ -1,0 +1,651 @@
+package com.android.messaging.nostr.net
+
+import android.util.Log
+import com.android.messaging.nostr.core.Draft
+import com.android.messaging.nostr.core.Event
+import com.android.messaging.nostr.core.Filter
+import com.android.messaging.nostr.core.Kind
+import com.android.messaging.nostr.core.Signer
+import com.android.messaging.nostr.core.nowSeconds
+import com.android.messaging.nostr.core.quoteJson
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
+
+internal class Subscription(
+    val id: String,
+    val relays: Set<String>,
+    val filters: List<Filter>,
+    internal val onEvent: (Event, String) -> Unit,
+    /** Called per relay: true for end of stored events, false when the relay failed or refused. */
+    internal val onDone: (String, Boolean) -> Unit,
+) {
+    internal val request: String by lazy {
+        buildString {
+            append("[\"REQ\",").append(quoteJson(id))
+            filters.forEach { append(',').append(it.toJson()) }
+            append(']')
+        }
+    }
+}
+
+internal data class PublishResult(
+    val ok: Boolean,
+    val message: String,
+)
+
+/** What the pool reports, for logcat: relay addresses and event kinds, never content or keys. */
+private object AppLog {
+    fun add(text: String) {
+        Log.i("TwillRelays", text)
+    }
+}
+
+/**
+ * All relay connections (from Struthio). Sockets exist only while something needs them and the
+ * pool is active: while Twill is connected ([setActive]), or for one job ([whileConnected]), such
+ * as a background sync or a reply sent from a notification.
+ */
+internal class RelayPool(
+    private val scope: CoroutineScope,
+    private val signer: () -> Signer?,
+) {
+    private val relays = ConcurrentHashMap<String, Relay>()
+    private val nextId = AtomicInteger()
+    private val verified = object : LinkedHashMap<String, Boolean>(4096, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>?) =
+            size > 8000
+    }
+
+    private val problems = HashMap<String, MutableList<String>>()
+
+    /** Twill wants to be connected (on screen, or "always connected"). */
+    @Volatile
+    private var active = false
+
+    /** Jobs connected for the moment, while Twill otherwise isn't. */
+    private val holds = AtomicInteger()
+
+    /** Nothing connects unless active or held, so a background wake-up opens no sockets. */
+    private val foreground: Boolean
+        get() = active || holds.get() > 0
+
+    /** No retries while nothing wants the connections. */
+    private val leaving: Boolean
+        get() = !foreground
+
+    private fun relay(url: String) = relays.getOrPut(url) { Relay(url) }
+
+    fun subscribe(
+        urls: Set<String>,
+        filters: List<Filter>,
+        onDone: (String, Boolean) -> Unit = { _, _ -> },
+        onEvent: (Event, String) -> Unit,
+    ): Subscription {
+        val sub = Subscription("s${nextId.incrementAndGet()}", urls, filters, onEvent, onDone)
+        urls.forEach { relay(it).add(sub) }
+        return sub
+    }
+
+    fun close(sub: Subscription) {
+        sub.relays.forEach { relays[it]?.remove(sub) }
+    }
+
+    /** Fetches stored events; returns the relays that really answered, not those that failed. */
+    suspend fun query(
+        urls: Set<String>,
+        filters: List<Filter>,
+        timeoutMs: Long = 6_000,
+        onEvent: (Event, String) -> Unit,
+    ): Set<String> {
+        if (urls.isEmpty()) return emptySet()
+        val remaining = HashSet(urls)
+        val answered = HashSet<String>()
+        val done = CompletableDeferred<Unit>()
+        val sub = subscribe(urls, filters, onDone = { url, ok ->
+            val finished = synchronized(remaining) {
+                if (remaining.remove(url) && ok) answered += url
+                remaining.isEmpty()
+            }
+            if (finished) done.complete(Unit)
+        }, onEvent = onEvent)
+        withTimeoutOrNull(timeoutMs) { done.await() }
+        close(sub)
+        return synchronized(remaining) { answered.toSet() }
+    }
+
+    /** NIP-45 counts where relays offer them; the highest wins, as relays see partial data. */
+    suspend fun count(urls: Set<String>, filter: Filter, timeoutMs: Long = 5_000): Long? {
+        var best: Long? = null
+        val remaining = HashSet(urls)
+        val done = CompletableDeferred<Unit>()
+        val id = "c${nextId.incrementAndGet()}"
+        val request = "[\"COUNT\",${quoteJson(id)},${filter.toJson()}]"
+        urls.forEach { url ->
+            relay(url).count(id, request) { value ->
+                val finished = synchronized(remaining) {
+                    if (value != null) best = maxOf(best ?: 0, value)
+                    remaining.remove(url)
+                    remaining.isEmpty()
+                }
+                if (finished) done.complete(Unit)
+            }
+        }
+        withTimeoutOrNull(timeoutMs) { done.await() }
+        urls.forEach { relays[it]?.endCount(id) }
+        return synchronized(remaining) { best }
+    }
+
+    suspend fun publish(
+        event: Event,
+        urls: Set<String>,
+        timeoutMs: Long = 8_000,
+    ): Map<String, PublishResult> {
+        if (urls.isEmpty()) return emptyMap()
+        val pending = urls.associateWith { relay(it).publish(event) }
+        withTimeoutOrNull(timeoutMs) { pending.values.awaitAll() }
+        return pending.mapValues { (url, deferred) ->
+            relays[url]?.forget(event.id)
+            if (deferred.isCompleted) deferred.getCompleted() else PublishResult(false, "timed out")
+        }
+    }
+
+    /** Answers as soon as one relay accepts. The others carry on until they finish or time out. */
+    suspend fun publishFirst(
+        event: Event,
+        urls: Set<String>,
+        timeoutMs: Long = 8_000,
+    ): PublishResult {
+        if (urls.isEmpty()) return PublishResult(false, "")
+        val pending = urls.associateWith { relay(it).publish(event) }
+        val answer = CompletableDeferred<PublishResult>()
+        scope.launch {
+            withTimeoutOrNull(timeoutMs) {
+                pending.values.map { sent ->
+                    launch { if (sent.await().ok) answer.complete(PublishResult(true, "")) }
+                }.joinAll()
+            }
+            urls.forEach { relays[it]?.forget(event.id) }
+            answer.complete(
+                pending.values.firstOrNull { it.isCompleted }?.getCompleted()
+                    ?: PublishResult(false, "timed out"),
+            )
+        }
+        return answer.await()
+    }
+
+    /** Connects relays that have work (and those that get some), or closes every socket. */
+    fun setActive(value: Boolean) {
+        if (active == value) return
+        active = value
+        AppLog.add(if (value) "connecting" else "disconnecting")
+        if (foreground) {
+            relays.values.forEach { it.wake() }
+        } else {
+            relays.values.forEach { it.disconnect() }
+        }
+    }
+
+    /** Runs [block] with relays allowed to connect, even while the pool isn't active. */
+    suspend fun <T> whileConnected(block: suspend () -> T): T {
+        if (holds.incrementAndGet() == 1 && !active) relays.values.forEach { it.wake() }
+        try {
+            return block()
+        } finally {
+            if (holds.decrementAndGet() == 0 && !active) relays.values.forEach { it.disconnect() }
+        }
+    }
+
+    /** What a relay refused or what we refused from it, for the account check. */
+    fun problemsOf(url: String): List<String> =
+        synchronized(problems) { problems[url]?.toList().orEmpty() }
+
+    fun clearProblems() {
+        synchronized(problems) { problems.clear() }
+    }
+
+    fun noDroppedLists(urls: Set<String>): Boolean =
+        urls.none { url -> problemsOf(url).any { it.startsWith("dropped") } }
+
+    /** Whether this relay has accepted our sign-in on the current connection. */
+    fun signedIn(url: String): Boolean = relays[url]?.signedIn == true
+
+    /** Whether this relay turned down a correct sign-in, as a misconfigured relay does. */
+    fun signInRefused(url: String): Boolean = relays[url]?.signInRefused == true
+
+    private fun note(url: String, problem: String) {
+        AppLog.add("$url $problem")
+        synchronized(problems) {
+            val list = problems.getOrPut(url) { ArrayList() }
+            if (problem !in list && list.size < 6) list += problem
+        }
+    }
+
+    private fun accept(event: Event, url: String): Boolean {
+        if (!event.hasValidId()) {
+            note(url, "dropped kind ${event.kind}: id does not match its content")
+            return false
+        }
+        synchronized(verified) { if (verified.containsKey(event.id)) return true }
+        if (!event.hasValidSignature()) {
+            note(url, "dropped kind ${event.kind}: bad signature")
+            return false
+        }
+        synchronized(verified) { verified[event.id] = true }
+        return true
+    }
+
+    private class Pending(
+        val event: Event,
+        val result: CompletableDeferred<PublishResult>,
+    ) {
+        var retriedAuth = false
+    }
+
+    private inner class Relay(
+        val url: String,
+    ) {
+        private val lock = Any()
+        private val subs = LinkedHashMap<String, Subscription>()
+        private val pending = LinkedHashMap<String, Pending>()
+        private val counts = LinkedHashMap<String, Pair<String, (Long?) -> Unit>>()
+        private var socket: WebSocket? = null
+        private var open = false
+        private var failures = 0
+        private var openedAt = 0L
+        private var failedUntil = 0L
+        private var limitedUntil = 0L
+        private val sent = HashSet<String>()
+        private var pacer: Job? = null
+
+        /** Events held until the open REQs are out, so an instant answer to them isn't missed. */
+        private val afterReqs = ArrayList<String>()
+        private var challenge: String? = null
+        private var authEventId: String? = null
+
+        @Volatile
+        var signedIn = false
+
+        /** Kept across reconnects, so a relay that can't take sign-ins isn't asked on each. */
+        @Volatile
+        var signInRefused = false
+        private val waitingForAuth = LinkedHashSet<String>()
+        private var idleJob: Job? = null
+        private var retryJob: Job? = null
+
+        fun add(sub: Subscription) {
+            val cooling = synchronized(lock) {
+                if (cooling()) return@synchronized true
+                subs[sub.id] = sub
+                idleJob?.cancel()
+                ensureConnected()
+                pump()
+                false
+            }
+            if (cooling) scope.launch { sub.onDone(url, false) }
+        }
+
+        private fun cooling(): Boolean =
+            System.currentTimeMillis() < maxOf(failedUntil, limitedUntil)
+
+        /** REQs go out one at a time and only so many stay open, because relays limit both. */
+        private fun pump() {
+            if (!open || pacer?.isActive == true) return
+            pacer = scope.launch {
+                while (true) {
+                    val next = synchronized(lock) {
+                        if (!open || sent.size >= MAX_OPEN_SUBS) {
+                            null
+                        } else {
+                            subs.values.firstOrNull { it.id !in sent }?.also { sent += it.id }
+                        }
+                    }
+                    if (next == null) {
+                        val held = synchronized(lock) {
+                            if (!open) {
+                                emptyList()
+                            } else {
+                                afterReqs.toList().also { afterReqs.clear() }
+                            }
+                        }
+                        held.forEach { socket?.send(it) }
+                        break
+                    }
+                    socket?.send(next.request)
+                    delay(REQ_SPACING_MS)
+                }
+            }
+        }
+
+        fun remove(sub: Subscription) {
+            val wasOpen = synchronized(lock) {
+                subs.remove(sub.id)
+                val wasSent = sent.remove(sub.id)
+                pump()
+                scheduleIdleClose()
+                wasSent && open
+            }
+            if (wasOpen) write("[\"CLOSE\",${quoteJson(sub.id)}]")
+        }
+
+        fun count(id: String, request: String, onResult: (Long?) -> Unit) {
+            val send = synchronized(lock) {
+                counts[id] = request to onResult
+                idleJob?.cancel()
+                ensureConnected()
+                open
+            }
+            if (send) write(request)
+        }
+
+        fun endCount(id: String) {
+            synchronized(lock) {
+                counts.remove(id)
+                scheduleIdleClose()
+            }
+        }
+
+        fun publish(event: Event): CompletableDeferred<PublishResult> {
+            val deferred = CompletableDeferred<PublishResult>()
+            val send = synchronized(lock) {
+                if (cooling()) {
+                    deferred.complete(PublishResult(false, "relay is unavailable for now"))
+                    return deferred
+                }
+                pending[event.id] = Pending(event, deferred)
+                idleJob?.cancel()
+                ensureConnected()
+                if (open && pacer?.isActive == true) {
+                    afterReqs += "[\"EVENT\",${event.toJson()}]"
+                    false
+                } else {
+                    open
+                }
+            }
+            if (send) write("[\"EVENT\",${event.toJson()}]")
+            return deferred
+        }
+
+        fun forget(id: String) {
+            synchronized(lock) {
+                pending.remove(id)
+                scheduleIdleClose()
+            }
+        }
+
+        private fun write(text: String) {
+            scope.launch { socket?.send(text) }
+        }
+
+        private fun ensureConnected() {
+            if (socket != null || !foreground) return
+            val ws = WebSocket(url, onOpen = ::opened, onText = ::message, onClosed = ::closed)
+            socket = ws
+            ws.connect()
+        }
+
+        private fun scheduleIdleClose() {
+            if (subs.isNotEmpty() || pending.isNotEmpty() || counts.isNotEmpty()) return
+            idleJob?.cancel()
+            idleJob = scope.launch {
+                delay(IDLE_CLOSE_MS)
+                val ws = synchronized(lock) {
+                    if (subs.isEmpty() && pending.isEmpty() && counts.isEmpty()) socket else null
+                }
+                ws?.close()
+            }
+        }
+
+        private fun opened() {
+            AppLog.add("$url connected")
+            synchronized(problems) { problems[url]?.removeAll { it.startsWith("connection:") } }
+            val requests = synchronized(lock) {
+                open = true
+                openedAt = System.currentTimeMillis()
+                sent.clear()
+                afterReqs.clear()
+                // Subscriptions go out before queued events: a wallet answers at once and its
+                // answers aren't stored, so a request sent ahead of the listener loses its answer.
+                afterReqs += pending.values.map { "[\"EVENT\",${it.event.toJson()}]" }
+                pump()
+                counts.values.map { it.first }
+            }
+            requests.forEach { socket?.send(it) }
+        }
+
+        private fun closed(error: Throwable?) {
+            if (!leaving) {
+                error?.let { note(url, "connection: ${it.message ?: it.javaClass.simpleName}") }
+            }
+            signedIn = false
+            val failed: List<Pending>
+            val current: List<Subscription>
+            val retry: Boolean
+            val waiting: List<(Long?) -> Unit>
+            synchronized(lock) {
+                waiting = counts.values.map { it.second }
+                counts.clear()
+                val now = System.currentTimeMillis()
+                // Only a connection that lasted counts as healthy. A relay that accepts and then
+                // drops us must back off, or every subscription gets resent every few seconds.
+                val lasted = open && now - openedAt > STABLE_MS
+                open = false
+                socket = null
+                sent.clear()
+                afterReqs.clear()
+                challenge = null
+                authEventId = null
+                waitingForAuth.clear()
+                current = subs.values.toList()
+                failed = pending.values.toList()
+                pending.clear()
+                if (lasted) failures = 0 else failures++
+                val wait = minOf(MAX_BACKOFF_S, 2L shl minOf(failures, 8)) * 1000 +
+                    (0L until 1000L).random()
+                if (!lasted && failures >= 2) failedUntil = now + wait
+                // A relay turning us away, as members-only relays do, won't change its mind soon.
+                val message = error?.message.orEmpty()
+                if (message.startsWith("handshake refused: HTTP/1.1 4") && " 429" !in message) {
+                    failedUntil = now + REFUSED_MS
+                    limitedUntil = now + REFUSED_MS
+                }
+                retry = current.isNotEmpty() && foreground && !leaving
+                if (retry) {
+                    val delayMs = maxOf(wait, limitedUntil - now)
+                    retryJob?.cancel()
+                    retryJob = scope.launch {
+                        delay(delayMs)
+                        synchronized(lock) { if (subs.isNotEmpty()) ensureConnected() }
+                    }
+                }
+            }
+            failed.forEach {
+                it.result.complete(PublishResult(false, error?.message ?: "connection closed"))
+            }
+            current.forEach { it.onDone(url, false) }
+            waiting.forEach { it(null) }
+        }
+
+        fun disconnect() {
+            val ws = synchronized(lock) {
+                retryJob?.cancel()
+                socket
+            }
+            ws?.close()
+        }
+
+        fun wake() {
+            synchronized(lock) {
+                // Coming back often means a new network, so past connection failures say little.
+                failures = 0
+                failedUntil = 0
+                if (subs.isNotEmpty()) ensureConnected()
+            }
+        }
+
+        private fun message(text: String) {
+            val msg = try {
+                JSONArray(text)
+            } catch (_: Exception) {
+                return
+            }
+            when (msg.optString(0)) {
+                "EVENT" -> {
+                    val sub = synchronized(lock) { subs[msg.optString(1)] } ?: return
+                    val raw = msg.optJSONObject(2) ?: return
+                    val event = Event.parse(raw)
+                    if (event == null) {
+                        note(url, "dropped kind ${raw.optInt("kind", -1)}: could not be parsed")
+                        return
+                    }
+                    if (accept(event, url)) sub.onEvent(event, url)
+                }
+                "COUNT" -> {
+                    val item = synchronized(lock) { counts.remove(msg.optString(1)) } ?: return
+                    item.second(msg.optJSONObject(2)?.optLong("count"))
+                }
+                "EOSE" -> synchronized(lock) { subs[msg.optString(1)] }?.onDone?.invoke(url, true)
+                "OK" -> ok(msg.optString(1), msg.optBoolean(2), msg.optString(3))
+                "CLOSED" -> {
+                    val id = msg.optString(1)
+                    val reason = msg.optString(2)
+                    synchronized(lock) { counts.remove(id) }?.let {
+                        it.second(null)
+                        return
+                    }
+                    val sub = synchronized(lock) { subs[id] } ?: return
+                    // Damus puts "ERROR: " before it.
+                    if ("auth-required" in reason && signer() != null && !signInRefused) {
+                        AppLog.add("$url asked for sign-in: $reason")
+                        synchronized(lock) { waitingForAuth += id }
+                        authenticate()
+                    } else {
+                        note(url, "closed: $reason")
+                        // A refused request is not resent on the next reconnect.
+                        synchronized(lock) {
+                            subs.remove(id)
+                            sent.remove(id)
+                            if (reason.startsWith("rate-limited")) {
+                                limitedUntil = System.currentTimeMillis() + RATE_LIMIT_PAUSE_MS
+                            }
+                            pump()
+                        }
+                        sub.onDone(url, false)
+                    }
+                }
+                "AUTH" -> {
+                    synchronized(lock) { challenge = msg.optString(1) }
+                }
+            }
+        }
+
+        private fun ok(id: String, accepted: Boolean, message: String) {
+            val isAuth = synchronized(lock) { id == authEventId }
+            if (isAuth) {
+                if (accepted) {
+                    AppLog.add("$url signed in")
+                    signedIn = true
+                    signInRefused = false
+                    replayAfterAuth()
+                } else {
+                    signInRefused = true
+                    failAuth(message)
+                }
+                return
+            }
+            val item = synchronized(lock) { pending[id] } ?: return
+            val canSignIn = signer() != null && !signInRefused
+            if (!accepted && "auth-required" in message && !item.retriedAuth && canSignIn) {
+                item.retriedAuth = true
+                authenticate()
+                return
+            }
+            synchronized(lock) { pending.remove(id) }
+            if (!accepted) AppLog.add("$url refused kind ${item.event.kind}: $message")
+            item.result.complete(PublishResult(accepted, message))
+        }
+
+        private fun replayAfterAuth() {
+            val requests = synchronized(lock) {
+                authEventId = null
+                val subRequests = waitingForAuth.mapNotNull { subs[it]?.request }
+                waitingForAuth.clear()
+                subRequests + pending.values.filter { it.retriedAuth }
+                    .map { "[\"EVENT\",${it.event.toJson()}]" }
+            }
+            requests.forEach { socket?.send(it) }
+        }
+
+        private fun failAuth(message: String) {
+            note(url, "sign-in failed: $message")
+            val affected: List<Subscription>
+            val failed: List<Pending>
+            synchronized(lock) {
+                authEventId = null
+                affected = waitingForAuth.mapNotNull { subs[it] }
+                // Refused requests aren't resent on the next reconnect, as with any other refusal.
+                waitingForAuth.forEach {
+                    subs.remove(it)
+                    sent.remove(it)
+                }
+                waitingForAuth.clear()
+                failed = pending.values.filter { it.retriedAuth }
+                failed.forEach { pending.remove(it.event.id) }
+                pump()
+            }
+            affected.forEach { it.onDone(url, false) }
+            failed.forEach { it.result.complete(PublishResult(false, message)) }
+        }
+
+        /** NIP-42, only when a relay demands it, so the user's key is not shown to every relay. */
+        private fun authenticate() {
+            val token = synchronized(lock) {
+                if (authEventId != null) return
+                authEventId = "pending"
+                challenge
+            }
+            val who = signer()
+            if (token == null || who == null) {
+                failAuth("auth-required: no challenge")
+                return
+            }
+            scope.launch {
+                try {
+                    val auth = who.sign(
+                        Draft(
+                            pubkey = who.pubkey,
+                            createdAt = nowSeconds(),
+                            kind = Kind.AUTH,
+                            tags = listOf(listOf("relay", url), listOf("challenge", token)),
+                            content = "",
+                        ),
+                        background = true,
+                    )
+                    synchronized(lock) { authEventId = auth.id }
+                    socket?.send("[\"AUTH\",${auth.toJson()}]")
+                } catch (e: Exception) {
+                    failAuth("auth-required: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private companion object {
+        const val IDLE_CLOSE_MS = 45_000L
+        const val PAUSE_GRACE_MS = 20_000L
+        const val MAX_BACKOFF_S = 300L
+        const val STABLE_MS = 30_000L
+        const val RATE_LIMIT_PAUSE_MS = 300_000L
+        const val REFUSED_MS = 30 * 60 * 1000L
+        const val MAX_OPEN_SUBS = 12
+        const val REQ_SPACING_MS = 120L
+    }
+}

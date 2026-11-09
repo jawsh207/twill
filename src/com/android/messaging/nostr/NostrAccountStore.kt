@@ -2,9 +2,9 @@ package com.android.messaging.nostr
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.android.messaging.nostr.core.Keys
+import com.android.messaging.nostr.core.normalizeRelay
 import com.android.messaging.twill.TwillDeliveryMode
-import com.vitorpamplona.quartz.nip01Core.core.toHexKey
-import com.vitorpamplona.quartz.nip01Core.crypto.KeyPair
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -195,7 +195,7 @@ internal class NostrAccountStore @Inject constructor(
 
     /** Stores [privKey] encrypted and signs in with it. Returns the public key. */
     fun signInWithLocalKey(privKey: ByteArray): String {
-        val pubKeyHex = KeyPair(privKey = privKey).pubKey.toHexKey()
+        val pubKeyHex = Keys.publicKey(privKey)
         synchronized(lock) {
             prefs.edit()
                 .putString(KEY_METHOD, METHOD_LOCAL)
@@ -256,7 +256,8 @@ internal class NostrAccountStore @Inject constructor(
             _account.value = readAccount()
             _relays.value = prefs.getString(KEY_RELAYS, null)
                 ?.split(RELAY_SEPARATOR)
-                ?.filter { it.isNotBlank() }
+                ?.mapNotNull(::normalizeRelay)
+                ?.distinct()
                 ?: NostrDefaults.DEFAULT_RELAYS
             _deliveryMode.value = TwillDeliveryMode.from(prefs.getString(KEY_DELIVERY_MODE, null))
             _mediaServer.value = prefs.getString(KEY_MEDIA_SERVER, null)
@@ -266,7 +267,8 @@ internal class NostrAccountStore @Inject constructor(
             _searchRelays.value = prefs.getBoolean(KEY_SEARCH_RELAYS, false)
             _searchRelayUrls.value = prefs.getString(KEY_SEARCH_RELAY_URLS, null)
                 ?.split(RELAY_SEPARATOR)
-                ?.filter { it.isNotBlank() }
+                ?.mapNotNull(::normalizeRelay)
+                ?.distinct()
                 ?: NostrDefaults.SEARCH_RELAYS
             _hasWallet.value = prefs.contains(KEY_ENCRYPTED_WALLET)
             isLoaded = true
