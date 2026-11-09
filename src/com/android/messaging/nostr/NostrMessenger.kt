@@ -490,6 +490,11 @@ internal class NostrMessenger @Inject constructor(
             } catch (exception: Exception) {
                 false
             }
+            android.util.Log.i(
+                "TwillWallet",
+                "request ${request.id.take(8)} kind ${request.kind} accepted=$accepted " +
+                    "connected=$wasConnected relays=${relays.map { it.url }}",
+            )
             if (!accepted) return@withContext null
             withTimeoutOrNull(timeoutMillis) { answer.await() }
         } finally {

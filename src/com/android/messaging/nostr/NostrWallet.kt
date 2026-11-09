@@ -1,6 +1,7 @@
 package com.android.messaging.nostr
 
 import android.content.Context
+import android.util.Log
 import com.android.messaging.R
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.twill.TwillActionError
@@ -257,6 +258,7 @@ internal class NostrWallet @Inject constructor(
         )
             .filter { it.pubKey == uri.wallet && it.verify() }
             .maxByOrNull { it.createdAt }
+        Log.i(TAG, "open: relays=${relays.map { it.url }} info=${info != null}")
         val encryptions = info?.tags?.firstOrNull { it.size > 1 && it[0] == "encryption" }
             ?.get(1)
             ?.split(' ')
@@ -294,6 +296,7 @@ internal class NostrWallet @Inject constructor(
             add(arrayOf("expiration", (nowSeconds() + REQUEST_EXPIRY_SECONDS).toString()))
         }.toTypedArray()
         val request = signer.sign<Event>(nowSeconds(), KIND_REQUEST, tags, content)
+        Log.i(TAG, "call $method: request ${request.id.take(8)} nip44=${current.useNip44}")
         val response = messenger.request(
             relays = messenger.normalizedRelays(current.relays),
             request = request,
@@ -303,7 +306,11 @@ internal class NostrWallet @Inject constructor(
                 tags = mapOf("e" to listOf(request.id)),
             ),
             timeoutMillis = timeoutMillis,
-        ) ?: throw TwillActionError(R.string.nostr_wallet_no_response)
+        ) ?: run {
+            Log.i(TAG, "call $method: no response")
+            throw TwillActionError(R.string.nostr_wallet_no_response)
+        }
+        Log.i(TAG, "call $method: response ${response.id.take(8)}")
         if (!response.verify()) throw TwillActionError(R.string.nostr_wallet_no_response)
         val plain = runCatching {
             if (current.useNip44) {
@@ -393,6 +400,7 @@ internal class NostrWallet @Inject constructor(
     }
 
     private companion object {
+        const val TAG = "TwillWallet"
         const val PREFS_NAME = "nostr_wallet"
         const val KEY_PAID = "paid_invoices"
         const val KEY_NIP04 = "uses_nip04"

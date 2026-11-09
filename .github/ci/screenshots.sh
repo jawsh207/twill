@@ -374,5 +374,5 @@ done
 
 adb shell settings get secure theme_customization_overlay_packages >> "$OUT/log.txt"
 adb logcat -d -b crash > "$OUT/crash.txt"
-adb logcat -d | grep -iE "AndroidRuntime|twill|FATAL" | tail -200 > "$OUT/logcat.txt"
+adb logcat -d | grep -iE "AndroidRuntime|twill|FATAL" | grep -v AccessibilityNodeInfoDumper | tail -300 > "$OUT/logcat.txt"
 python3 .github/ci/ui.py report "$OUT"
