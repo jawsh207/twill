@@ -57,10 +57,15 @@ internal class NostrWallet @Inject constructor(
     private class Connection(
         val walletPubKey: String,
         val relays: List<String>,
-        secret: ByteArray,
-        val methods: Set<String>,
+        val secret: ByteArray,
+        /** What the wallet's info event offers; null when it published none. */
+        val methods: Set<String>?,
         val useNip44: Boolean,
     ) {
+        fun offers(method: String) = methods == null || method in methods
+
+        fun withNip04() = Connection(walletPubKey, relays, secret, methods, useNip44 = false)
+
         val signer = NostrSignerInternal(KeyPair(privKey = secret))
     }
 
@@ -98,11 +103,40 @@ internal class NostrWallet @Inject constructor(
         }
     }
 
-    /** Checks [link] with the wallet, then saves it. Throws [TwillActionError] if it's no good. */
+    /**
+     * Checks [link] with the wallet (it must answer a request), then saves it. Throws
+     * [TwillActionError] if it's no good.
+     */
     suspend fun connect(link: String) = withContext(Dispatchers.IO) {
-        connection = open(link.trim())
+        val opened = open(link.trim(), isNew = true)
+        val working = probe(opened)
+        // Remembered for next time, when a wallet without info only answered NIP-04.
+        prefs.edit().putBoolean(KEY_NIP04, !working.useNip44).apply()
+        connection = working
         accountStore.setWalletLink(link.trim())
         refresh()
+    }
+
+    /**
+     * Asks the wallet for its info, so a wrong or offline wallet shows up now rather than at the
+     * first payment. A wallet without an info event may be an older one that only knows NIP-04:
+     * if it doesn't answer NIP-44, it's asked again that way. Any answer, even an error, will do.
+     */
+    private suspend fun probe(opened: Connection): Connection {
+        val attempts = if (opened.methods == null && opened.useNip44) {
+            listOf(opened, opened.withNip04())
+        } else {
+            listOf(opened)
+        }
+        for (attempt in attempts) {
+            try {
+                call("get_info", connection = attempt, timeoutMillis = PROBE_TIMEOUT_MILLIS)
+                return attempt
+            } catch (error: TwillActionError) {
+                if (error.messageRes != R.string.nostr_wallet_no_response) return attempt
+            }
+        }
+        throw TwillActionError(R.string.nostr_wallet_no_answer)
     }
 
     fun disconnect() {
@@ -114,13 +148,13 @@ internal class NostrWallet @Inject constructor(
     /** Asks the wallet for its name and balance (when it allows that). */
     suspend fun refresh() = withContext(Dispatchers.IO) {
         val current = runCatching { requireConnection() }.getOrNull() ?: return@withContext
-        val alias = if ("get_info" in current.methods) {
+        val alias = if (current.offers("get_info")) {
             runCatching { call("get_info").optString("alias").takeIf { it.isNotBlank() } }
                 .getOrNull()
         } else {
             null
         }
-        val balance = if ("get_balance" in current.methods) {
+        val balance = if (current.offers("get_balance")) {
             runCatching { call("get_balance").optLong("balance") }.getOrNull()
         } else {
             null
@@ -209,8 +243,11 @@ internal class NostrWallet @Inject constructor(
         return open(link).also { connection = it }
     }
 
-    /** Parses [link] and asks the wallet service what it offers (its kind 13194 info). */
-    private suspend fun open(link: String): Connection {
+    /**
+     * Parses [link] and looks for what the wallet service offers (its kind 13194 info). Some
+     * wallets publish none, or not where it's found: then NIP-44 is tried first (see [probe]).
+     */
+    private suspend fun open(link: String, isNew: Boolean = false): Connection {
         val uri = parseLink(link) ?: throw TwillActionError(R.string.nostr_wallet_bad_link)
         val relays = messenger.normalizedRelays(uri.relays)
         if (relays.isEmpty()) throw TwillActionError(R.string.nostr_wallet_no_relay)
@@ -220,18 +257,20 @@ internal class NostrWallet @Inject constructor(
         )
             .filter { it.pubKey == uri.wallet && it.verify() }
             .maxByOrNull { it.createdAt }
-            ?: throw TwillActionError(R.string.nostr_wallet_no_answer)
-        val encryptions = info.tags.firstOrNull { it.size > 1 && it[0] == "encryption" }
+        val encryptions = info?.tags?.firstOrNull { it.size > 1 && it[0] == "encryption" }
             ?.get(1)
             ?.split(' ')
-            .orEmpty()
         return Connection(
             walletPubKey = uri.wallet,
             relays = uri.relays,
             secret = uri.secret,
-            methods = info.content.split(' ').filter { it.isNotBlank() }.toSet(),
-            // No encryption tag: an older wallet, which only knows NIP-04.
-            useNip44 = NIP44 in encryptions,
+            methods = info?.content?.split(' ')?.filter { it.isNotBlank() }?.toSet(),
+            useNip44 = when {
+                info == null -> isNew || !prefs.getBoolean(KEY_NIP04, false)
+                // An info event without an encryption tag: an older wallet (NIP-04 only).
+                encryptions == null -> false
+                else -> NIP44 in encryptions
+            },
         )
     }
 
@@ -239,8 +278,9 @@ internal class NostrWallet @Inject constructor(
         method: String,
         params: JSONObject = JSONObject(),
         timeoutMillis: Long = CALL_TIMEOUT_MILLIS,
+        connection: Connection? = null,
     ): JSONObject {
-        val current = requireConnection()
+        val current = connection ?: requireConnection()
         val signer = current.signer
         val body = JSONObject().put("method", method).put("params", params).toString()
         val content = if (current.useNip44) {
@@ -355,6 +395,7 @@ internal class NostrWallet @Inject constructor(
     private companion object {
         const val PREFS_NAME = "nostr_wallet"
         const val KEY_PAID = "paid_invoices"
+        const val KEY_NIP04 = "uses_nip04"
         const val MAX_PAID = 200
         const val KIND_METADATA = 0
         const val KIND_ZAP_REQUEST = 9734
@@ -363,6 +404,7 @@ internal class NostrWallet @Inject constructor(
         const val KIND_RESPONSE = 23195
         const val NIP44 = "nip44_v2"
         const val CALL_TIMEOUT_MILLIS = 30_000L
+        const val PROBE_TIMEOUT_MILLIS = 15_000L
         const val PAY_TIMEOUT_MILLIS = 60_000L
         const val REQUEST_EXPIRY_SECONDS = 60L
         const val HTTP_TIMEOUT_SECONDS = 15L
