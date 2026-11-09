@@ -18,6 +18,10 @@ section here. Write entries for people using the app, newest version first.
   About. SMS Settings has Conversations, Notifications and sounds, and More. Nostr settings
   keeps everything about relays in one Relays section, including people search. Delta Chat
   settings puts the QR code and invite links under Invite people.
+- Nostr runs on Twill's own code now, shared with Struthio, instead of a large outside
+  library. Connections to relays are more dependable and the app is about 1.5 MB smaller.
+  Wallets have to support NIP-44 encryption (current wallets do); older NIP-04-only wallets
+  are no longer supported.
 
 ## 1.0.17
 
