@@ -1,6 +1,7 @@
 package com.android.messaging.ui.nostr.wallet
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,6 +29,7 @@ import com.android.messaging.twill.TwillRuntime
 import com.android.messaging.ui.core.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /**
@@ -96,6 +98,16 @@ internal class NostrWalletLinkActivity : ComponentActivity() {
                                         finish()
                                     } catch (failure: TwillActionError) {
                                         error = getString(failure.messageRes, *failure.args)
+                                    } catch (failure: CancellationException) {
+                                        Log.w(TAG, "Connecting cancelled", failure)
+                                        throw failure
+                                    } catch (failure: Exception) {
+                                        // Never leave the dialog hanging: say what went wrong.
+                                        Log.w(TAG, "Connecting failed", failure)
+                                        error = getString(
+                                            R.string.nostr_wallet_error,
+                                            failure.message ?: failure.javaClass.simpleName,
+                                        )
                                     } finally {
                                         isConnecting = false
                                     }
@@ -111,5 +123,9 @@ internal class NostrWalletLinkActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "NostrWalletLink"
     }
 }

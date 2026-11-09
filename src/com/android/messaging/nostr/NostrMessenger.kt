@@ -468,6 +468,10 @@ internal class NostrMessenger @Inject constructor(
         timeoutMillis: Long,
     ): Event? = withContext(Dispatchers.IO) {
         val wasConnected = _isConnected.value
+        android.util.Log.i(
+            "TwillWallet",
+            "request ${request.id.take(8)}: sending, connected=$wasConnected",
+        )
         if (!wasConnected) client.connect()
         val answer = CompletableDeferred<Event>()
         val subscriptionId = "twill-request-" + fetchCounter.incrementAndGet()

@@ -79,6 +79,7 @@ import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.twill.TwillAvatarImage
 import com.android.messaging.util.UiUtils
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private enum class NostrSettingsDialog {
@@ -835,6 +836,13 @@ private fun ConnectWalletDialog(
                             onDismiss()
                         } catch (failure: TwillActionError) {
                             error = context.getString(failure.messageRes, *failure.args)
+                        } catch (failure: CancellationException) {
+                            throw failure
+                        } catch (failure: Exception) {
+                            error = context.getString(
+                                R.string.nostr_wallet_error,
+                                failure.message ?: failure.javaClass.simpleName,
+                            )
                         } finally {
                             isConnecting = false
                         }
