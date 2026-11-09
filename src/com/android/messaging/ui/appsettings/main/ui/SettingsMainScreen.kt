@@ -14,14 +14,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.android.messaging.R
 import com.android.messaging.data.subscription.model.SubId
+import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
 import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
+import com.android.messaging.ui.appsettings.common.SettingsGroupTitle
 import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.ui.appsettings.subscription.model.SubscriptionUiState
 import com.android.messaging.ui.common.text.asLtrText
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.twill.LocalSmsSettingsHeader
+import com.android.messaging.ui.twill.TwillSettingsRow
 import com.android.messaging.ui.twill.twillSmsSettingsRows
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -54,7 +57,21 @@ internal fun SettingsMainScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            twillSmsSettingsRows(twillHeader)
+            twillSmsSettingsRows(twillHeader, TwillSettingsRow.Group.Top)
+            if (twillHeader != null) {
+                item(key = "conversations_divider", contentType = SettingsGroupBreak) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                item(key = "conversations_header", contentType = SettingsGroupTitle) {
+                    SettingsCategoryHeader(
+                        title = stringResource(R.string.twill_settings_conversations),
+                    )
+                }
+                twillSmsSettingsRows(twillHeader, TwillSettingsRow.Group.Conversations)
+                item(key = "general_divider", contentType = SettingsGroupBreak) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+            }
             item(key = "general_settings") {
                 SettingsClickableItem(
                     title = stringResource(R.string.general_settings),

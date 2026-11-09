@@ -965,7 +965,8 @@
     <string name="nostr_nsec_copied">Private key copied. Store it somewhere safe and clear your clipboard</string>
     <string name="nostr_relays_header">Message relays</string>
     <string name="nostr_relays_summary">Servers that carry your messages. They can\'t read them, but can see your IP address</string>
-    <string name="nostr_add_relay">Add relay</string>
+    <string name="nostr_add_relay">Add message relay</string>
+    <string name="nostr_relays_section">Relays</string>
     <string name="nostr_add">Add</string>
     <string name="nostr_remove_relay">Remove relay</string>
     <string name="nostr_relay_invalid">That isn\'t a valid relay address</string>
@@ -1046,7 +1047,6 @@
     <string name="twill_invoice_pay_warning">This pays from your connected wallet and can\'t be undone.</string>
     <string name="twill_invoice_paid_amount">Paid <xliff:g id="amount">%s</xliff:g></string>
     <string name="twill_invoice_no_wallet">No wallet app found. Copy the invoice instead.</string>
-    <string name="nostr_people_header">Finding people</string>
     <string name="nostr_search_relays">Search for people you don\'t know</string>
     <string name="nostr_search_relays_summary">In Start chat, also asks your search relays for people you haven\'t followed or talked to. They see what you type</string>
     <string name="nostr_search_relays_header">Search relays</string>
@@ -1229,6 +1229,13 @@
     <string name="twill_sms_blocked_summary">People whose messages are blocked</string>
     <string name="twill_debug_summary">Developer options for this test build</string>
     <!-- Twill: inbox bottom bar option -->
+    <string name="twill_settings_services">Services</string>
+    <string name="twill_settings_inbox">Inbox</string>
+    <string name="twill_settings_about">About</string>
+    <string name="twill_settings_conversations">Conversations</string>
+    <string name="twill_settings_notifications_sounds">Notifications and sounds</string>
+    <string name="twill_settings_more">More</string>
+    <string name="deltachat_invite_header">Invite people</string>
     <string name="twill_bottom_bar">Bottom bar</string>
     <string name="twill_bottom_bar_summary">When more than one service is on, show a tab for each instead of sections</string>
     <!-- Twill: Delta Chat QR codes -->

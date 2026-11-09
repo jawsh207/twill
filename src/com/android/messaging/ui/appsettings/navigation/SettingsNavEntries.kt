@@ -17,7 +17,6 @@ import com.android.messaging.R
 import com.android.messaging.data.subscription.model.SubId
 import com.android.messaging.twill.twillEntryPoint
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
-import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
 import com.android.messaging.ui.appsettings.general.AppSettingsViewModel
 import com.android.messaging.ui.appsettings.general.model.AppSettingsNavEvent
 import com.android.messaging.ui.appsettings.general.rememberAppSettingsEffectHandler
@@ -172,21 +171,26 @@ private fun settingsRouteContent(): @Composable (SmsSettingsNavKey) -> Unit {
             val rows = remember(smsSwitch, navigator, archivedTitle, blockedTitle) {
                 listOf(
                     TwillSettingsRow(key = "twill_sms_switch", content = smsSwitch),
-                    TwillSettingsRow(key = "twill_sms_archived") {
+                    TwillSettingsRow(
+                        key = "twill_sms_archived",
+                        group = TwillSettingsRow.Group.Conversations,
+                    ) {
                         SettingsClickableItem(
                             title = archivedTitle,
                             summary = archivedSummary,
                             onClick = { navigator.push(ArchivedConversationListNavKey) },
                         )
                     },
-                    TwillSettingsRow(key = "twill_sms_blocked") {
+                    TwillSettingsRow(
+                        key = "twill_sms_blocked",
+                        group = TwillSettingsRow.Group.Conversations,
+                    ) {
                         SettingsClickableItem(
                             title = blockedTitle,
                             summary = blockedSummary,
                             onClick = { navigator.push(BlockedParticipantsNavKey) },
                         )
                     },
-                    TwillSettingsRow(key = "twill_sms_break", contentType = SettingsGroupBreak) {},
                 )
             }
             CompositionLocalProvider(LocalSmsSettingsHeader provides rows) {

@@ -12,8 +12,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import com.android.messaging.R
+import com.android.messaging.ui.appsettings.common.SettingsCategoryHeader
 import com.android.messaging.ui.appsettings.common.SettingsClickableItem
 import com.android.messaging.ui.appsettings.common.SettingsGroupBreak
+import com.android.messaging.ui.appsettings.common.SettingsGroupTitle
 import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
@@ -54,6 +56,9 @@ internal fun TwillSettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
+            item(key = "services_header", contentType = SettingsGroupTitle) {
+                SettingsCategoryHeader(title = stringResource(R.string.twill_settings_services))
+            }
             item(key = "sms_settings") {
                 SettingsClickableItem(
                     title = stringResource(R.string.sms_settings_title),
@@ -80,8 +85,11 @@ internal fun TwillSettingsScreen(
                     onClick = onDeltaChatSettingsClick,
                 )
             }
-            item(key = "licenses_divider", contentType = SettingsGroupBreak) {
+            item(key = "inbox_divider", contentType = SettingsGroupBreak) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            item(key = "inbox_header", contentType = SettingsGroupTitle) {
+                SettingsCategoryHeader(title = stringResource(R.string.twill_settings_inbox))
             }
             item(key = "bottom_bar") {
                 SettingsSwitchItem(
@@ -91,7 +99,12 @@ internal fun TwillSettingsScreen(
                     onCheckedChange = onBottomBarChange,
                 )
             }
-            item(key = "licenses_break", contentType = SettingsGroupBreak) {}
+            item(key = "about_divider", contentType = SettingsGroupBreak) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            item(key = "about_header", contentType = SettingsGroupTitle) {
+                SettingsCategoryHeader(title = stringResource(R.string.twill_settings_about))
+            }
             item(key = "licenses") {
                 SettingsClickableItem(
                     title = stringResource(R.string.menu_license),

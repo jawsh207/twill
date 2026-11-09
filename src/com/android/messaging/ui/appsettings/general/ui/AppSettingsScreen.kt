@@ -1,5 +1,6 @@
 package com.android.messaging.ui.appsettings.general.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +25,7 @@ import com.android.messaging.ui.appsettings.general.model.AppSettingsAction as A
 import com.android.messaging.ui.appsettings.general.model.AppSettingsUiState
 import com.android.messaging.ui.core.MessagingPreviewTheme
 import com.android.messaging.ui.twill.LocalSmsSettingsHeader
+import com.android.messaging.ui.twill.TwillSettingsRow
 import com.android.messaging.ui.twill.twillSmsSettingsRows
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,16 +65,13 @@ internal fun AppSettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = contentPadding,
         ) {
-            twillSmsSettingsRows(twillHeader)
             coreSettingsItems(
                 appSettings = appSettings,
+                twillRows = twillHeader,
                 onAction = onAction,
                 onPrivacyClick = onPrivacyClick,
+                onAdvancedClick = onAdvancedClick.takeIf { isTopLevel && hasAdvancedSettings },
             )
-
-            if (isTopLevel && hasAdvancedSettings) {
-                advancedSettingsItem(onAdvancedClick)
-            }
 
             debugSettingsItems(
                 appSettings = appSettings,
@@ -86,11 +85,18 @@ internal fun AppSettingsScreen(
     }
 }
 
+/**
+ * Twill: grouped as Twill's other settings pages. The SMS app first, then Conversations,
+ * Notifications and sounds, and More (privacy, advanced).
+ */
 private fun LazyListScope.coreSettingsItems(
     appSettings: AppSettingsUiState,
+    twillRows: List<TwillSettingsRow>?,
     onAction: (Action) -> Unit,
     onPrivacyClick: () -> Unit,
+    onAdvancedClick: (() -> Unit)?,
 ) {
+    twillSmsSettingsRows(twillRows, TwillSettingsRow.Group.Top)
     item(key = "default_sms_app") {
         SettingsClickableItem(
             title = stringResource(R.string.sms_disabled_pref_title),
@@ -101,6 +107,20 @@ private fun LazyListScope.coreSettingsItems(
         )
     }
 
+    settingsGroup(key = "conversations", title = R.string.twill_settings_conversations)
+    twillSmsSettingsRows(twillRows, TwillSettingsRow.Group.Conversations)
+    item(key = "unread_on_top") {
+        SettingsSwitchItem(
+            title = stringResource(R.string.unread_on_top_pref_title),
+            summary = stringResource(R.string.unread_on_top_pref_summary),
+            checked = appSettings.unreadOnTopEnabled,
+            onCheckedChange = {
+                onAction(Action.UnreadOnTopChanged(it))
+            },
+        )
+    }
+
+    settingsGroup(key = "sounds", title = R.string.twill_settings_notifications_sounds)
     item(key = "notifications") {
         SettingsClickableItem(
             title = stringResource(R.string.notifications_enabled_conversation_pref_title),
@@ -131,31 +151,30 @@ private fun LazyListScope.coreSettingsItems(
         )
     }
 
-    item(key = "unread_on_top") {
-        SettingsSwitchItem(
-            title = stringResource(R.string.unread_on_top_pref_title),
-            summary = stringResource(R.string.unread_on_top_pref_summary),
-            checked = appSettings.unreadOnTopEnabled,
-            onCheckedChange = {
-                onAction(Action.UnreadOnTopChanged(it))
-            },
-        )
-    }
-
+    settingsGroup(key = "more", title = R.string.twill_settings_more)
     item(key = "privacy") {
         SettingsClickableItem(
             title = stringResource(R.string.privacy_settings_activity_title),
             onClick = onPrivacyClick,
         )
     }
+    if (onAdvancedClick != null) {
+        item(key = "advanced_settings") {
+            SettingsClickableItem(
+                title = stringResource(R.string.advanced_settings),
+                onClick = onAdvancedClick,
+            )
+        }
+    }
 }
 
-private fun LazyListScope.advancedSettingsItem(onAdvancedClick: () -> Unit) {
-    item(key = "advanced_settings") {
-        SettingsClickableItem(
-            title = stringResource(R.string.advanced_settings),
-            onClick = onAdvancedClick,
-        )
+/** A divider and a category header, starting a group of rows. */
+private fun LazyListScope.settingsGroup(key: String, @StringRes title: Int) {
+    item(key = key + "_divider", contentType = SettingsGroupBreak) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    }
+    item(key = key + "_header", contentType = SettingsGroupTitle) {
+        SettingsCategoryHeader(title = stringResource(title))
     }
 }
 

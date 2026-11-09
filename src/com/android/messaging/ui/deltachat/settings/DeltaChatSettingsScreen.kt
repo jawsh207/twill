@@ -203,6 +203,45 @@ internal fun DeltaChatSettingsScreen(
                             },
                         )
                     }
+                    if (!notificationsAllowed) {
+                        item(key = "notifications_off") {
+                            SettingsClickableItem(
+                                title = stringResource(R.string.nostr_notifications_off),
+                                summary = stringResource(
+                                    R.string.deltachat_notifications_off_summary
+                                ),
+                                onClick = {
+                                    if (context.checkSelfPermission(
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        ) ==
+                                        PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        openNotificationSettings(context)
+                                    } else {
+                                        permissionLauncher.launch(
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        )
+                                    }
+                                },
+                            )
+                        }
+                    }
+                    item(key = "remove") {
+                        SettingsClickableItem(
+                            title = stringResource(R.string.deltachat_remove_profile),
+                            onClick = { dialog = DeltaChatDialog.Remove },
+                        )
+                    }
+
+                    // Inviting people: QR code and invite link, together.
+                    item(key = "invite_divider", contentType = SettingsGroupBreak) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                    item(key = "invite_header", contentType = SettingsGroupTitle) {
+                        SettingsCategoryHeader(
+                            title = stringResource(R.string.deltachat_invite_header)
+                        )
+                    }
                     item(key = "qr") {
                         SettingsClickableItem(
                             title = stringResource(R.string.deltachat_qr_title),
@@ -232,35 +271,6 @@ internal fun DeltaChatSettingsScreen(
                                     UiUtils.showToastAtBottom(R.string.deltachat_copied)
                                 }
                             },
-                        )
-                    }
-                    if (!notificationsAllowed) {
-                        item(key = "notifications_off") {
-                            SettingsClickableItem(
-                                title = stringResource(R.string.nostr_notifications_off),
-                                summary = stringResource(
-                                    R.string.deltachat_notifications_off_summary
-                                ),
-                                onClick = {
-                                    if (context.checkSelfPermission(
-                                            Manifest.permission.POST_NOTIFICATIONS
-                                        ) ==
-                                        PackageManager.PERMISSION_GRANTED
-                                    ) {
-                                        openNotificationSettings(context)
-                                    } else {
-                                        permissionLauncher.launch(
-                                            Manifest.permission.POST_NOTIFICATIONS
-                                        )
-                                    }
-                                },
-                            )
-                        }
-                    }
-                    item(key = "remove") {
-                        SettingsClickableItem(
-                            title = stringResource(R.string.deltachat_remove_profile),
-                            onClick = { dialog = DeltaChatDialog.Remove },
                         )
                     }
 

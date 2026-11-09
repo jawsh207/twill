@@ -310,21 +310,6 @@ internal fun NostrSettingsScreen(
                 )
             }
 
-            item(key = "people_divider", contentType = SettingsGroupBreak) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
-            item(key = "people_header", contentType = SettingsGroupTitle) {
-                SettingsCategoryHeader(title = stringResource(R.string.nostr_people_header))
-            }
-            item(key = "search_relays") {
-                SettingsSwitchItem(
-                    title = stringResource(R.string.nostr_search_relays),
-                    summary = stringResource(R.string.nostr_search_relays_summary),
-                    checked = uiState.searchRelays,
-                    onCheckedChange = viewModel::setSearchRelays,
-                )
-            }
-
             item(key = "media_divider", contentType = SettingsGroupBreak) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
@@ -362,7 +347,10 @@ internal fun NostrSettingsScreen(
             }
             // The only relays Twill uses: message relays and search relays.
             item(key = "relays_header", contentType = SettingsGroupTitle) {
-                SettingsCategoryHeader(title = stringResource(R.string.nostr_relays_header))
+                SettingsCategoryHeader(title = stringResource(R.string.nostr_relays_section))
+            }
+            item(key = "message_relays_label", contentType = SettingsGroupTitle) {
+                RelayListLabel(text = stringResource(R.string.nostr_relays_header))
             }
             items(items = uiState.relays, key = { "relay:$it" }) { relay ->
                 ListItem(
@@ -384,8 +372,8 @@ internal fun NostrSettingsScreen(
                     onClick = { dialog = NostrSettingsDialog.AddRelay },
                 )
             }
-            item(key = "search_relays_header", contentType = SettingsGroupTitle) {
-                SettingsCategoryHeader(title = stringResource(R.string.nostr_search_relays_header))
+            item(key = "search_relays_label", contentType = SettingsGroupTitle) {
+                RelayListLabel(text = stringResource(R.string.nostr_search_relays_header))
             }
             items(items = uiState.searchRelayUrls, key = { "search_relay:$it" }) { relay ->
                 ListItem(
@@ -405,6 +393,14 @@ internal fun NostrSettingsScreen(
                     title = stringResource(R.string.nostr_add_search_relay),
                     summary = stringResource(R.string.nostr_search_relays_list_summary),
                     onClick = { dialog = NostrSettingsDialog.AddSearchRelay },
+                )
+            }
+            item(key = "search_relays") {
+                SettingsSwitchItem(
+                    title = stringResource(R.string.nostr_search_relays),
+                    summary = stringResource(R.string.nostr_search_relays_summary),
+                    checked = uiState.searchRelays,
+                    onCheckedChange = viewModel::setSearchRelays,
                 )
             }
         }
@@ -499,6 +495,17 @@ internal fun NostrSettingsScreen(
             },
         )
     }
+}
+
+/** Names one relay list (message or search) within the Relays section. */
+@Composable
+private fun RelayListLabel(text: String) {
+    Text(
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable

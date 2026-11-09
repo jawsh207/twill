@@ -14,12 +14,21 @@ import com.android.messaging.R
 import com.android.messaging.ui.appsettings.common.SettingsLazyColumn
 import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 
-/** A row Twill adds to upstream's SMS Settings list. */
+/** A row Twill adds to upstream's SMS Settings list, in [group]. */
 internal class TwillSettingsRow(
     val key: String,
     val contentType: Any? = null,
+    val group: Group = Group.Top,
     val content: @Composable () -> Unit,
-)
+) {
+    enum class Group {
+        /** First, with the default SMS app row ("Use Twill for SMS/MMS"). */
+        Top,
+
+        /** Under "Conversations" (Archived, Blocked contacts). */
+        Conversations,
+    }
+}
 
 /**
  * The first rows of the SMS Settings page ("Use Twill for SMS/MMS", Archived, Blocked
@@ -28,9 +37,13 @@ internal class TwillSettingsRow(
  */
 internal val LocalSmsSettingsHeader = staticCompositionLocalOf<List<TwillSettingsRow>?> { null }
 
-/** Adds [rows] (from [LocalSmsSettingsHeader]) to a settings list. */
-internal fun LazyListScope.twillSmsSettingsRows(rows: List<TwillSettingsRow>?) {
-    rows?.forEach { row -> item(key = row.key, contentType = row.contentType) { row.content() } }
+/** Adds [rows] (from [LocalSmsSettingsHeader]) to a settings list, only those in [group]. */
+internal fun LazyListScope.twillSmsSettingsRows(
+    rows: List<TwillSettingsRow>?,
+    group: TwillSettingsRow.Group? = null,
+) {
+    rows?.filter { group == null || it.group == group }
+        ?.forEach { row -> item(key = row.key, contentType = row.contentType) { row.content() } }
 }
 
 /** SMS Settings while SMS is off: only the switch to turn it back on. */

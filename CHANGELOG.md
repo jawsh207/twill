@@ -13,6 +13,10 @@ section here. Write entries for people using the app, newest version first.
   with. It pays from your connected wallet, or opens your wallet app if none is connected.
 - Relays: Nostr settings now has exactly two kinds, Message relays and Search relays, and
   both can be edited. Twill no longer uses any other relays behind the scenes.
+- Tidier settings: related options are grouped together. Settings has Services, Inbox and
+  About. SMS Settings has Conversations, Notifications and sounds, and More. Nostr settings
+  keeps everything about relays in one Relays section, including people search. Delta Chat
+  settings puts the QR code and invite links under Invite people.
 
 ## 1.0.17
 
