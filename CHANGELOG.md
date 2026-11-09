@@ -8,7 +8,8 @@ section here. Write entries for people using the app, newest version first.
 
 - Wallet: connect your Lightning wallet with Nostr Wallet Connect (Nostr settings > Wallet).
   Invoice cards then get a Pay button, which asks first, and show "Paid" afterwards. Your
-  funds stay in your wallet.
+  funds stay in your wallet. Wallet apps that offer "connect to an app" can also open Twill
+  directly, so there's nothing to copy.
 - Zap: a ⚡ button at the top of Nostr chats, beside search, zaps the person you're chatting
   with. It pays from your connected wallet, or opens your wallet app if none is connected.
 - Relays: Nostr settings now has exactly two kinds, Message relays and Search relays, and

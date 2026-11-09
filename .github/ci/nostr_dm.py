@@ -265,17 +265,31 @@ def test_invoice(memo, amount="1u", expiry=3600):
     return bech32_words("lnbc" + amount, words)
 
 
-WALLET_RELAY = "wss://relay.damus.io"
+WALLET_RELAYS = ["wss://nos.lol", "wss://relay.primal.net", "wss://relay.damus.io"]
 
 
-async def run_wallet(wallet, client_secret, seconds):
+async def run_wallet(wallet, client_secret, seconds, linkfile):
     import websockets
 
     me = xonly(wallet).hex()
     client = xonly(client_secret).hex()
     info = signed(wallet, 13194, "pay_invoice get_balance get_info",
                   [["encryption", "nip44_v2"]])
-    async with websockets.connect(WALLET_RELAY, open_timeout=10) as ws:
+    # The first relay that lets us in; the link names it.
+    ws = None
+    for relay in WALLET_RELAYS:
+        try:
+            ws = await websockets.connect(relay, open_timeout=10)
+            break
+        except Exception as exc:  # noqa: BLE001
+            print("wallet relay", relay, "failed:", exc, flush=True)
+    if ws is None:
+        return
+    with open(linkfile, "w") as f:
+        f.write("nostr+walletconnect://" + me + "?relay=" + relay
+                + "&secret=" + client_secret.to_bytes(32, "big").hex())
+    print("wallet on", relay, flush=True)
+    async with ws:
         await ws.send(json.dumps(["EVENT", info]))
         await ws.send(json.dumps(["REQ", "nwc", {"kinds": [23194], "#p": [me],
                                                   "since": int(time.time()) - 60}]))
@@ -320,11 +334,7 @@ def main():
     elif command == "wallet":
         wallet = secrets.randbelow(N - 1) + 1
         client = secrets.randbelow(N - 1) + 1
-        link = ("nostr+walletconnect://" + xonly(wallet).hex() + "?relay=" + WALLET_RELAY
-                + "&secret=" + client.to_bytes(32, "big").hex())
-        with open(sys.argv[3], "w") as f:
-            f.write(link)
-        asyncio.run(run_wallet(wallet, client, int(sys.argv[4])))
+        asyncio.run(run_wallet(wallet, client, int(sys.argv[4]), sys.argv[3]))
     elif command == "send":
         with open(keyfile) as f:
             keys = json.load(f)

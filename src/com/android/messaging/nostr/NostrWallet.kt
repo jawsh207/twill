@@ -288,7 +288,7 @@ internal class NostrWallet @Inject constructor(
 
     /** `nostr+walletconnect://<wallet key>?relay=…&secret=…` */
     private fun parseLink(text: String): Link? = runCatching {
-        val normalized = text.replace("nostr+walletconnect:", "nwc:")
+        val normalized = text.replace("nostr+walletconnect:", "nwc:").replace("nostrnwc:", "nwc:")
         val uri = URI(normalized)
         require(uri.scheme == "nwc")
         val wallet = (uri.host ?: uri.rawAuthority ?: uri.rawSchemeSpecificPart.removePrefix("//"))

@@ -181,31 +181,37 @@ shot "nostr-11-chat-after-reply"
 LINK=$(mktemp)
 python3 .github/ci/nostr_dm.py wallet "$KEYS" "$LINK" 300 > "$OUT/wallet.txt" 2>&1 &
 WALLET_PID=$!
-sleep 8
+for i in $(seq 1 20); do [ -s "$LINK" ] && break; sleep 1; done
+sleep 4
+# Wallets hand Twill a nostr+walletconnect:// link; it asks, then connects.
+adb shell "am start -W -a android.intent.action.VIEW -d '$(cat "$LINK")'" >> "$OUT/log.txt" 2>&1
+sleep 3
+shot "nostr-12-wallet-link"
+$UI tap "Connect" || $UI dump "$OUT/nostr-wallet-link.xml"
+sleep 12
 back
 sleep 1
 $UI tap "Settings"
 $UI tap "Nostr Settings"
-sleep 2
-$UI tap "Connect a wallet" || { adb shell input swipe 540 1700 540 900 300; sleep 1; $UI tap "Connect a wallet"; } || $UI dump "$OUT/nostr-wallet-settings.xml"
-sleep 2
-WALLET_LINK=$(sed 's/&/\\&/g; s/?/\\?/g' "$LINK")
-for attempt in 1 2 3; do
-    $UI tapcontains "walletconnect" || true
-    adb shell input keyevent KEYCODE_MOVE_END
-    adb shell input keyevent $(printf 'KEYCODE_DEL %.0s' $(seq 1 220))
-    adb shell input text "$WALLET_LINK"
-    sleep 1
-    $UI tap "Connect" || true
-    sleep 10
-    $UI dump "$OUT/nostr-wallet-connect.xml"
-    grep -q "Paste a Nostr Wallet Connect" "$OUT/nostr-wallet-connect.xml" || break
-    echo "wallet connect attempt $attempt failed" >> "$OUT/log.txt"
-    shot "nostr-12-wallet-attempt-$attempt"
-done
-sleep 3
+sleep 6
 shot "nostr-12-wallet-connected"
+# The settings pages, grouped: Nostr (scrolled to Relays), main Settings, SMS.
+adb shell input swipe 540 1900 540 500 400
+sleep 1
+adb shell input swipe 540 1900 540 500 400
+sleep 1
+shot "settings-nostr-relays"
 back
+sleep 2
+shot "settings-main"
+$UI tap "SMS Settings"
+sleep 3
+shot "settings-sms"
+adb shell input swipe 540 1900 540 700 400
+sleep 1
+shot "settings-sms-2"
+back
+sleep 1
 back
 sleep 2
 $UI tap "Robin Test" || $UI tapcontains "Robin" || $UI dump "$OUT/nostr-inbox-wallet.xml"
