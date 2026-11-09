@@ -299,8 +299,8 @@ async def run_wallet(wallet, client_secret, seconds, linkfile):
                 message = json.loads(await asyncio.wait_for(ws.recv(), 5))
             except asyncio.TimeoutError:
                 continue
+            print("wallet relay:", str(message)[:160], flush=True)
             if message[0] != "EVENT" or message[2].get("pubkey") != client:
-                print("wallet relay:", str(message)[:100], flush=True)
                 continue
             request = message[2]
             body = json.loads(nip44_decrypt(request["content"], wallet, client))

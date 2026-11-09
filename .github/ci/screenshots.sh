@@ -188,7 +188,17 @@ adb shell "am start -W -a android.intent.action.VIEW -d '$(cat "$LINK")'" >> "$O
 sleep 3
 shot "nostr-12-wallet-link"
 $UI tap "Connect" || $UI dump "$OUT/nostr-wallet-link.xml"
-sleep 12
+sleep 3
+shot "nostr-12a-connecting"
+sleep 6
+shot "nostr-12b-connecting"
+$UI dump "$OUT/nostr-wallet-link-after.xml"
+sleep 8
+shot "nostr-12c-connected"
+$UI dump "$OUT/nostr-wallet-link-end.xml"
+# Close the dialog if it's still up (an error), then leave the chat.
+$UI tap "Cancel" || true
+sleep 1
 back
 sleep 1
 $UI tap "Settings"
