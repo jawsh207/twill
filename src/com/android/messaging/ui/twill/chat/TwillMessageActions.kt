@@ -234,7 +234,13 @@ internal fun TwillReplyQuote(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = message?.let(::quoteText) ?: stringResource(R.string.twill_not_loaded),
+                text = if (message !=
+                    null
+                ) {
+                    quoteText(message)
+                } else {
+                    stringResource(R.string.twill_not_loaded)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurface,
                 maxLines = 2,
