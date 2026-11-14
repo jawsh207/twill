@@ -55,6 +55,9 @@ internal data class NostrMessage(
     val isRead: Boolean,
     val status: Status,
     val attachment: NostrAttachment? = null,
+    /** NIP-17: the message this one answers (its first `e` tag). */
+    val replyTo: String? = null,
+    val reactions: List<NostrReaction> = emptyList(),
 ) {
     enum class Status(
         val code: Int,
@@ -94,6 +97,17 @@ internal data class NostrProfile(
     val picture: String?,
     val nip05: String?,
     val isNip05Verified: Boolean = false,
+)
+
+/** A NIP-25 reaction sent inside a chat (NIP-17), so only the chat's members see it. */
+@Immutable
+internal data class NostrReaction(
+    val id: String,
+    val target: String,
+    val sender: String,
+    val emoji: String,
+    val createdAtSeconds: Long,
+    val isOutgoing: Boolean,
 )
 
 /** Someone the user might want to message, for the new-chat suggestions. */
@@ -430,6 +444,27 @@ internal class NostrMessageStore @Inject constructor(
         return rowId != -1L
     }
 
+    /** Adds a reaction in [chatKey] unless already stored. Returns true if added. */
+    fun insertReaction(chatKey: String, reaction: NostrReaction): Boolean {
+        val values = ContentValues().apply {
+            put("id", reaction.id)
+            put("peer", chatKey)
+            put("target", reaction.target)
+            put("sender", reaction.sender)
+            put("content", reaction.emoji)
+            put("created_at", reaction.createdAtSeconds)
+            put("outgoing", if (reaction.isOutgoing) 1 else 0)
+        }
+        val rowId = helper.writableDatabase.insertWithOnConflict(
+            "reactions",
+            null,
+            values,
+            SQLiteDatabase.CONFLICT_IGNORE,
+        )
+        if (rowId != -1L) notifyChanged(chatKey)
+        return rowId != -1L
+    }
+
     fun message(id: String): NostrMessage? {
         return helper.readableDatabase.rawQuery(
             "SELECT * FROM messages WHERE id = ?",
@@ -461,6 +496,7 @@ internal class NostrMessageStore @Inject constructor(
         val message = message(id)
         message?.attachment?.localPath?.let { File(it).delete() }
         helper.writableDatabase.delete("messages", "id = ?", arrayOf(id))
+        helper.writableDatabase.delete("reactions", "target = ?", arrayOf(id))
         notifyChanged(message?.chatKey)
     }
 
@@ -511,6 +547,7 @@ internal class NostrMessageStore @Inject constructor(
             arrayOf(chatKey),
         ).use { cursor -> while (cursor.moveToNext()) File(cursor.getString(0)).delete() }
         db.delete("messages", "peer = ?", arrayOf(chatKey))
+        db.delete("reactions", "peer = ?", arrayOf(chatKey))
         db.delete("pinned", "peer = ?", arrayOf(chatKey))
         db.delete("groups", "chat_key = ?", arrayOf(chatKey))
         notifyChanged(chatKey)
@@ -633,7 +670,8 @@ internal class NostrMessageStore @Inject constructor(
             "pinned",
             "state",
             "groups",
-            "people"
+            "people",
+            "reactions",
         ).forEach { table ->
             db.delete(table, null, null)
         }
@@ -760,13 +798,42 @@ internal class NostrMessageStore @Inject constructor(
     }
 
     private fun queryMessages(chatKey: String, limit: Int): List<NostrMessage> {
-        return helper.readableDatabase.rawQuery(
+        val messages = helper.readableDatabase.rawQuery(
             "SELECT * FROM messages WHERE peer = ? ORDER BY created_at DESC, rowid DESC LIMIT ?",
             arrayOf(chatKey, limit.toString()),
         ).use { cursor ->
             buildList { while (cursor.moveToNext()) add(cursor.toMessage()) }
         }.asReversed()
+        val reactions = queryReactions(chatKey)
+        if (reactions.isEmpty()) return messages
+        return messages.map { message ->
+            reactions[message.id]?.let { message.copy(reactions = it) } ?: message
+        }
     }
+
+    /** [chatKey]'s reactions by the message they're on, oldest first. */
+    private fun queryReactions(chatKey: String): Map<String, List<NostrReaction>> =
+        helper.readableDatabase.rawQuery(
+            "SELECT * FROM reactions WHERE peer = ? ORDER BY created_at",
+            arrayOf(chatKey),
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(
+                        NostrReaction(
+                            id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
+                            target = cursor.getString(cursor.getColumnIndexOrThrow("target")),
+                            sender = cursor.getString(cursor.getColumnIndexOrThrow("sender")),
+                            emoji = cursor.getString(cursor.getColumnIndexOrThrow("content")),
+                            createdAtSeconds =
+                                cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
+                            isOutgoing =
+                                cursor.getInt(cursor.getColumnIndexOrThrow("outgoing")) == 1,
+                        ),
+                    )
+                }
+            }
+        }.groupBy { it.target }
 
     private fun queryProfile(pubKey: String): NostrProfile? {
         return helper.readableDatabase.rawQuery(
@@ -800,6 +867,7 @@ internal class NostrMessageStore @Inject constructor(
         put("outgoing", if (isOutgoing) 1 else 0)
         put("is_read", if (isRead) 1 else 0)
         put("status", status.code)
+        put("reply_to", replyTo)
         val file = attachment
         if (file == null) {
             put("kind", KIND_TEXT)
@@ -830,6 +898,7 @@ internal class NostrMessageStore @Inject constructor(
             isOutgoing = getInt(getColumnIndexOrThrow("outgoing")) == 1,
             isRead = getInt(getColumnIndexOrThrow("is_read")) == 1,
             status = NostrMessage.Status.from(getInt(getColumnIndexOrThrow("status"))),
+            replyTo = getStringOrNull("reply_to"),
             attachment = if (isFile) {
                 NostrAttachment(
                     url = getStringOrNull("file_url").orEmpty(),
@@ -885,11 +954,24 @@ internal class NostrMessageStore @Inject constructor(
             db.execSQL("CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT)")
             upgradeToVersion2(db)
             upgradeToVersion3(db)
+            upgradeToVersion4(db)
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             if (oldVersion < 2) upgradeToVersion2(db)
             if (oldVersion < 3) upgradeToVersion3(db)
+            if (oldVersion < 4) upgradeToVersion4(db)
+        }
+
+        /** Version 4: replies and reactions (NIP-17 carrying NIP-25), as in Zino. */
+        private fun upgradeToVersion4(db: SQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN reply_to TEXT")
+            db.execSQL(
+                "CREATE TABLE reactions (id TEXT PRIMARY KEY, peer TEXT NOT NULL, " +
+                    "target TEXT NOT NULL, sender TEXT NOT NULL, content TEXT NOT NULL, " +
+                    "created_at INTEGER NOT NULL, outgoing INTEGER NOT NULL)",
+            )
+            db.execSQL("CREATE INDEX reactions_peer ON reactions(peer)")
         }
 
         /**
@@ -937,7 +1019,7 @@ internal class NostrMessageStore @Inject constructor(
 
     private companion object {
         const val DATABASE_NAME = "nostr.db"
-        const val DATABASE_VERSION = 3
+        const val DATABASE_VERSION = 4
         const val PUBKEY_HEX_LENGTH = 64
         const val BULK_MISS_AGE_MILLIS = 24 * 60 * 60 * 1000L + 60_000L
         const val MAX_SEARCH_HITS = 500

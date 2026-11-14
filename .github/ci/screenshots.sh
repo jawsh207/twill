@@ -187,6 +187,30 @@ sleep 3
 $UI tap "Robin Test" || $UI tapcontains "npub1" || $UI dump "$OUT/nostr-chat-after-reply.xml"
 sleep 3
 shot "nostr-11-chat-after-reply"
+# Replies and reactions (as in Zino): the sender answers and reacts to its first message,
+# then Twill reacts to and replies to that message from its long-press menu.
+python3 .github/ci/nostr_dm.py reply "$KEYS" "Make it 1 instead?" >> "$OUT/log.txt" 2>&1
+sleep 3
+python3 .github/ci/nostr_dm.py react "$KEYS" "🔥" >> "$OUT/log.txt" 2>&1
+sleep 8
+shot "nostr-11a-incoming-reply-reaction"
+# (Not the first message: the test bubble floats over its left side.)
+$UI longpress "I can do 12:30 at the usual place" || $UI dump "$OUT/nostr-longpress.xml"
+sleep 2
+shot "nostr-11b-message-actions"
+$UI tap "👍" || $UI dump "$OUT/nostr-actions.xml"
+sleep 6
+$UI longpress "Make it 1 instead?" || $UI dump "$OUT/nostr-longpress-2.xml"
+sleep 2
+$UI tap "Reply" || $UI dump "$OUT/nostr-actions-2.xml"
+sleep 2
+$UI tap "Nostr message"
+adb shell input text "1%sworks"
+sleep 2
+shot "nostr-11c-replying"
+$UI tap "Send Message" || $UI dump "$OUT/nostr-reply-send.xml"
+sleep 10
+shot "nostr-11d-replied-reacted"
 
 # Wallet (Nostr Wallet Connect) with a test wallet service: connect it, pay the invoice card,
 # then open the zap sheet (the test sender has no Lightning address, so that zap is refused).

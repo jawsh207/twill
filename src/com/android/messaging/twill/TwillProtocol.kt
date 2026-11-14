@@ -84,9 +84,21 @@ internal data class TwillMessage(
     val attachment: TwillAttachment? = null,
     /** Centered notices such as "Alice joined the group". */
     val isInfo: Boolean = false,
+    /** The message this one answers, if any (it may not be loaded, or known, here). */
+    val replyToId: String? = null,
+    /** Emoji reactions, most used first. */
+    val reactions: List<TwillReaction> = emptyList(),
 ) {
     enum class Status { Sending, Sent, Delivered, Read, Failed }
 }
+
+/** One emoji under a message: how many people sent it, and whether you're one of them. */
+@Immutable
+internal data class TwillReaction(
+    val emoji: String,
+    val count: Int,
+    val isMine: Boolean,
+)
 
 @Immutable
 internal data class TwillChat(
@@ -230,6 +242,15 @@ internal interface TwillProtocol {
     fun onChatOpened(chatId: String) = Unit
 
     fun send(chatId: String, text: String)
+
+    /** Long-pressing a message offers Reply and emoji reactions. */
+    val canReplyAndReact: Boolean get() = false
+
+    /** Sends [text] as an answer to [replyToId]. */
+    fun sendReply(chatId: String, text: String, replyToId: String) = send(chatId, text)
+
+    /** Reacts to [messageId] with [emoji]. */
+    fun react(chatId: String, messageId: String, emoji: String) = Unit
 
     fun sendFile(chatId: String, uri: Uri)
 

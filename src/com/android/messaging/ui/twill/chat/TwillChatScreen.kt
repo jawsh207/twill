@@ -1,5 +1,7 @@
 package com.android.messaging.ui.twill.chat
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.text.format.DateUtils
@@ -12,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +80,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -138,6 +142,10 @@ internal fun TwillChatScreen(
     var isInfoDialogVisible by rememberSaveable { mutableStateOf(false) }
     var viewerPath by remember { mutableStateOf<String?>(null) }
     var pendingSave by remember { mutableStateOf<TwillMessage?>(null) }
+    // Replies and reactions (long-press a message), as in Zino.
+    var replyToId by rememberSaveable(protocol, chatId) { mutableStateOf<String?>(null) }
+    var acting by remember { mutableStateOf<TwillMessage?>(null) }
+    var picking by remember { mutableStateOf<TwillMessage?>(null) }
     val listState = rememberLazyListState()
     val search = rememberTwillConversationSearch(
         key = protocol to chatId,
@@ -262,25 +270,36 @@ internal fun TwillChatScreen(
                         },
                     )
 
-                    else -> Composer(
-                        text = draft,
-                        enabled = info?.canSend == true,
-                        hint = protocolText.composerHint,
-                        disabledHint = protocolText.composerSignedOut,
-                        onTextChange = { draft = it },
-                        onSend = {
-                            viewModel.send(draft)
-                            draft = ""
-                        },
-                        onPickPhoto = {
-                            pickPhoto.launch(
-                                PickVisualMediaRequest(
-                                    ActivityResultContracts.PickVisualMedia.ImageOnly
-                                ),
+                    else -> Column {
+                        val replying = replyToId?.let { id -> messages.firstOrNull { it.id == id } }
+                        if (replying != null) {
+                            TwillReplyBar(
+                                message = replying,
+                                senderName = senderNameOf(replying, info),
+                                onCancel = { replyToId = null },
                             )
-                        },
-                        onPickFile = { pickFile.launch(arrayOf("*/*")) },
-                    )
+                        }
+                        Composer(
+                            text = draft,
+                            enabled = info?.canSend == true,
+                            hint = protocolText.composerHint,
+                            disabledHint = protocolText.composerSignedOut,
+                            onTextChange = { draft = it },
+                            onSend = {
+                                viewModel.send(draft, replying?.id)
+                                draft = ""
+                                replyToId = null
+                            },
+                            onPickPhoto = {
+                                pickPhoto.launch(
+                                    PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    ),
+                                )
+                            },
+                            onPickFile = { pickFile.launch(arrayOf("*/*")) },
+                        )
+                    }
                 }
             },
         ) { contentPadding ->
@@ -339,8 +358,19 @@ internal fun TwillChatScreen(
                                     earlier.senderId != message.senderId
                                 )
                         val sender = members[message.senderId]
+                        val replied = message.replyToId?.let { id ->
+                            ordered.firstOrNull { it.id == id }
+                        }
                         MessageBubble(
                             message = message,
+                            replied = replied,
+                            repliedName = replied?.let { senderNameOf(it, info) },
+                            onLongPress = { acting = message },
+                            onReact = { emoji -> viewModel.react(message, emoji) },
+                            onOpenReply = {
+                                val at = ordered.indexOfFirst { it.id == message.replyToId }
+                                if (at >= 0) scope.launch { listState.animateScrollToItem(at) }
+                            },
                             protocol = protocol,
                             sender = if (showSender) {
                                 sender ?: TwillMember(
@@ -391,6 +421,45 @@ internal fun TwillChatScreen(
     }
 
     viewerPath?.let { path -> ImageViewer(path = path, onDismiss = { viewerPath = null }) }
+
+    acting?.let { message ->
+        val canReplyAndReact = viewModel.canReplyAndReact &&
+            message.status != TwillMessage.Status.Sending &&
+            message.status != TwillMessage.Status.Failed &&
+            info?.canSend == true
+        TwillMessageActions(
+            canReplyAndReact = canReplyAndReact,
+            onDismiss = { acting = null },
+            onReact = { emoji ->
+                acting = null
+                viewModel.react(message, emoji)
+            },
+            onMoreReactions = {
+                acting = null
+                picking = message
+            },
+            onReply = {
+                acting = null
+                replyToId = message.id
+            },
+            onCopy = message.text.takeIf { it.isNotBlank() }?.let { text ->
+                {
+                    acting = null
+                    context.getSystemService(ClipboardManager::class.java)
+                        ?.setPrimaryClip(ClipData.newPlainText(null, text))
+                }
+            },
+        )
+    }
+    picking?.let { message ->
+        TwillEmojiSheet(
+            onPick = { emoji ->
+                picking = null
+                viewModel.react(message, emoji)
+            },
+            onDismiss = { picking = null },
+        )
+    }
 
     if (isZapSheetVisible && info != null) {
         TwillZapSheet(
@@ -471,6 +540,11 @@ private fun InfoMessage(text: String) {
 @Composable
 private fun MessageBubble(
     message: TwillMessage,
+    replied: TwillMessage?,
+    repliedName: String?,
+    onLongPress: () -> Unit,
+    onReact: (String) -> Unit,
+    onOpenReply: () -> Unit,
     protocol: TwillProtocolId,
     sender: TwillMember?,
     isDownloading: Boolean,
@@ -512,7 +586,12 @@ private fun MessageBubble(
             Surface(
                 modifier = Modifier
                     .widthIn(max = 300.dp)
-                    .then(if (isFailed) Modifier.clickable(onClick = onRetry) else Modifier),
+                    .clip(RoundedCornerShape(18.dp))
+                    .combinedClickable(
+                        onClick = { if (isFailed) onRetry() },
+                        onLongClick = onLongPress,
+                        onLongClickLabel = stringResource(R.string.twill_message_actions),
+                    ),
                 shape = RoundedCornerShape(18.dp),
                 color = when {
                     message.isOutgoing -> MaterialTheme.colorScheme.primaryContainer
@@ -524,6 +603,15 @@ private fun MessageBubble(
                 },
             ) {
                 Column {
+                    if (message.replyToId != null) {
+                        TwillReplyQuote(
+                            message = replied,
+                            senderName = repliedName,
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp),
+                            onClick = onOpenReply.takeIf { replied != null },
+                            onLongClick = onLongPress,
+                        )
+                    }
                     val attachment = message.attachment
                     when {
                         attachment == null -> Unit
@@ -588,6 +676,13 @@ private fun MessageBubble(
                         )
                     }
                 }
+            }
+            if (message.reactions.isNotEmpty()) {
+                TwillReactionChips(
+                    reactions = message.reactions,
+                    onReact = onReact,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
             }
             Text(
                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -1017,3 +1112,8 @@ private fun ChatMenu(onBubble: () -> Unit) {
         }
     }
 }
+
+/** Who wrote [message], for quotes: the member's name in groups, else the chat's title. */
+private fun senderNameOf(message: TwillMessage, details: TwillChatDetails?): String? =
+    details?.members?.get(message.senderId)?.name
+        ?: details?.title?.takeIf { details.isGroup.not() }

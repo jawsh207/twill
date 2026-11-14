@@ -206,9 +206,54 @@ internal class NostrMessenger @Inject constructor(
         }
     }
 
-    /** Sends [text] to everyone in [chatKey]. The message shows immediately as sending. */
-    fun send(chatKey: String, text: String) {
-        appScope.launch(Dispatchers.IO) { sendText(chatKey = chatKey, text = text) }
+    /**
+     * Sends [text] to everyone in [chatKey], as an answer to [replyTo] if given. The message
+     * shows immediately as sending.
+     */
+    fun send(chatKey: String, text: String, replyTo: String? = null) {
+        appScope.launch(Dispatchers.IO) {
+            sendText(chatKey = chatKey, text = text, replyTo = replyTo)
+        }
+    }
+
+    /**
+     * Reacts to [messageId] with [emoji] (NIP-25), sealed and gift-wrapped like the messages
+     * themselves, so only the chat's members see it. Shows at once; as in Zino, it isn't
+     * taken back if the relays refuse it.
+     */
+    fun react(chatKey: String, messageId: String, emoji: String) {
+        appScope.launch(Dispatchers.IO) {
+            val signer = signerProvider.signer() ?: return@launch
+            val target = store.message(messageId) ?: return@launch
+            val members = NostrChatKey.members(chatKey)
+            val kind = if (target.attachment != null) Kind.FILE_DM else Kind.DM
+            val rumor = Draft(
+                pubkey = signer.pubkey,
+                createdAt = nowSeconds(),
+                kind = Kind.REACTION,
+                tags = members.map { listOf("p", it) } +
+                    listOf(listOf("e", messageId), listOf("k", kind.toString())),
+                content = emoji,
+            )
+            store.insertReaction(
+                chatKey,
+                NostrReaction(
+                    id = rumor.id,
+                    target = messageId,
+                    sender = signer.pubkey,
+                    emoji = emoji,
+                    createdAtSeconds = rumor.createdAt,
+                    isOutgoing = true,
+                ),
+            )
+            try {
+                deliver(rumor, members, signer)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                LogUtil.w(TAG, "Could not send reaction: ${exception.javaClass.simpleName}")
+            }
+        }
     }
 
     /**
@@ -231,7 +276,11 @@ internal class NostrMessenger @Inject constructor(
             when {
                 message.attachment == null -> {
                     store.deleteMessage(message.id)
-                    sendText(chatKey = message.chatKey, text = message.content)
+                    sendText(
+                        chatKey = message.chatKey,
+                        text = message.content,
+                        replyTo = message.replyTo,
+                    )
                 }
 
                 local != null -> {
@@ -434,7 +483,7 @@ internal class NostrMessenger @Inject constructor(
     private fun JSONObject.optCleanString(key: String): String? =
         (opt(key) as? String)?.trim()?.takeIf { it.isNotEmpty() && it != "null" }
 
-    private suspend fun sendText(chatKey: String, text: String) {
+    private suspend fun sendText(chatKey: String, text: String, replyTo: String? = null) {
         val signer = signerProvider.signer() ?: return
         val members = NostrChatKey.members(chatKey)
         val subject = if (NostrChatKey.isGroup(chatKey)) {
@@ -447,8 +496,12 @@ internal class NostrMessenger @Inject constructor(
             pubkey = signer.pubkey,
             createdAt = nowSeconds(),
             kind = Kind.DM,
+            // NIP-17: a reply names the message it answers in an `e` tag, as Zino does.
             tags = members.map { listOf("p", it) } +
-                listOfNotNull(subject?.let { listOf("subject", it) }),
+                listOfNotNull(
+                    replyTo?.let { listOf("e", it) },
+                    subject?.let { listOf("subject", it) },
+                ),
             content = text,
         )
 
@@ -462,6 +515,7 @@ internal class NostrMessenger @Inject constructor(
                 isOutgoing = true,
                 isRead = true,
                 status = NostrMessage.Status.Sending,
+                replyTo = replyTo,
             ),
         )
         val delivered = deliver(rumor, members, signer)
@@ -790,7 +844,7 @@ internal class NostrMessenger @Inject constructor(
         store.markWrapSeen(wrap.id)
         store.setLastSyncSeconds(wrap.createdAt)
         if (rumor == null) return
-        if (rumor.kind != Kind.DM && rumor.kind != Kind.FILE_DM) {
+        if (rumor.kind != Kind.DM && rumor.kind != Kind.FILE_DM && rumor.kind != Kind.REACTION) {
             return
         }
 
@@ -799,6 +853,26 @@ internal class NostrMessenger @Inject constructor(
             participants = recipients + rumor.pubkey,
             me = me
         )
+        if (rumor.kind == Kind.REACTION) {
+            // NIP-17 carries NIP-25 reactions too: the last `e` tag is the message reacted to.
+            val target = rumor.tags.lastOrNull { it.size >= 2 && it[0] == "e" && Hex.isKey(it[1]) }
+                ?.get(1)
+            val emoji = reactionGlyph(rumor.content)
+            if (target != null && emoji != null) {
+                store.insertReaction(
+                    chatKey,
+                    NostrReaction(
+                        id = rumor.id,
+                        target = target,
+                        sender = rumor.pubkey,
+                        emoji = emoji,
+                        createdAtSeconds = rumor.createdAt,
+                        isOutgoing = rumor.pubkey == me,
+                    ),
+                )
+            }
+            return
+        }
         val isOutgoing = rumor.pubkey == me
         val isNew = rumor.createdAt >= notifySinceSeconds()
         // Notes to self written in another client count as news; Twill's own sends are
@@ -828,6 +902,8 @@ internal class NostrMessenger @Inject constructor(
             isRead = isOutgoing && !(isFromOtherDevice && isNew),
             status = NostrMessage.Status.Sent,
             attachment = attachment,
+            replyTo = rumor.tags.firstOrNull { it.size >= 2 && it[0] == "e" && Hex.isKey(it[1]) }
+                ?.get(1),
         )
         if (store.insertMessage(message)) {
             if ((!isOutgoing || isFromOtherDevice) && isNew) notify(message)
@@ -867,6 +943,16 @@ internal class NostrMessenger @Inject constructor(
             fileName = null,
             localPath = null,
         )
+    }
+
+    /**
+     * What a reaction shows, as in Zino: a like ("+" or empty) is a purple heart; dislikes ("-")
+     * and custom emoji (":name:") show nothing.
+     */
+    private fun reactionGlyph(content: String): String? = when {
+        content == "+" || content.isEmpty() -> DEFAULT_REACTION
+        content == "-" || content.startsWith(":") -> null
+        else -> content
     }
 
     private fun Tags.valuesOf(name: String): List<String> =
@@ -936,6 +1022,7 @@ internal class NostrMessenger @Inject constructor(
         const val PROFILE_RETRY_MILLIS = 10 * 60 * 1000L
         const val PUBKEY_HEX_LENGTH = 64
         const val FILE_ALGORITHM = "aes-gcm"
+        const val DEFAULT_REACTION = "\uD83D\uDC9C"
         const val TWO_DAYS_SECONDS = 2 * 24 * 60 * 60
         const val FETCH_TIMEOUT_MILLIS = 8_000L
         const val ONE_SHOT_SYNC_TIMEOUT_MILLIS = 25_000L

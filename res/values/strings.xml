@@ -1115,6 +1115,17 @@
     <string name="twill_chat_more_options">More options</string>
     <string name="twill_bubble_chat">Bubble</string>
     <string name="twill_bubble_not_allowed">Allow Twill\'s conversations to bubble, then try again</string>
+    <string name="twill_message_actions">React or reply</string>
+    <string name="twill_reply">Reply</string>
+    <string name="twill_copy_text">Copy text</string>
+    <string name="twill_more_reactions">More reactions</string>
+    <string name="twill_react">React</string>
+    <string name="twill_any_emoji">Any emoji</string>
+    <string name="twill_you">You</string>
+    <string name="twill_earlier_message">Earlier message</string>
+    <string name="twill_not_loaded">Not loaded</string>
+    <string name="twill_cancel_reply">Cancel reply</string>
+    <string name="twill_photo">Photo</string>
     <string name="twill_bubble_failed">Couldn\'t open a bubble</string>
     <string name="twill_verified">Verified</string>
     <string name="twill_request_explainer">Someone new wants to chat. Accept to reply and let them know you\'ve read their messages, or block to never hear from them again.</string>

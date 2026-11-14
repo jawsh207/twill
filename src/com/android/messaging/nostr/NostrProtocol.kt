@@ -18,6 +18,7 @@ import com.android.messaging.twill.TwillMessageHit
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.twill.TwillReaction
 import com.android.messaging.twill.TwillSearchHit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -169,6 +170,14 @@ internal class NostrProtocol @Inject constructor(
 
     override fun send(chatId: String, text: String) = messenger.send(chatKey = chatId, text = text)
 
+    override val canReplyAndReact: Boolean get() = true
+
+    override fun sendReply(chatId: String, text: String, replyToId: String) =
+        messenger.send(chatKey = chatId, text = text, replyTo = replyToId)
+
+    override fun react(chatId: String, messageId: String, emoji: String) =
+        messenger.react(chatKey = chatId, messageId = messageId, emoji = emoji)
+
     override suspend fun sendFromNotification(chatId: String, text: String) =
         messenger.sendNow(chatKey = chatId, text = text)
 
@@ -314,6 +323,17 @@ internal class NostrProtocol @Inject constructor(
     }
 
     private fun NostrMessage.toTwill() = TwillMessage(
+        replyToId = replyTo,
+        // Each emoji once, with how many sent it, most used first (as in Zino).
+        reactions = reactions.groupBy { it.emoji }
+            .map { (emoji, by) ->
+                TwillReaction(
+                    emoji = emoji,
+                    count = by.distinctBy { it.sender }.size,
+                    isMine = by.any { it.isOutgoing },
+                )
+            }
+            .sortedByDescending { it.count },
         id = id,
         chatId = chatKey,
         senderId = senderPubKey,
