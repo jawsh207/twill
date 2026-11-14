@@ -68,6 +68,10 @@ internal data class TwillAttachment(
     val isImage: Boolean
         get() = mimeType?.startsWith("image/") == true
 
+    /** Voice messages and other audio: played in the chat once downloaded. */
+    val isAudio: Boolean
+        get() = mimeType?.startsWith("audio/") == true
+
     val isDownloaded: Boolean
         get() = localPath != null && File(localPath).exists()
 }
@@ -251,6 +255,12 @@ internal interface TwillProtocol {
 
     /** Reacts to [messageId] with [emoji]. */
     fun react(chatId: String, messageId: String, emoji: String) = Unit
+
+    /** The composer's mic records voice messages (Delta Chat); otherwise it's a send button. */
+    val canSendVoice: Boolean get() = false
+
+    /** Sends the recording at [file] as a voice message. The file may be deleted afterwards. */
+    fun sendVoice(chatId: String, file: java.io.File) = Unit
 
     fun sendFile(chatId: String, uri: Uri)
 

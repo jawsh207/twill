@@ -592,6 +592,29 @@ internal class DeltaChatProtocol @Inject constructor(
         }
     }
 
+    override val canSendVoice: Boolean get() = true
+
+    override fun sendVoice(chatId: String, file: File) = launchCall(
+        TwillError.UploadFailed,
+        chatId,
+    ) { account ->
+        try {
+            rpc.call(
+                "send_msg",
+                account,
+                chatId.toInt(),
+                mapOf(
+                    "viewtype" to "Voice",
+                    "file" to file.absolutePath,
+                    "filename" to file.name,
+                ),
+            )
+        } finally {
+            // The core copies the file into its own storage.
+            file.delete()
+        }
+    }
+
     private fun copyToCache(uri: Uri): File {
         val name =
             context.contentResolver.query(

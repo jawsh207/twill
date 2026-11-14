@@ -148,6 +148,14 @@ internal class TwillChatViewModel @Inject constructor(
 
     fun sendFile(uri: Uri) = withTarget { protocol, chatId -> protocol.sendFile(chatId, uri) }
 
+    /** The mic records voice messages here (Delta Chat); otherwise the button only sends. */
+    val canSendVoice: Boolean
+        get() = target.value?.protocol?.canSendVoice == true
+
+    fun sendVoice(file: java.io.File) = withTarget { protocol, chatId ->
+        protocol.sendVoice(chatId, file)
+    }
+
     fun download(message: TwillMessage) = withTarget { protocol, _ -> protocol.download(message) }
 
     fun retry(message: TwillMessage) = withTarget { protocol, _ -> protocol.retry(message) }
