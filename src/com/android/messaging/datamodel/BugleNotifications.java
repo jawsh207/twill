@@ -57,6 +57,7 @@ import com.android.messaging.sms.MmsSmsUtils;
 import com.android.messaging.sms.MmsUtils;
 import com.android.messaging.sms.SmsDestinations;
 import com.android.messaging.twill.TwillSmsNotificationDelete;
+import com.android.messaging.twill.TwillNotifications;
 import com.android.messaging.ui.UIIntents;
 import com.android.messaging.util.Assert;
 import com.android.messaging.util.AvatarUriUtil;
@@ -848,7 +849,9 @@ public class BugleNotifications {
 
         NotificationCompat.BubbleMetadata.Builder bubbleBuilder =
                 new NotificationCompat.BubbleMetadata.Builder(conversation.mConversationId);
-        bubbleBuilder.setDesiredHeightResId(R.dimen.max_bubbled_activity_height);
+        // In dp, not a resource id: Android keeps bubbles across app updates, which can
+        // renumber resources and leave the bubble at its small default height.
+        bubbleBuilder.setDesiredHeight(TwillNotifications.BUBBLE_HEIGHT_DP);
         notifBuilder.setBubbleMetadata(bubbleBuilder.build());
     }
 

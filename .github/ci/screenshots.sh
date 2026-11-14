@@ -242,6 +242,20 @@ sleep 1
 shot "nostr-17-zapping"
 # The answer is a toast: catch it whenever it shows.
 for i in 1 2 3 4; do sleep 3; shot "nostr-18-zap-result-$i"; done
+# The chat's menu floats it in a bubble (protocol-coloured ring, full height).
+back
+sleep 1
+$UI tap "More options" || $UI dump "$OUT/nostr-menu.xml"
+sleep 1
+shot "nostr-19-menu"
+$UI tap "Bubble" || $UI dump "$OUT/nostr-menu-open.xml"
+sleep 5
+shot "nostr-20-bubble-from-menu"
+$UI dump "$OUT/nostr-bubble-menu.xml"
+back
+back
+sleep 2
+shot "nostr-21-bubble-collapsed"
 kill "$WALLET_PID" 2>/dev/null || true
 adb shell am force-stop "$PKG"
 

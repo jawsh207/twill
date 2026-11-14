@@ -9,10 +9,12 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Shader
 import android.os.Bundle
+import android.provider.Settings
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
@@ -146,12 +148,12 @@ internal object TwillNotifications {
         val active = activeNotification(context, tag)
         val shownIds = active?.extras?.getStringArray(EXTRA_MESSAGE_IDS)?.toList().orEmpty()
         if (message.id in shownIds) return
+        val senderAvatar =
+            avatarBitmap(context, message.senderPicture, message.senderName, message.senderKey)
         val sender = Person.Builder()
             .setName(message.senderName)
             .setKey(protocol.key + ":" + message.senderKey)
-            .setIcon(
-                avatarIcon(context, message.senderPicture, message.senderName, message.senderKey)
-            )
+            .setIcon(senderAvatar?.let(IconCompat::createWithBitmap))
             .build()
         // Earlier messages from the same sender take their current name and picture (a
         // profile can arrive after the first message, which then showed a key).
@@ -171,16 +173,18 @@ internal object TwillNotifications {
         style.setConversationTitle(if (isGroup) title else null)
         val ids = (shownIds + message.id).takeLast(MAX_MESSAGES)
 
+        val chatAvatar = if (isGroup) avatarBitmap(context, chatPicture, title, chatId) else null
         val conversationPerson = if (isGroup) {
             Person.Builder()
                 .setName(title)
                 .setKey(key)
-                .setIcon(avatarIcon(context, chatPicture, title, chatId))
+                .setIcon(chatAvatar?.let(IconCompat::createWithBitmap))
                 .build()
         } else {
             sender
         }
-        pushShortcut(context, protocol, chatId, key, title, conversationPerson)
+        val avatar = if (isGroup) chatAvatar else senderAvatar
+        pushShortcut(context, protocol, chatId, key, title, conversationPerson, avatar)
         ensureConversationChannel(context, protocol, key, title)
 
         val builder = NotificationCompat.Builder(context, key)
@@ -195,11 +199,7 @@ internal object TwillNotifications {
             .setShortcutId(key)
             .setLocusId(LocusIdCompat(key))
             // A bubble, as on SMS: the shortcut's screen in a floating window.
-            .setBubbleMetadata(
-                NotificationCompat.BubbleMetadata.Builder(key)
-                    .setDesiredHeightResId(R.dimen.max_bubbled_activity_height)
-                    .build(),
-            )
+            .setBubbleMetadata(bubbleMetadata(key))
             .addPerson(sender)
             .addExtras(Bundle().apply { putStringArray(EXTRA_MESSAGE_IDS, ids.toTypedArray()) })
             .addAction(markReadAction(context, protocol, chatId, ids))
@@ -224,9 +224,135 @@ internal object TwillNotifications {
         post(NotificationManagerCompat.from(context), tag, builder.build())
     }
 
+    /**
+     * Removes [chatId]'s notification, except while the chat is a bubble: Android closes a
+     * bubble along with its notification, so then the notification is only hidden from the
+     * shade and the bubble stays.
+     */
     fun cancelChat(context: Context, protocol: TwillProtocolId, chatId: String) {
-        context.getSystemService(NotificationManager::class.java)?.cancel(tag(protocol, chatId), 0)
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val tag = tag(protocol, chatId)
+        val active = manager.activeNotifications.firstOrNull { it.tag == tag && it.id == 0 }
+            ?.notification
+        val bubble = active?.bubbleMetadata
+        val shortcutId = bubble?.shortcutId
+        if (active == null || active.flags and Notification.FLAG_BUBBLE == 0 ||
+            shortcutId == null
+        ) {
+            manager.cancel(tag, 0)
+            return
+        }
+        if (bubble.isNotificationSuppressed) return
+        val hidden = Notification.Builder.recoverBuilder(context, active)
+            .setOnlyAlertOnce(true)
+            .setBubbleMetadata(
+                Notification.BubbleMetadata.Builder(shortcutId)
+                    .setDesiredHeight(BUBBLE_HEIGHT_DP)
+                    .setSuppressNotification(true)
+                    .build(),
+            )
+            .build()
+        runCatching { manager.notify(tag, 0, hidden) }
     }
+
+    /** What [bubbleChat] did. */
+    enum class BubbleResult { Opened, NotAllowed, Failed }
+
+    /**
+     * Opens [chatId] in a floating bubble now, from the chat's menu. Android only shows it if
+     * Twill may bubble this conversation (Settings > Notifications > Bubbles); otherwise
+     * nothing is posted and the caller can send the user there. Call off the main thread.
+     */
+    fun bubbleChat(
+        context: Context,
+        protocol: TwillProtocolId,
+        chatId: String,
+        title: String,
+        isGroup: Boolean,
+        picture: Bitmap?,
+    ): BubbleResult {
+        val manager = context.getSystemService(NotificationManager::class.java)
+            ?: return BubbleResult.Failed
+        if (!manager.areNotificationsEnabled() || !manager.areBubblesEnabled()) {
+            return BubbleResult.NotAllowed
+        }
+        ensureChannels(context)
+        val key = conversationKey(protocol, chatId)
+        val tag = tag(protocol, chatId)
+        val avatar = avatarBitmap(context, picture, title, chatId)
+        val person = Person.Builder()
+            .setName(title)
+            .setKey(if (isGroup) key else protocol.key + ":" + chatId)
+            .setIcon(avatar?.let(IconCompat::createWithBitmap))
+            .build()
+        pushShortcut(context, protocol, chatId, key, title, person, avatar)
+        ensureConversationChannel(context, protocol, key, title)
+        val allowed = when (manager.bubblePreference) {
+            NotificationManager.BUBBLE_PREFERENCE_ALL -> true
+            NotificationManager.BUBBLE_PREFERENCE_SELECTED ->
+                manager.getNotificationChannel(key)?.canBubble() == true
+            else -> false
+        }
+        if (!allowed) return BubbleResult.NotAllowed
+
+        val metadata = NotificationCompat.BubbleMetadata.Builder(key)
+            .setDesiredHeight(BUBBLE_HEIGHT_DP)
+            .setAutoExpandBubble(true)
+            .setSuppressNotification(true)
+            .build()
+        val active = activeNotification(context, tag)
+        val builder = if (active != null) {
+            NotificationCompat.Builder(context, active)
+        } else {
+            val style = MessagingStyle(selfPerson(context))
+                .setGroupConversation(isGroup)
+                .setConversationTitle(if (isGroup) title else null)
+            NotificationCompat.Builder(context, key)
+                .setSmallIcon(protocolIcon(protocol))
+                .setStyle(style)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setContentTitle(title)
+                .setContentIntent(openIntent(context, protocol, chatId))
+                .setShortcutId(key)
+                .setLocusId(LocusIdCompat(key))
+                .addPerson(person)
+        }
+        builder.setBubbleMetadata(metadata).setOnlyAlertOnce(true).setSilent(true)
+        return try {
+            NotificationManagerCompat.from(context).notify(tag, 0, builder.build())
+            BubbleResult.Opened
+        } catch (exception: SecurityException) {
+            BubbleResult.NotAllowed
+        } catch (exception: RuntimeException) {
+            LogUtil.w(TAG, "Could not bubble chat: ${exception.javaClass.simpleName}")
+            BubbleResult.Failed
+        }
+    }
+
+    /** Where the user lets Twill's conversations bubble. */
+    fun bubbleSettingsIntent(context: Context): Intent =
+        Intent(Settings.ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+    @DrawableRes
+    private fun protocolIcon(protocol: TwillProtocolId) = when (protocol) {
+        TwillProtocolId.Nostr -> R.drawable.ic_notification_nostr
+        TwillProtocolId.DeltaChat -> R.drawable.ic_notification_deltachat
+    }
+
+    /**
+     * A bubble as on SMS: the shortcut's screen in a floating window. The height is in dp
+     * rather than a resource id, since Android keeps bubbles across app updates, which can
+     * renumber resources (a stale id leaves the bubble at Android's small default height).
+     */
+    private fun bubbleMetadata(key: String) = NotificationCompat.BubbleMetadata.Builder(key)
+        .setDesiredHeight(BUBBLE_HEIGHT_DP)
+        .build()
+
+    /** Bubble height for every protocol, SMS included. */
+    const val BUBBLE_HEIGHT_DP = 600
 
     private fun post(manager: NotificationManagerCompat, tag: String, notification: Notification) {
         try {
@@ -250,21 +376,54 @@ internal object TwillNotifications {
         .build()
 
     /** A circular picture, or SMS's letter avatar for [name] when there is no picture. */
-    private fun avatarIcon(
+    private fun avatarBitmap(
         context: Context,
         picture: Bitmap?,
         name: String,
         identifier: String,
-    ): IconCompat? {
-        val bitmap = picture?.let { circular(context, it) }
-            ?: runCatching {
-                BugleNotifications.getAvatarBitmap(
-                    context,
-                    AvatarUriUtil.createAvatarUri(null, name, identifier, null),
-                )
-            }.getOrNull()
-        return bitmap?.let(IconCompat::createWithBitmap)
+    ): Bitmap? = picture?.let { circular(context, it) }
+        ?: runCatching {
+            BugleNotifications.getAvatarBitmap(
+                context,
+                AvatarUriUtil.createAvatarUri(null, name, identifier, null),
+            )
+        }.getOrNull()
+
+    /**
+     * The chat's conversation icon (bubble, Conversations section): the avatar inside a ring
+     * in the protocol's colour, where Android puts a white one around SMS avatars.
+     */
+    private fun ringedIcon(protocol: TwillProtocolId, avatar: Bitmap): IconCompat {
+        // An adaptive icon: Android shows the middle 72 of its 108 units, cut to a circle.
+        val side = RING_ICON_SIZE
+        val visible = side * 72f / 108f
+        val output = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+        canvas.drawColor(ringColor(protocol))
+        val inner = visible * RING_AVATAR_FRACTION
+        val scale = inner / minOf(avatar.width, avatar.height)
+        val matrix = Matrix().apply {
+            setScale(scale, scale)
+            postTranslate(
+                (side - avatar.width * scale) / 2f,
+                (side - avatar.height * scale) / 2f,
+            )
+        }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
+            shader = BitmapShader(avatar, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+                .apply { setLocalMatrix(matrix) }
+        }
+        canvas.drawCircle(side / 2f, side / 2f, inner / 2f, paint)
+        return IconCompat.createWithAdaptiveBitmap(output)
     }
+
+    private fun ringColor(protocol: TwillProtocolId) = when (protocol) {
+        TwillProtocolId.Nostr -> Color.rgb(0x8E, 0x30, 0xEB)
+        TwillProtocolId.DeltaChat -> Color.rgb(0x9E, 0x9E, 0x9E)
+    }
+
+    private const val RING_ICON_SIZE = 288
+    private const val RING_AVATAR_FRACTION = 0.78f
 
     private fun circular(context: Context, source: Bitmap): Bitmap {
         val side = context.resources.getDimensionPixelSize(R.dimen.contact_icon_view_normal_size)
@@ -296,6 +455,7 @@ internal object TwillNotifications {
         key: String,
         title: String,
         person: Person,
+        avatar: Bitmap?,
     ) {
         runCatching {
             val shortcut = ShortcutInfoCompat.Builder(context, key)
@@ -304,7 +464,7 @@ internal object TwillNotifications {
                 .setLongLived(true)
                 .setPerson(person)
                 .setIcon(
-                    person.icon
+                    avatar?.let { ringedIcon(protocol, it) }
                         ?: IconCompat.createWithResource(
                             context,
                             R.drawable.ic_launcher_foreground

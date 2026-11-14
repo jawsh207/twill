@@ -1112,6 +1112,10 @@
     <string name="twill_connection_title">Connected to %s</string>
     <string name="twill_connection_text">Receiving messages</string>
     <string name="twill_send_failed">Couldn\'t send. Tap the message to try again</string>
+    <string name="twill_chat_more_options">More options</string>
+    <string name="twill_bubble_chat">Bubble</string>
+    <string name="twill_bubble_not_allowed">Allow Twill\'s conversations to bubble, then try again</string>
+    <string name="twill_bubble_failed">Couldn\'t open a bubble</string>
     <string name="twill_verified">Verified</string>
     <string name="twill_request_explainer">Someone new wants to chat. Accept to reply and let them know you\'ve read their messages, or block to never hear from them again.</string>
     <string name="twill_request_accept">Accept</string>

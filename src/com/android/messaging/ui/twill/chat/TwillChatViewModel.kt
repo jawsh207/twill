@@ -1,5 +1,6 @@
 package com.android.messaging.ui.twill.chat
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,7 @@ import com.android.messaging.twill.TwillAppVisibility
 import com.android.messaging.twill.TwillChatDetails
 import com.android.messaging.twill.TwillError
 import com.android.messaging.twill.TwillMessage
+import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocols
@@ -16,6 +18,7 @@ import com.android.messaging.twill.TwillSearchHit
 import com.android.messaging.twill.TwillWallet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +28,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withContext
 
 /** One chat of any Twill protocol. Call [bind] before use. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -49,6 +53,25 @@ internal class TwillChatViewModel @Inject constructor(
     suspend fun zap(sats: Long, comment: String): String? {
         val current = target.value ?: return null
         return current.protocol.zap(current.chatId, sats, comment)
+    }
+
+    /** Floats this chat in a bubble; see [TwillNotifications.bubbleChat]. */
+    suspend fun bubble(context: Context): TwillNotifications.BubbleResult {
+        val current = target.value ?: return TwillNotifications.BubbleResult.Failed
+        val info = details.value ?: return TwillNotifications.BubbleResult.Failed
+        return withContext(Dispatchers.IO) {
+            val picture = info.avatar.ref?.let { ref ->
+                runCatching { current.protocol.loadAvatar(ref) }.getOrNull()
+            }
+            TwillNotifications.bubbleChat(
+                context = context.applicationContext,
+                protocol = current.protocol.id,
+                chatId = current.chatId,
+                title = info.title,
+                isGroup = info.isGroup,
+                picture = picture,
+            )
+        }
     }
 
     private data class Target(
