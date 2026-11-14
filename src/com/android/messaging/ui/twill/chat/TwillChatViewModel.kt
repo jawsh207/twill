@@ -126,9 +126,24 @@ internal class TwillChatViewModel @Inject constructor(
         target.value?.let { block(it.protocol, it.chatId) }
     }
 
-    fun send(text: String) = withTarget { protocol, chatId ->
+    fun send(text: String, replyToId: String? = null) = withTarget { protocol, chatId ->
         val trimmed = text.trim()
-        if (trimmed.isNotEmpty()) protocol.send(chatId, trimmed)
+        when {
+            trimmed.isEmpty() -> Unit
+            replyToId != null -> protocol.sendReply(chatId, trimmed, replyToId)
+            else -> protocol.send(chatId, trimmed)
+        }
+    }
+
+    /** Whether long-pressing a message offers Reply and reactions in this chat. */
+    val canReplyAndReact: Boolean
+        get() = target.value?.protocol?.canReplyAndReact == true
+
+    fun react(message: TwillMessage, emoji: String) = withTarget { protocol, chatId ->
+        // One of each emoji per person: tapping one you've already sent does nothing.
+        if (message.reactions.none { it.emoji == emoji && it.isMine }) {
+            protocol.react(chatId, message.id, emoji)
+        }
     }
 
     fun sendFile(uri: Uri) = withTarget { protocol, chatId -> protocol.sendFile(chatId, uri) }

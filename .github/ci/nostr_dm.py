@@ -156,15 +156,16 @@ def signed(priv, kind, content, tags, created_at=None):
     return ev
 
 
-def gift_wrap(sender, recipient_hex, text):
+def gift_wrap(sender, recipient_hex, text, kind=14, tags=()):
     rumor = {
         "pubkey": xonly(sender).hex(),
         "created_at": int(time.time()),
-        "kind": 14,
-        "tags": [["p", recipient_hex]],
+        "kind": kind,
+        "tags": [["p", recipient_hex]] + [list(t) for t in tags],
         "content": text,
     }
     rumor["id"] = event_id(rumor)
+    gift_wrap.last_rumor_id = rumor["id"]
     past = lambda: int(time.time()) - secrets.randbelow(2 * 24 * 3600)  # noqa: E731
     seal = signed(sender, 13, nip44_encrypt(json.dumps(rumor), sender, recipient_hex), [],
                   past())
@@ -353,13 +354,27 @@ def main():
         wallet = secrets.randbelow(N - 1) + 1
         client = secrets.randbelow(N - 1) + 1
         asyncio.run(run_wallet(wallet, client, int(sys.argv[4]), sys.argv[3]))
-    elif command == "send":
+    elif command in ("send", "reply", "react"):
+        # send: a message. reply: a message answering the first one sent (NIP-17 "e" tag).
+        # react: an emoji on the first message sent (NIP-25 inside NIP-17, as Zino sends).
         with open(keyfile) as f:
             keys = json.load(f)
         account, sender = int(keys["account"], 16), int(keys["sender"], 16)
+        recipient = xonly(account).hex()
+        first = keys.get("first")
         profile = signed(sender, 0, json.dumps({"name": SENDER_NAME}), [])
-        text = sys.argv[3].replace("{invoice}", test_invoice("Lunch money"))
-        dm = gift_wrap(sender, xonly(account).hex(), text)
+        if command == "send":
+            text = sys.argv[3].replace("{invoice}", test_invoice("Lunch money"))
+            dm = gift_wrap(sender, recipient, text)
+        elif command == "reply":
+            dm = gift_wrap(sender, recipient, sys.argv[3], tags=[["e", first]])
+        else:
+            dm = gift_wrap(sender, recipient, sys.argv[3], kind=7,
+                           tags=[["e", first], ["k", "14"]])
+        if command == "send" and not first:
+            keys["first"] = gift_wrap.last_rumor_id
+            with open(keyfile, "w") as f:
+                json.dump(keys, f)
         asyncio.run(publish([profile, dm]))
 
 
