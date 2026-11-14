@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.NotificationsPaused
 import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.ChatBubbleOutline
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.GroupAdd
@@ -37,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -119,6 +121,7 @@ internal fun ConversationTopAppBar(
         isDeleteConversationVisible = isDeleteConversationVisible,
         isShowSubjectFieldVisible = isShowSubjectFieldVisible,
         isSimSelectorVisible = simSelector.isAvailable,
+        onBubbleClick = LocalConversationBubbleAction.current,
     )
 
     TopAppBar(
@@ -426,6 +429,16 @@ private fun ConversationTopAppBarOverflowMenuContent(
         onClick = { onItemClick(onShowSubjectFieldClick) },
     )
 
+    visibility.onBubbleClick?.let { onBubbleClick ->
+        ConversationTopAppBarOverflowMenuItem(
+            isVisible = true,
+            testTag = CONVERSATION_BUBBLE_MENU_ITEM_TEST_TAG,
+            label = stringResource(id = R.string.twill_bubble_chat),
+            icon = Icons.Rounded.ChatBubbleOutline,
+            onClick = { onItemClick(onBubbleClick) },
+        )
+    }
+
     ConversationTopAppBarOverflowMenuItem(
         isVisible = visibility.isArchiveVisible,
         testTag = CONVERSATION_ARCHIVE_BUTTON_TEST_TAG,
@@ -657,10 +670,13 @@ private data class ConversationTopAppBarOverflowVisibility(
     val isDeleteConversationVisible: Boolean,
     val isShowSubjectFieldVisible: Boolean,
     val isSimSelectorVisible: Boolean,
+    /** Twill: floats the conversation in a bubble; null when it can't (already in one). */
+    val onBubbleClick: (() -> Unit)? = null,
 ) {
     val isOverflowVisible: Boolean
         get() {
-            return isAddPeopleVisible ||
+            return onBubbleClick != null ||
+                isAddPeopleVisible ||
                 isArchiveVisible ||
                 isUnarchiveVisible ||
                 isAddContactVisible ||
@@ -775,3 +791,8 @@ private fun ConversationTopAppBarOverflowMenuContentPreview() {
         )
     }
 }
+
+/** Twill: the conversation menu's Bubble item; provided by the conversation screen. */
+internal val LocalConversationBubbleAction = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+private const val CONVERSATION_BUBBLE_MENU_ITEM_TEST_TAG = "conversation_bubble_menu_item"

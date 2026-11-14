@@ -1,5 +1,8 @@
 package com.android.messaging.ui.conversation.screen
 
+import android.content.Context
+import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Schedule
@@ -12,11 +15,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Rect as ComposeRect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.messaging.R
@@ -26,6 +31,8 @@ import com.android.messaging.data.conversation.model.ParticipantId
 import com.android.messaging.data.conversation.model.draft.ConversationDraft
 import com.android.messaging.data.conversation.model.metadata.ConversationComposerDisabledReason
 import com.android.messaging.twill.SmsMessageSearch
+import com.android.messaging.twill.TwillNotifications
+import com.android.messaging.twill.TwillSmsBubble
 import com.android.messaging.ui.common.components.snackbar.MessagingSnackbarHost
 import com.android.messaging.ui.contact.model.AddContactRequest
 import com.android.messaging.ui.conversation.composer.ui.ConversationComposerSection
@@ -37,7 +44,9 @@ import com.android.messaging.ui.conversation.composer.ui.LocalSendLongPressActio
 import com.android.messaging.ui.conversation.composer.ui.SendLongPressAction
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerPermissionState
 import com.android.messaging.ui.conversation.mediapicker.rememberConversationMediaPickerState
+import com.android.messaging.ui.conversation.metadata.model.ConversationMetadataUiState
 import com.android.messaging.ui.conversation.metadata.ui.ConversationTopAppBar
+import com.android.messaging.ui.conversation.metadata.ui.LocalConversationBubbleAction
 import com.android.messaging.ui.conversation.scheduled.LocalConversationTopBarExtraActions
 import com.android.messaging.ui.conversation.scheduled.LocalScheduledMessagesController
 import com.android.messaging.ui.conversation.scheduled.ScheduleMessageDialog
@@ -53,6 +62,9 @@ import com.android.messaging.ui.twill.search.TwillSearchAction
 import com.android.messaging.ui.twill.search.TwillSearchTopBar
 import com.android.messaging.ui.twill.search.rememberTwillConversationSearch
 import com.android.messaging.util.UiUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 @Suppress("LongMethod") // Long arguments list, not too much logic, so it's ok to suppress
@@ -250,7 +262,35 @@ internal fun ConversationScreenScaffold(
             null
         }
 
+    // Twill: the menu's Bubble item floats this conversation (not offered inside a bubble).
+    val bubbleContext = LocalContext.current
+    val isInBubble = LocalActivity.current?.isLaunchedFromBubble == true
+    val bubbleScope = rememberCoroutineScope()
+    val bubbleTarget = uiState.metadata as? ConversationMetadataUiState.Present
+    val bubbleAction: (() -> Unit)? =
+        if (conversationId != null && bubbleTarget != null && !isInBubble) {
+            {
+                bubbleScope.launch {
+                    val single = bubbleTarget.avatar as? ConversationMetadataUiState.Avatar.Single
+                    val result = withContext(Dispatchers.IO) {
+                        TwillSmsBubble.open(
+                            context = bubbleContext.applicationContext,
+                            conversationId = conversationId.value,
+                            title = bubbleTarget.title,
+                            isGroup = bubbleTarget.participantCount > 1,
+                            photoUri = single?.photoUri,
+                            destination = single?.normalizedDestination,
+                        )
+                    }
+                    showBubbleResult(bubbleContext, result)
+                }
+            }
+        } else {
+            null
+        }
+
     CompositionLocalProvider(
+        LocalConversationBubbleAction provides bubbleAction,
         LocalSendLongPressActions provides sendLongPressActions,
         LocalDelayedSendUi provides delayedSendUi,
         LocalConversationTopBarExtraActions provides topBarExtraActions,
@@ -504,4 +544,19 @@ private fun ConversationScreenSimSelectorSheet(
         },
         onDismissRequest = simSheetState::dismiss,
     )
+}
+
+/** Twill: explains a bubble that couldn't open, and offers the setting that allows it. */
+internal fun showBubbleResult(context: Context, result: TwillNotifications.BubbleResult) {
+    when (result) {
+        TwillNotifications.BubbleResult.Opened -> Unit
+        TwillNotifications.BubbleResult.NotAllowed -> {
+            Toast.makeText(context, R.string.twill_bubble_not_allowed, Toast.LENGTH_LONG).show()
+            runCatching {
+                context.startActivity(TwillNotifications.bubbleSettingsIntent(context))
+            }
+        }
+        TwillNotifications.BubbleResult.Failed ->
+            Toast.makeText(context, R.string.twill_bubble_failed, Toast.LENGTH_SHORT).show()
+    }
 }

@@ -41,6 +41,7 @@ import androidx.compose.material.icons.rounded.AttachFile
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
@@ -71,6 +72,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -98,6 +100,7 @@ import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.ui.conversation.screen.showBubbleResult
 import com.android.messaging.ui.nostr.NostrForegroundHost
 import com.android.messaging.ui.twill.TwillAvatarImage
 import com.android.messaging.ui.twill.search.LocalTwillSearch
@@ -108,6 +111,7 @@ import com.android.messaging.ui.twill.search.TwillSearchTopBar
 import com.android.messaging.ui.twill.search.rememberTwillConversationSearch
 import com.android.messaging.ui.twill.search.withTwillSearchHighlight
 import java.io.File
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -195,6 +199,11 @@ internal fun TwillChatScreen(
         if (uri != null && path != null) copyToUri(context, File(path), uri)
     }
 
+    val scope = rememberCoroutineScope()
+    val bubbleChat: () -> Unit = {
+        scope.launch { showBubbleResult(context, viewModel.bubble(context)) }
+    }
+
     val info = details
     val title = info?.title.orEmpty()
     val isGroup = info?.isGroup == true
@@ -235,6 +244,10 @@ internal fun TwillChatScreen(
                                 }
                             }
                             if (messages.isNotEmpty()) TwillSearchAction(onClick = search::open)
+                            // A bubble can't open another bubble of itself.
+                            if (info != null && !isInBubble) {
+                                ChatMenu(onBubble = { bubbleChat() })
+                            }
                         },
                     )
                 }
@@ -979,5 +992,28 @@ private fun copyToUri(context: Context, source: File, target: Uri) {
         Toast.makeText(context, R.string.nostr_file_saved, Toast.LENGTH_SHORT).show()
     }.onFailure {
         Toast.makeText(context, R.string.nostr_file_save_failed, Toast.LENGTH_LONG).show()
+    }
+}
+
+/** The chat's ⋮ menu. */
+@Composable
+private fun ChatMenu(onBubble: () -> Unit) {
+    var isExpanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { isExpanded = true }) {
+            Icon(
+                imageVector = Icons.Rounded.MoreVert,
+                contentDescription = stringResource(R.string.twill_chat_more_options),
+            )
+        }
+        DropdownMenu(expanded = isExpanded, onDismissRequest = { isExpanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.twill_bubble_chat)) },
+                onClick = {
+                    isExpanded = false
+                    onBubble()
+                },
+            )
+        }
     }
 }

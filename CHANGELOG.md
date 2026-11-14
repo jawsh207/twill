@@ -4,6 +4,15 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.0.19
+
+- Bubbles: every conversation's menu (SMS, Nostr and Delta Chat) has Bubble, which floats
+  it in a bubble right away. Nostr bubbles have a purple ring and Delta Chat bubbles a gray
+  one, so you can tell them from SMS at a glance.
+- Bubbles always open at full height. Before, a bubble kept from before an app update could
+  open squashed.
+- Reading a conversation in the app no longer closes its bubble.
+
 ## 1.0.18
 
 - Wallet: connect your Lightning wallet with Nostr Wallet Connect (Nostr settings > Wallet).

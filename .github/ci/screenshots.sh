@@ -50,6 +50,18 @@ sleep 2
 $UI tap "Send Message"
 sleep 10
 shot "first-run-sent"
+# The conversation's menu floats it in a bubble (white ring, full height).
+adb shell cmd notification set_bubbles "$PKG" 1 >> "$OUT/log.txt" 2>&1 || true
+$UI tap "More options" || $UI dump "$OUT/sms-menu.xml"
+sleep 1
+shot "sms-bubble-1-menu"
+$UI tap "Bubble" || $UI dump "$OUT/sms-menu-open.xml"
+sleep 5
+shot "sms-bubble-2-open"
+back
+back
+sleep 2
+shot "sms-bubble-3-collapsed"
 adb shell am force-stop "$PKG"
 adb shell cmd notification cancel_all 2>/dev/null || adb shell service call notification 1
 
@@ -242,6 +254,20 @@ sleep 1
 shot "nostr-17-zapping"
 # The answer is a toast: catch it whenever it shows.
 for i in 1 2 3 4; do sleep 3; shot "nostr-18-zap-result-$i"; done
+# The chat's menu floats it in a bubble (protocol-coloured ring, full height).
+back
+sleep 1
+$UI tap "More options" || $UI dump "$OUT/nostr-menu.xml"
+sleep 1
+shot "nostr-19-menu"
+$UI tap "Bubble" || $UI dump "$OUT/nostr-menu-open.xml"
+sleep 5
+shot "nostr-20-bubble-from-menu"
+$UI dump "$OUT/nostr-bubble-menu.xml"
+back
+back
+sleep 2
+shot "nostr-21-bubble-collapsed"
 kill "$WALLET_PID" 2>/dev/null || true
 adb shell am force-stop "$PKG"
 
