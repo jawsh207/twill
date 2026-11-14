@@ -4,8 +4,13 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
-## 1.0.19
+## 1.1.0
 
+- Nostr replies and reactions, the same as in Zino: long-press a message to react with an
+  emoji or reply to it. Replies show the message they answer (tap it to jump there), and
+  reactions show under the message with a count. Only the people in the chat can see them,
+  and they work with Zino in both directions.
+- Long-press a message to copy its text, in Nostr and Delta Chat chats.
 - Bubbles: every conversation's menu (SMS, Nostr and Delta Chat) has Bubble, which floats
   it in a bubble right away. Nostr bubbles have a purple ring and Delta Chat bubbles a gray
   one, so you can tell them from SMS at a glance.
