@@ -50,6 +50,18 @@ sleep 2
 $UI tap "Send Message"
 sleep 10
 shot "first-run-sent"
+# The conversation's menu floats it in a bubble (white ring, full height).
+adb shell cmd notification set_bubbles "$PKG" 1 >> "$OUT/log.txt" 2>&1 || true
+$UI tap "More options" || $UI dump "$OUT/sms-menu.xml"
+sleep 1
+shot "sms-bubble-1-menu"
+$UI tap "Bubble" || $UI dump "$OUT/sms-menu-open.xml"
+sleep 5
+shot "sms-bubble-2-open"
+back
+back
+sleep 2
+shot "sms-bubble-3-collapsed"
 adb shell am force-stop "$PKG"
 adb shell cmd notification cancel_all 2>/dev/null || adb shell service call notification 1
 

@@ -98,9 +98,9 @@ import com.android.messaging.twill.TwillImages
 import com.android.messaging.twill.TwillInvoices
 import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
-import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.ui.conversation.screen.showBubbleResult
 import com.android.messaging.ui.nostr.NostrForegroundHost
 import com.android.messaging.ui.twill.TwillAvatarImage
 import com.android.messaging.ui.twill.search.LocalTwillSearch
@@ -201,21 +201,7 @@ internal fun TwillChatScreen(
 
     val scope = rememberCoroutineScope()
     val bubbleChat: () -> Unit = {
-        scope.launch {
-            when (viewModel.bubble(context)) {
-                TwillNotifications.BubbleResult.Opened -> Unit
-                TwillNotifications.BubbleResult.NotAllowed -> {
-                    Toast.makeText(context, R.string.twill_bubble_not_allowed, Toast.LENGTH_LONG)
-                        .show()
-                    runCatching {
-                        context.startActivity(TwillNotifications.bubbleSettingsIntent(context))
-                    }
-                }
-                TwillNotifications.BubbleResult.Failed ->
-                    Toast.makeText(context, R.string.twill_bubble_failed, Toast.LENGTH_SHORT)
-                        .show()
-            }
-        }
+        scope.launch { showBubbleResult(context, viewModel.bubble(context)) }
     }
 
     val info = details

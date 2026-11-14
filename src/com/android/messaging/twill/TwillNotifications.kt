@@ -225,21 +225,29 @@ internal object TwillNotifications {
     }
 
     /**
-     * Removes [chatId]'s notification, except while the chat is a bubble: Android closes a
-     * bubble along with its notification, so then the notification is only hidden from the
-     * shade and the bubble stays.
+     * Removes [chatId]'s notification, except while the chat is a bubble; see
+     * [cancelKeepingBubble].
      */
     fun cancelChat(context: Context, protocol: TwillProtocolId, chatId: String) {
+        cancelKeepingBubble(context, tag(protocol, chatId), 0)
+    }
+
+    /**
+     * Removes a conversation notification (any protocol, SMS included), except while it is a
+     * bubble: Android closes a bubble along with its notification, so then the notification
+     * is only hidden from the shade and the bubble stays open.
+     */
+    @JvmStatic
+    fun cancelKeepingBubble(context: Context, tag: String?, id: Int) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        val tag = tag(protocol, chatId)
-        val active = manager.activeNotifications.firstOrNull { it.tag == tag && it.id == 0 }
+        val active = manager.activeNotifications.firstOrNull { it.tag == tag && it.id == id }
             ?.notification
         val bubble = active?.bubbleMetadata
         val shortcutId = bubble?.shortcutId
         if (active == null || active.flags and Notification.FLAG_BUBBLE == 0 ||
             shortcutId == null
         ) {
-            manager.cancel(tag, 0)
+            manager.cancel(tag, id)
             return
         }
         if (bubble.isNotificationSuppressed) return
@@ -252,10 +260,10 @@ internal object TwillNotifications {
                     .build(),
             )
             .build()
-        runCatching { manager.notify(tag, 0, hidden) }
+        runCatching { manager.notify(tag, id, hidden) }
     }
 
-    /** What [bubbleChat] did. */
+    /** What [bubbleChat] and [postBubble] did. */
     enum class BubbleResult { Opened, NotAllowed, Failed }
 
     /**
@@ -271,14 +279,9 @@ internal object TwillNotifications {
         isGroup: Boolean,
         picture: Bitmap?,
     ): BubbleResult {
-        val manager = context.getSystemService(NotificationManager::class.java)
-            ?: return BubbleResult.Failed
-        if (!manager.areNotificationsEnabled() || !manager.areBubblesEnabled()) {
-            return BubbleResult.NotAllowed
-        }
+        if (!canBubbleAtAll(context)) return BubbleResult.NotAllowed
         ensureChannels(context)
         val key = conversationKey(protocol, chatId)
-        val tag = tag(protocol, chatId)
         val avatar = avatarBitmap(context, picture, title, chatId)
         val person = Person.Builder()
             .setName(title)
@@ -287,40 +290,82 @@ internal object TwillNotifications {
             .build()
         pushShortcut(context, protocol, chatId, key, title, person, avatar)
         ensureConversationChannel(context, protocol, key, title)
+        return postBubble(
+            context = context,
+            tag = tag(protocol, chatId),
+            id = 0,
+            channelId = key,
+            shortcutId = key,
+            person = person,
+            title = title,
+            isGroup = isGroup,
+            smallIcon = protocolIcon(protocol),
+            contentIntent = openIntent(context, protocol, chatId),
+        )
+    }
+
+    /** Notifications and bubbles are on for Twill at all. */
+    @JvmStatic
+    fun canBubbleAtAll(context: Context): Boolean {
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return false
+        return manager.areNotificationsEnabled() && manager.areBubblesEnabled()
+    }
+
+    /**
+     * Shows a conversation (its shortcut [shortcutId] and channel [channelId] already set up)
+     * as an expanded bubble: its current notification if there is one, else an empty
+     * conversation notification. Hidden from the shade either way.
+     */
+    @JvmStatic
+    fun postBubble(
+        context: Context,
+        tag: String?,
+        id: Int,
+        channelId: String,
+        shortcutId: String,
+        person: Person,
+        title: String,
+        isGroup: Boolean,
+        @DrawableRes smallIcon: Int,
+        contentIntent: PendingIntent,
+    ): BubbleResult {
+        val manager = context.getSystemService(NotificationManager::class.java)
+            ?: return BubbleResult.Failed
         val allowed = when (manager.bubblePreference) {
             NotificationManager.BUBBLE_PREFERENCE_ALL -> true
             NotificationManager.BUBBLE_PREFERENCE_SELECTED ->
-                manager.getNotificationChannel(key)?.canBubble() == true
+                manager.getNotificationChannel(channelId)?.canBubble() == true
             else -> false
         }
         if (!allowed) return BubbleResult.NotAllowed
 
-        val metadata = NotificationCompat.BubbleMetadata.Builder(key)
+        val metadata = NotificationCompat.BubbleMetadata.Builder(shortcutId)
             .setDesiredHeight(BUBBLE_HEIGHT_DP)
             .setAutoExpandBubble(true)
             .setSuppressNotification(true)
             .build()
-        val active = activeNotification(context, tag)
+        val active = manager.activeNotifications.firstOrNull { it.tag == tag && it.id == id }
+            ?.notification
         val builder = if (active != null) {
             NotificationCompat.Builder(context, active)
         } else {
             val style = MessagingStyle(selfPerson(context))
                 .setGroupConversation(isGroup)
                 .setConversationTitle(if (isGroup) title else null)
-            NotificationCompat.Builder(context, key)
-                .setSmallIcon(protocolIcon(protocol))
+            NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(smallIcon)
                 .setStyle(style)
                 .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                 .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                 .setContentTitle(title)
-                .setContentIntent(openIntent(context, protocol, chatId))
-                .setShortcutId(key)
-                .setLocusId(LocusIdCompat(key))
+                .setContentIntent(contentIntent)
+                .setShortcutId(shortcutId)
+                .setLocusId(LocusIdCompat(shortcutId))
                 .addPerson(person)
         }
         builder.setBubbleMetadata(metadata).setOnlyAlertOnce(true).setSilent(true)
         return try {
-            NotificationManagerCompat.from(context).notify(tag, 0, builder.build())
+            NotificationManagerCompat.from(context).notify(tag, id, builder.build())
             BubbleResult.Opened
         } catch (exception: SecurityException) {
             BubbleResult.NotAllowed
@@ -331,6 +376,7 @@ internal object TwillNotifications {
     }
 
     /** Where the user lets Twill's conversations bubble. */
+    @JvmStatic
     fun bubbleSettingsIntent(context: Context): Intent =
         Intent(Settings.ACTION_APP_NOTIFICATION_BUBBLE_SETTINGS)
             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)

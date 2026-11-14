@@ -317,15 +317,16 @@ public class BugleNotifications {
         final NotificationManagerCompat notificationManager =
                 NotificationManagerCompat.from(Factory.get().getApplicationContext());
 
+        final Context context = Factory.get().getApplicationContext();
         if (conversationId == null || conversationId.isBlank()) {
             notificationManager.getActiveNotifications().forEach(notification -> {
                 String activeTag = notification.getTag();
-                if (activeTag.contains(notificationTag)) {
-                    notificationManager.cancel(activeTag, type);
+                if (activeTag != null && activeTag.contains(notificationTag)) {
+                    cancelKeepingBubble(context, notificationManager, activeTag, type);
                 }
             });
         } else {
-            notificationManager.cancel(notificationTag, type);
+            cancelKeepingBubble(context, notificationManager, notificationTag, type);
         }
 
         if (LogUtil.isLoggable(TAG, LogUtil.DEBUG)) {
@@ -353,6 +354,25 @@ public class BugleNotifications {
      * @param name The tag name (in practice, the type)
      * @param conversationId The conversation id (optional)
      */
+    /**
+     * Twill: a conversation's notification stays (hidden from the shade) while it is an open
+     * bubble, since Android closes the bubble along with it.
+     */
+    private static void cancelKeepingBubble(final Context context,
+            final NotificationManagerCompat notificationManager, final String tag,
+            final int type) {
+        if (type == PendingIntentConstants.SMS_NOTIFICATION_ID) {
+            TwillNotifications.cancelKeepingBubble(context, tag, type);
+        } else {
+            notificationManager.cancel(tag, type);
+        }
+    }
+
+    /** Twill: the tag of [conversationId]'s message notification, for bubbling it. */
+    public static String messageNotificationTag(final String conversationId) {
+        return buildNotificationTag(PendingIntentConstants.SMS_NOTIFICATION_ID, conversationId);
+    }
+
     private static String buildNotificationTag(final String name,
             final String conversationId) {
         final Context context = Factory.get().getApplicationContext();
