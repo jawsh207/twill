@@ -69,8 +69,8 @@ android {
         applicationId = "app.twill"
         // versionCode only has to keep increasing (test installs started at 20000016);
         // versionName is Twill's own version, shown to users and used as the release tag.
-        versionCode = 20000000 + 35
-        versionName = "1.0.18"
+        versionCode = 20000000 + 36
+        versionName = "1.1.0"
         minSdk = 36
         targetSdk = 37
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
