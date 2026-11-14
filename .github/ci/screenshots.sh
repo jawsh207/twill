@@ -194,7 +194,8 @@ sleep 3
 python3 .github/ci/nostr_dm.py react "$KEYS" "🔥" >> "$OUT/log.txt" 2>&1
 sleep 8
 shot "nostr-11a-incoming-reply-reaction"
-$UI longpress "Hi, are we still on for lunch?" || $UI dump "$OUT/nostr-longpress.xml"
+# (Not the first message: the test bubble floats over its left side.)
+$UI longpress "I can do 12:30 at the usual place" || $UI dump "$OUT/nostr-longpress.xml"
 sleep 2
 shot "nostr-11b-message-actions"
 $UI tap "👍" || $UI dump "$OUT/nostr-actions.xml"

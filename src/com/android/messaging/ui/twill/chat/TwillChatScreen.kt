@@ -609,6 +609,7 @@ private fun MessageBubble(
                             senderName = repliedName,
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp),
                             onClick = onOpenReply.takeIf { replied != null },
+                            onLongClick = onLongPress,
                         )
                     }
                     val attachment = message.attachment

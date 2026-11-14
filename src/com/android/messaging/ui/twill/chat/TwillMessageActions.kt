@@ -2,6 +2,7 @@ package com.android.messaging.ui.twill.chat
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -206,13 +207,24 @@ internal fun TwillReplyQuote(
     senderName: String?,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    /** Long-pressing the quote acts on the message it sits in, like the rest of the bubble. */
+    onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .background(colors.surfaceContainer)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(
+                if (onClick != null || onLongClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = { onClick?.invoke() },
+                        onLongClick = onLongClick,
+                    )
+                } else {
+                    Modifier
+                },
+            )
             .height(IntrinsicSize.Min),
     ) {
         Box(
