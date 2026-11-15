@@ -594,7 +594,7 @@ internal class DeltaChatProtocol @Inject constructor(
 
     override val canSendVoice: Boolean get() = true
 
-    override fun sendVoice(chatId: String, file: File) = launchCall(
+    override fun sendVoice(chatId: String, file: File, text: String) = launchCall(
         TwillError.UploadFailed,
         chatId,
     ) { account ->
@@ -607,6 +607,7 @@ internal class DeltaChatProtocol @Inject constructor(
                     "viewtype" to "Voice",
                     "file" to file.absolutePath,
                     "filename" to file.name,
+                    "text" to text.ifBlank { null },
                 ),
             )
         } finally {

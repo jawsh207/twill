@@ -259,8 +259,11 @@ internal interface TwillProtocol {
     /** The composer's mic records voice messages (Delta Chat); otherwise it's a send button. */
     val canSendVoice: Boolean get() = false
 
-    /** Sends the recording at [file] as a voice message. The file may be deleted afterwards. */
-    fun sendVoice(chatId: String, file: java.io.File) = Unit
+    /**
+     * Sends the recording at [file] as a voice message, with [text] as its caption when not
+     * blank. The file may be deleted afterwards.
+     */
+    fun sendVoice(chatId: String, file: java.io.File, text: String) = Unit
 
     fun sendFile(chatId: String, uri: Uri)
 

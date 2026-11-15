@@ -290,13 +290,16 @@ internal fun TwillChatScreen(
                             onTextChange = { text, revision ->
                                 if (revision == draftRevision) draft = text
                             },
-                            onSend = {
-                                viewModel.send(draft, replying?.id)
+                            onSend = { voice ->
+                                if (voice != null) {
+                                    viewModel.sendVoice(voice, draft)
+                                } else {
+                                    viewModel.send(draft, replying?.id)
+                                }
                                 draft = ""
                                 draftRevision++
                                 replyToId = null
                             },
-                            onSendVoice = viewModel::sendVoice,
                             onPickPhoto = {
                                 pickPhoto.launch(
                                     PickVisualMediaRequest(

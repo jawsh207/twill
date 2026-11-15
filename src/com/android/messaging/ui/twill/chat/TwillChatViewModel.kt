@@ -152,8 +152,8 @@ internal class TwillChatViewModel @Inject constructor(
     val canSendVoice: Boolean
         get() = target.value?.protocol?.canSendVoice == true
 
-    fun sendVoice(file: java.io.File) = withTarget { protocol, chatId ->
-        protocol.sendVoice(chatId, file)
+    fun sendVoice(file: java.io.File, text: String) = withTarget { protocol, chatId ->
+        protocol.sendVoice(chatId, file, text.trim())
     }
 
     fun download(message: TwillMessage) = withTarget { protocol, _ -> protocol.download(message) }
