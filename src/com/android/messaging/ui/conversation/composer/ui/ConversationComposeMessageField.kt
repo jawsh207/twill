@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.InsertDriveFile
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Mic
@@ -77,6 +78,9 @@ internal fun ConversationComposeAttachmentMenu(
     onContactAttachClick: () -> Unit,
     onMediaPickerClick: () -> Unit,
     onAudioAttachClick: () -> Unit,
+    /** Twill: what the menu offers besides photos (Nostr and Delta Chat chats differ). */
+    items: ConversationComposeAttachmentItems = ConversationComposeAttachmentItems(),
+    onFileAttachClick: () -> Unit = {},
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     var isExpanded by rememberSaveable {
@@ -142,10 +146,22 @@ internal fun ConversationComposeAttachmentMenu(
                 onContactAttachClick = {
                     closeMenuAndRun(action = onContactAttachClick)
                 },
+                items = items,
+                onFileAttachClick = {
+                    closeMenuAndRun(action = onFileAttachClick)
+                },
             )
         }
     }
 }
+
+/** Twill: which attachment menu items show. SMS shows audio and contacts; others differ. */
+@androidx.compose.runtime.Immutable
+internal data class ConversationComposeAttachmentItems(
+    val isAudioVisible: Boolean = true,
+    val isContactVisible: Boolean = true,
+    val isFileVisible: Boolean = false,
+)
 
 @Composable
 private fun ConversationComposeAttachmentMenuContent(
@@ -153,6 +169,8 @@ private fun ConversationComposeAttachmentMenuContent(
     onMediaPickerClick: () -> Unit,
     onAudioAttachClick: () -> Unit,
     onContactAttachClick: () -> Unit,
+    items: ConversationComposeAttachmentItems = ConversationComposeAttachmentItems(),
+    onFileAttachClick: () -> Unit = {},
 ) {
     ConversationComposeAttachmentMenuItem(
         modifier = Modifier.testTag(CONVERSATION_ATTACHMENT_MEDIA_MENU_ITEM_TEST_TAG),
@@ -160,20 +178,32 @@ private fun ConversationComposeAttachmentMenuContent(
         textResId = R.string.mediapicker_gallery_title,
         onClick = onMediaPickerClick,
     )
-    ConversationComposeAttachmentMenuItem(
-        modifier = Modifier.testTag(CONVERSATION_ATTACHMENT_AUDIO_MENU_ITEM_TEST_TAG),
-        imageVector = Icons.Rounded.Mic,
-        textResId = R.string.mediapicker_audio_title,
-        enabled = isAudioRecordActionEnabled,
-        onClick = onAudioAttachClick,
-    )
+    if (items.isFileVisible) {
+        ConversationComposeAttachmentMenuItem(
+            imageVector = Icons.AutoMirrored.Rounded.InsertDriveFile,
+            textResId = R.string.nostr_attach_file,
+            onClick = onFileAttachClick,
+        )
+    }
 
-    ConversationComposeAttachmentMenuItem(
-        modifier = Modifier.testTag(CONVERSATION_ATTACHMENT_CONTACT_MENU_ITEM_TEST_TAG),
-        imageVector = Icons.Rounded.Person,
-        textResId = R.string.mediapicker_contact_title,
-        onClick = onContactAttachClick,
-    )
+    if (items.isAudioVisible) {
+        ConversationComposeAttachmentMenuItem(
+            modifier = Modifier.testTag(CONVERSATION_ATTACHMENT_AUDIO_MENU_ITEM_TEST_TAG),
+            imageVector = Icons.Rounded.Mic,
+            textResId = R.string.mediapicker_audio_title,
+            enabled = isAudioRecordActionEnabled,
+            onClick = onAudioAttachClick,
+        )
+    }
+
+    if (items.isContactVisible) {
+        ConversationComposeAttachmentMenuItem(
+            modifier = Modifier.testTag(CONVERSATION_ATTACHMENT_CONTACT_MENU_ITEM_TEST_TAG),
+            imageVector = Icons.Rounded.Person,
+            textResId = R.string.mediapicker_contact_title,
+            onClick = onContactAttachClick,
+        )
+    }
 }
 
 @Composable

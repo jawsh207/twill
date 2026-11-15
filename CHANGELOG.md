@@ -4,6 +4,15 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.1.1
+
+- Nostr and Delta Chat chats use the same message box as SMS: the ⊕ menu (Gallery and File)
+  and the round button. In Nostr it's always the send button.
+- Delta Chat voice messages: hold the mic to record, as in SMS (slide up to lock, slide away
+  to cancel). The recording is attached and goes out when you tap Send. It's recorded and
+  sent exactly as Delta Chat's own Android app does it.
+- Voice messages and other audio play right in Nostr and Delta Chat chats.
+
 ## 1.1.0
 
 - Nostr replies and reactions, the same as in Zino: long-press a message to react with an

@@ -111,7 +111,7 @@ sleep 1
 shot "nostr-4-new-chat"
 $UI tap "Start chat" || $UI dump "$OUT/nostr-start-chat.xml"
 sleep 8
-$UI tap "Nostr message" || $UI dump "$OUT/nostr-chat.xml"
+$UI tap "Send message" || $UI dump "$OUT/nostr-chat.xml"
 adb shell input text "Hello%sfrom%sthe%soptimized%sbuild"
 sleep 1
 $UI tap "Send Message" || $UI dump "$OUT/nostr-send.xml"
@@ -204,7 +204,7 @@ $UI longpress "Make it 1 instead?" || $UI dump "$OUT/nostr-longpress-2.xml"
 sleep 2
 $UI tap "Reply" || $UI dump "$OUT/nostr-actions-2.xml"
 sleep 2
-$UI tap "Nostr message"
+$UI tap "Send message"
 adb shell input text "1%sworks"
 sleep 2
 shot "nostr-11c-replying"

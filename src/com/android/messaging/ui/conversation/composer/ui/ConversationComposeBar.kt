@@ -119,6 +119,8 @@ internal fun ConversationComposeBar(
     onSendActionLongClick: () -> Unit,
     onSubjectChipClick: () -> Unit,
     onSubjectChipClear: () -> Unit,
+    attachmentItems: ConversationComposeAttachmentItems = ConversationComposeAttachmentItems(),
+    onFileAttachClick: () -> Unit = {},
 ) {
     val recordingGestureController = rememberConversationAudioRecordingGestureController(
         audioRecording = audioRecording,
@@ -160,6 +162,8 @@ internal fun ConversationComposeBar(
             onSendActionLongClick = onSendActionLongClick,
             onSubjectChipClick = onSubjectChipClick,
             onSubjectChipClear = onSubjectChipClear,
+            attachmentItems = attachmentItems,
+            onFileAttachClick = onFileAttachClick,
         )
     }
 }
@@ -244,6 +248,8 @@ internal fun ConversationComposeInputContent(
     onSendActionLongClick: () -> Unit,
     onSubjectChipClick: () -> Unit,
     onSubjectChipClear: () -> Unit,
+    attachmentItems: ConversationComposeAttachmentItems = ConversationComposeAttachmentItems(),
+    onFileAttachClick: () -> Unit = {},
 ) {
     val inputState = conversationComposeInputState(
         audioRecording = audioRecording,
@@ -279,6 +285,8 @@ internal fun ConversationComposeInputContent(
                 onContactAttachClick = onContactAttachClick,
                 onMediaPickerClick = onMediaPickerClick,
                 onAudioAttachClick = onLockedAudioRecordingStartRequest,
+                items = attachmentItems,
+                onFileAttachClick = onFileAttachClick,
             )
         },
         trailingContent = conversationComposeMmsSlot(sendProtocol = sendProtocol),

@@ -72,6 +72,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -139,6 +140,8 @@ internal fun TwillChatScreen(
     val paidInvoices by viewModel.paidInvoices.collectAsStateWithLifecycle()
     var isZapSheetVisible by rememberSaveable { mutableStateOf(false) }
     var draft by rememberSaveable { mutableStateOf("") }
+    // The SMS compose bar only takes our text when this moves (see MessageComposeTextSync).
+    var draftRevision by rememberSaveable { mutableIntStateOf(0) }
     var isInfoDialogVisible by rememberSaveable { mutableStateOf(false) }
     var viewerPath by remember { mutableStateOf<String?>(null) }
     var pendingSave by remember { mutableStateOf<TwillMessage?>(null) }
@@ -279,21 +282,28 @@ internal fun TwillChatScreen(
                                 onCancel = { replyToId = null },
                             )
                         }
-                        Composer(
+                        TwillComposeBar(
                             text = draft,
-                            enabled = info?.canSend == true,
-                            hint = protocolText.composerHint,
-                            disabledHint = protocolText.composerSignedOut,
-                            onTextChange = { draft = it },
-                            onSend = {
-                                viewModel.send(draft, replying?.id)
+                            textRevision = draftRevision,
+                            isEnabled = info?.canSend == true,
+                            canSendVoice = viewModel.canSendVoice,
+                            onTextChange = { text, revision ->
+                                if (revision == draftRevision) draft = text
+                            },
+                            onSend = { voice ->
+                                if (voice != null) {
+                                    viewModel.sendVoice(voice, draft)
+                                } else {
+                                    viewModel.send(draft, replying?.id)
+                                }
                                 draft = ""
+                                draftRevision++
                                 replyToId = null
                             },
                             onPickPhoto = {
                                 pickPhoto.launch(
                                     PickVisualMediaRequest(
-                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly,
                                     ),
                                 )
                             },
@@ -631,6 +641,10 @@ private fun MessageBubble(
                             isBusy = isDownloading || message.status == TwillMessage.Status.Sending,
                             aspectRatio = attachment.aspectRatio(),
                             onClick = onDownload,
+                        )
+
+                        attachment.isAudio && attachment.isDownloaded -> TwillAudioRow(
+                            path = requireNotNull(attachment.localPath),
                         )
 
                         else -> FileRow(
@@ -987,92 +1001,6 @@ private fun RequestBar(onAccept: () -> Unit, onBlock: () -> Unit) {
                 Button(modifier = Modifier.weight(1f), onClick = onAccept) {
                     Text(text = stringResource(R.string.twill_request_accept))
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun Composer(
-    text: String,
-    enabled: Boolean,
-    hint: Int,
-    disabledHint: Int,
-    onTextChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onPickPhoto: () -> Unit,
-    onPickFile: () -> Unit,
-) {
-    var isAttachMenuExpanded by remember { mutableStateOf(false) }
-
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Box {
-                IconButton(enabled = enabled, onClick = { isAttachMenuExpanded = true }) {
-                    Icon(
-                        imageVector = Icons.Rounded.AttachFile,
-                        contentDescription = stringResource(R.string.nostr_attach),
-                    )
-                }
-                DropdownMenu(
-                    containerColor = MaterialTheme.colorScheme.surfaceBright,
-                    expanded = isAttachMenuExpanded,
-                    onDismissRequest = { isAttachMenuExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(text = stringResource(R.string.nostr_attach_photo)) },
-                        leadingIcon = { Icon(Icons.Rounded.Image, contentDescription = null) },
-                        onClick = {
-                            isAttachMenuExpanded = false
-                            onPickPhoto()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(text = stringResource(R.string.nostr_attach_file)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.AutoMirrored.Rounded.InsertDriveFile,
-                                contentDescription = null,
-                            )
-                        },
-                        onClick = {
-                            isAttachMenuExpanded = false
-                            onPickFile()
-                        },
-                    )
-                }
-            }
-            OutlinedTextField(
-                modifier = Modifier.weight(1f),
-                value = text,
-                onValueChange = onTextChange,
-                enabled = enabled,
-                placeholder = {
-                    Text(
-                        text = stringResource(
-                            if (enabled) hint else disabledHint,
-                        ),
-                    )
-                },
-                maxLines = 6,
-                shape = RoundedCornerShape(24.dp),
-            )
-            FilledIconButton(
-                enabled = enabled && text.isNotBlank(),
-                onClick = onSend,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.Send,
-                    contentDescription = stringResource(R.string.sendButtonContentDescription),
-                )
             }
         }
     }
