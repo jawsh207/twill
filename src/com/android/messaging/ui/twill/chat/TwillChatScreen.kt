@@ -66,6 +66,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -105,6 +106,7 @@ import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.ui.common.components.contentSurfaceShape
 import com.android.messaging.ui.conversation.screen.showBubbleResult
 import com.android.messaging.ui.nostr.NostrForegroundHost
 import com.android.messaging.ui.twill.TwillAvatarImage
@@ -231,6 +233,10 @@ internal fun TwillChatScreen(
                     TwillSearchTopBar(search = search)
                 } else {
                     TopAppBar(
+                        // As on SMS chats, so the messages' rounded area stands out the same.
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        ),
                         navigationIcon = {
                             IconButton(onClick = onNavigateBack) {
                                 Icon(
@@ -321,7 +327,7 @@ internal fun TwillChatScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(contentPadding)
+                        .chatContentArea(contentPadding)
                         .padding(32.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -345,15 +351,12 @@ internal fun TwillChatScreen(
                     onLoadOlder = viewModel::ensureLoaded,
                 )
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .chatContentArea(contentPadding),
                     state = listState,
                     reverseLayout = true,
-                    contentPadding = PaddingValues(
-                        start = 12.dp,
-                        end = 12.dp,
-                        top = contentPadding.calculateTopPadding() + 8.dp,
-                        bottom = contentPadding.calculateBottomPadding() + 8.dp,
-                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     items(items = ordered.indices.toList(), key = { ordered[it].id }) { index ->
@@ -1065,3 +1068,17 @@ private fun ChatMenu(onBubble: () -> Unit) {
 private fun senderNameOf(message: TwillMessage, details: TwillChatDetails?): String? =
     details?.members?.get(message.senderId)?.name
         ?: details?.title?.takeIf { details.isGroup.not() }
+
+/**
+ * The messages' area, as in SMS chats: between the title bar and the message box rather than
+ * under them, so messages don't scroll behind the message box, with the same rounded corners.
+ */
+@Composable
+private fun Modifier.chatContentArea(contentPadding: PaddingValues): Modifier = this
+    .padding(
+        top = contentPadding.calculateTopPadding(),
+        bottom = contentPadding.calculateBottomPadding(),
+    )
+    .background(MaterialTheme.colorScheme.surfaceContainer)
+    .clip(MaterialTheme.contentSurfaceShape)
+    .background(MaterialTheme.colorScheme.background)

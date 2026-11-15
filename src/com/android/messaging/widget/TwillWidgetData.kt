@@ -77,6 +77,7 @@ internal sealed interface WidgetChatKey {
 internal fun avatarLetter(name: String, isGroup: Boolean): String? =
     name.firstOrNull()?.takeIf { !isGroup && it.isLetter() }?.uppercase()
 
+/** One chat in a home-screen widget: its name, latest message, time and picture. */
 internal data class WidgetChat(
     val key: WidgetChatKey,
     val title: String,
@@ -89,6 +90,7 @@ internal data class WidgetChat(
     val loadPhoto: suspend () -> Bitmap?,
 )
 
+/** One message in a conversation widget. */
 internal data class WidgetMessage(
     val id: String,
     val text: String,

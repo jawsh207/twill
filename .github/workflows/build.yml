@@ -54,6 +54,9 @@ jobs:
           java-version: 17
           cache: gradle
 
+      - name: Check that Twill's code is described
+        run: python3 .github/ci/check-docs.py
+
       - name: Run ktlintCheck
         run: ./gradlew ktlintCheck --no-daemon --stacktrace --console=plain
 
