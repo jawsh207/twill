@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
+/** Lets code Hilt can't inject (receivers, workers, Java) reach Twill's protocols. */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 internal interface TwillEntryPoint {
@@ -52,6 +53,7 @@ internal interface TwillEntryPoint {
     fun twillInboxSettings(): TwillInboxSettings
 }
 
+/** The [TwillEntryPoint] for this app, from any context. */
 internal fun Context.twillEntryPoint(): TwillEntryPoint =
     EntryPointAccessors.fromApplication(applicationContext, TwillEntryPoint::class.java)
 

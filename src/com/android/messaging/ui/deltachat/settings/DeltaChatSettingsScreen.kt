@@ -61,10 +61,15 @@ import com.android.messaging.ui.appsettings.common.SettingsTopAppBar
 import com.android.messaging.util.UiUtils
 import kotlinx.coroutines.launch
 
+/** Which Delta Chat settings dialog is open. */
 private enum class DeltaChatDialog { None, NewProfile, Code, Email, Name, Remove }
 
 private const val DEFAULT_CHATMAIL_SERVER = "nine.testrun.org"
 
+/**
+ * Delta Chat settings: creating or adding a profile, name, read receipts, inviting
+ * people and how messages arrive.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun DeltaChatSettingsScreen(
@@ -413,6 +418,7 @@ internal fun DeltaChatSettingsScreen(
     }
 }
 
+/** A short explanatory note between settings. */
 @Composable
 private fun NoteItem(text: String) {
     ListItem(
@@ -426,6 +432,7 @@ private fun NoteItem(text: String) {
     )
 }
 
+/** One choice of how messages arrive (always connected, or checking now and then). */
 @Composable
 private fun DeliveryModeRow(
     mode: TwillDeliveryMode,
@@ -452,6 +459,7 @@ private fun DeliveryModeRow(
     )
 }
 
+/** One text field in a [FormDialog]. */
 private class FormField(
     val label: String,
     val initial: String = "",
@@ -459,6 +467,7 @@ private class FormField(
     val isSecret: Boolean = false,
 )
 
+/** A dialog with a few text fields and a confirm button, for profile details. */
 @Composable
 private fun FormDialog(
     title: String,
@@ -512,12 +521,14 @@ private fun FormDialog(
     )
 }
 
+/** Whether Twill may post notifications at all. */
 private fun areNotificationsAllowed(context: Context): Boolean =
     context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
         PackageManager.PERMISSION_GRANTED &&
         context.getSystemService(NotificationManager::class.java)?.areNotificationsEnabled() !=
         false
 
+/** Opens Android's notification settings for Twill. */
 private fun openNotificationSettings(context: Context) {
     runCatching {
         context.startActivity(
@@ -528,11 +539,13 @@ private fun openNotificationSettings(context: Context) {
     }
 }
 
+/** Copies [text] to the clipboard. */
 private fun copy(context: Context, text: String) {
     context.getSystemService(ClipboardManager::class.java)
         ?.setPrimaryClip(ClipData.newPlainText("deltachat", text))
 }
 
+/** Opens Android's share sheet for [text]. */
 private fun shareText(context: Context, text: String) {
     val send = Intent(Intent.ACTION_SEND)
         .setType("text/plain")

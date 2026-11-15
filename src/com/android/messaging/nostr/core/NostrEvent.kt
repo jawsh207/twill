@@ -5,6 +5,7 @@ import org.json.JSONObject
 
 /* Nostr events, filters and signers (NIP-01), from Struthio. */
 
+/** Nostr event kinds Twill reads or writes, by what they are. */
 internal object Kind {
     const val METADATA = 0
     const val NOTE = 1
@@ -30,10 +31,13 @@ internal object Kind {
 
 internal typealias Tags = List<List<String>>
 
+/** The first tag called [name] that has a value, e.g. `["p", <pubkey>]`. */
 internal fun Tags.first(name: String): List<String>? = firstOrNull { it.size >= 2 && it[0] == name }
 
+/** The value of the first tag called [name]. */
 internal fun Tags.value(name: String): String? = first(name)?.get(1)
 
+/** The values of every tag called [name], e.g. all relays in a relay list. */
 internal fun Tags.values(name: String): List<String> =
     filter { it.size >= 2 && it[0] == name }.map { it[1] }
 
@@ -55,6 +59,7 @@ private fun StringBuilder.jsonString(value: String) {
     append('"')
 }
 
+/** Writes [tags] as a JSON array of arrays, exactly as NIP-01 hashes them. */
 private fun StringBuilder.jsonTags(tags: Tags) {
     append('[')
     tags.forEachIndexed { i, tag ->
@@ -69,8 +74,10 @@ private fun StringBuilder.jsonTags(tags: Tags) {
     append(']')
 }
 
+/** [value] as a JSON string literal, escaped the way NIP-01 requires. */
 internal fun quoteJson(value: String) = StringBuilder().apply { jsonString(value) }.toString()
 
+/** Reads an event's tags from JSON, skipping anything that isn't a list of strings. */
 internal fun parseTags(array: JSONArray?): Tags {
     if (array == null) return emptyList()
     return List(array.length()) { i ->
@@ -79,6 +86,7 @@ internal fun parseTags(array: JSONArray?): Tags {
     }
 }
 
+/** An event's id: the SHA-256 of its fields serialised as NIP-01 specifies. */
 internal fun computeEventId(
     pubkey: String,
     createdAt: Long,
@@ -119,6 +127,10 @@ internal class Draft(
     }.toString()
 }
 
+/**
+ * A signed Nostr event, as relays send and receive it. [isValid] checks that the id
+ * matches the content and the signature matches the author.
+ */
 internal class Event(
     val id: String,
     val pubkey: String,
@@ -192,8 +204,13 @@ internal class Event(
     }
 }
 
+/** The current time in seconds, as Nostr timestamps are. */
 internal fun nowSeconds() = System.currentTimeMillis() / 1000
 
+/**
+ * A NIP-01 subscription filter: which events to ask relays for (by author, kind, tag,
+ * time range or search words).
+ */
 internal class Filter(
     val ids: Collection<String>? = null,
     val authors: Collection<String>? = null,
@@ -261,6 +278,10 @@ internal interface Signer {
     suspend fun nip44Decrypt(payload: String, peer: String, background: Boolean = true): String
 }
 
+/**
+ * Signs and encrypts with a private key held by Twill itself (the user's own key, or a
+ * throwaway key for gift wraps). The other kind of signer is an app like Amber.
+ */
 internal class LocalSigner(
     private val secret: ByteArray,
 ) : Signer {

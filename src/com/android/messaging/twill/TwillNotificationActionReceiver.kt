@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
+/** What the notification action receiver needs, since receivers can't be injected. */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 internal interface TwillNotificationEntryPoint {

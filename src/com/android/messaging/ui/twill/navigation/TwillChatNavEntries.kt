@@ -36,6 +36,7 @@ internal fun twillChatRoute(intent: Intent?): NavKey? {
     return TwillChatNavKey(protocol = protocol, chatId = chatId)
 }
 
+/** Adds Twill's screens (chats and Delta Chat QR codes) to the app's navigation. */
 internal fun EntryProviderScope<NavKey>.twillEntries() {
     entry<TwillChatNavKey>(
         metadata = paneTitleMetadata(R.string.twill_chat_pane_title),
@@ -60,6 +61,7 @@ internal fun EntryProviderScope<NavKey>.twillEntries() {
     )
 }
 
+/** Shows the chat a navigation key points to, knowing whether it's inside a bubble. */
 private fun twillChatRouteContent(): @Composable (TwillChatNavKey) -> Unit {
     return { navKey ->
         val navigator = LocalNavigator.current

@@ -55,6 +55,10 @@ internal data class TwillAvatar(
     val isGroup: Boolean = false,
 )
 
+/**
+ * A file sent with a message: a picture, voice message, or any other file.
+ * It may still be on a server ([isDownloaded] false) until the user opens it.
+ */
 @Immutable
 internal data class TwillAttachment(
     val mimeType: String?,
@@ -76,6 +80,10 @@ internal data class TwillAttachment(
         get() = localPath != null && File(localPath).exists()
 }
 
+/**
+ * One message in a Nostr or Delta Chat chat, in the shape every Twill screen understands.
+ * Each protocol turns its own messages into these.
+ */
 @Immutable
 internal data class TwillMessage(
     val id: String,
@@ -104,6 +112,10 @@ internal data class TwillReaction(
     val isMine: Boolean,
 )
 
+/**
+ * One conversation in the inbox list: who it's with, the latest message and its sender,
+ * the unread count, and whether it's pinned or a request from someone new.
+ */
 @Immutable
 internal data class TwillChat(
     val protocol: TwillProtocolId,
@@ -120,6 +132,7 @@ internal data class TwillChat(
     val isRequest: Boolean = false,
 )
 
+/** A person in a chat, for names and pictures next to their messages. */
 @Immutable
 internal data class TwillMember(
     val id: String,
@@ -131,6 +144,10 @@ internal data class TwillMember(
     val avatar: TwillAvatar = TwillAvatar(name),
 )
 
+/**
+ * What the open chat screen shows in its title bar and info dialog, and what the user
+ * may do there (send, rename, accept a request).
+ */
 @Immutable
 internal data class TwillChatDetails(
     val chatId: String,

@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** Everything Nostr settings shows: account, profile, relays, wallet, media and options. */
 @Immutable
 internal data class NostrSettingsUiState(
     val account: NostrAccount? = null,
@@ -44,6 +45,7 @@ internal data class NostrSettingsUiState(
     val isRefreshingProfile: Boolean = false,
 )
 
+/** Reads and changes Nostr settings: sign-in, relays, wallet, media server and options. */
 @HiltViewModel
 internal class NostrSettingsViewModel @Inject constructor(
     private val accountStore: NostrAccountStore,

@@ -346,6 +346,7 @@ internal fun AnnotatedString.withTwillSearchHighlight(): AnnotatedString {
 internal fun String.withTwillSearchHighlight(): AnnotatedString =
     AnnotatedString(this).withTwillSearchHighlight()
 
+/** This text with every match of [query] highlighted. */
 private fun AnnotatedString.highlighted(query: String, style: SpanStyle): AnnotatedString {
     val starts = buildList {
         var from = text.indexOf(query, ignoreCase = true)

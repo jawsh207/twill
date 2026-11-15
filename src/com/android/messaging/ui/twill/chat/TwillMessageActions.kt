@@ -118,6 +118,7 @@ internal fun TwillMessageActions(
     }
 }
 
+/** A round button holding one quick-reaction emoji (or the + for more). */
 @Composable
 private fun ReactionCircle(onClick: () -> Unit, content: @Composable () -> Unit) {
     Box(
@@ -130,6 +131,7 @@ private fun ReactionCircle(onClick: () -> Unit, content: @Composable () -> Unit)
     ) { content() }
 }
 
+/** One row of the long-press menu, such as Reply or Copy text. */
 @Composable
 private fun ActionRow(label: String, icon: @Composable () -> Unit, onClick: () -> Unit) {
     ListItem(
@@ -262,6 +264,7 @@ internal fun TwillReplyQuote(
     }
 }
 
+/** What a quote shows of [message]: its text, or Photo or File when it has none. */
 @Composable
 private fun quoteText(message: TwillMessage): String {
     val attachment = message.attachment

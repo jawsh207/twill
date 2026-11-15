@@ -20,6 +20,7 @@ internal sealed interface NostrAccount {
     ) : NostrAccount
 }
 
+/** The relays Twill starts with. Users can change both lists in Nostr settings. */
 internal object NostrDefaults {
     /** Used for sending and receiving DMs until the user changes them. */
     val DEFAULT_RELAYS = listOf(

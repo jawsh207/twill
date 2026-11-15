@@ -49,6 +49,10 @@ internal object TwillSmsNotificationDelete {
     }
 }
 
+/**
+ * Handles Delete on an SMS notification: deletes those messages and marks the
+ * conversation read, without opening the app.
+ */
 class TwillSmsNotificationDeleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != TwillSmsNotificationDelete.ACTION) return

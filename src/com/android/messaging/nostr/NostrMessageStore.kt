@@ -44,6 +44,10 @@ internal data class NostrAttachment(
         get() = localPath != null && File(localPath).exists()
 }
 
+/**
+ * A Nostr message as stored on the phone: who sent it, the text or file, when, and
+ * whether it was sent, delivered or failed. Opened from its gift wrap when it arrived.
+ */
 @Immutable
 internal data class NostrMessage(
     val id: String,
@@ -73,6 +77,10 @@ internal data class NostrMessage(
     }
 }
 
+/**
+ * A Nostr chat in the inbox: who it's with, its latest message, the unread count and
+ * whether it's pinned.
+ */
 @Immutable
 internal data class NostrConversation(
     val chatKey: String,
@@ -90,6 +98,10 @@ internal data class NostrConversation(
         get() = NostrChatKey.isGroup(chatKey)
 }
 
+/**
+ * A person's public Nostr profile (kind 0): name, picture, NIP-05 address, Lightning
+ * address. Cached so chats show names without asking relays each time.
+ */
 @Immutable
 internal data class NostrProfile(
     val pubKey: String,
@@ -149,6 +161,7 @@ internal object NostrPeopleSource {
     const val CLOSE = CHAT or FOLLOW or LEGACY_DM
 }
 
+/** A Nostr group chat's name, as set by its members (the NIP-17 `subject` tag). */
 @Immutable
 internal data class NostrGroupInfo(
     val chatKey: String,

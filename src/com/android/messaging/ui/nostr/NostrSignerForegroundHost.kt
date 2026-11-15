@@ -53,6 +53,7 @@ internal fun NostrSignerForegroundHost() {
     }
 }
 
+/** Lets the signer host composable reach the account store and signer without injection. */
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 internal interface NostrUiEntryPoint {

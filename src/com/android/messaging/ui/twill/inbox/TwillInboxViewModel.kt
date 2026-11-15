@@ -50,6 +50,7 @@ internal data class TwillInboxSection(
     val chats: List<TwillChat>,
 )
 
+/** Everything the inbox shows: each protocol's section of chats, and the SMS options. */
 @Immutable
 internal data class TwillInboxUiState(
     /** Twill handles SMS/MMS (see [com.android.messaging.twill.TwillSms]). */
@@ -108,6 +109,7 @@ internal data class TwillInboxSearchItem(
     @param:DrawableRes val iconRes: Int,
 )
 
+/** Inbox search results: matching conversations, and matching messages. */
 @Immutable
 internal data class TwillInboxSearchResults(
     val conversations: List<TwillInboxSearchItem> = emptyList(),
@@ -229,6 +231,10 @@ internal class TwillInbox(
 /** Provided only by the real conversation list route; null keeps the upstream list. */
 internal val LocalTwillInbox = staticCompositionLocalOf<TwillInbox?> { null }
 
+/**
+ * Gathers chats from every protocol for the inbox, and carries out what the user
+ * does there (search, pin, archive, delete, start chats).
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 internal class TwillInboxViewModel @Inject constructor(

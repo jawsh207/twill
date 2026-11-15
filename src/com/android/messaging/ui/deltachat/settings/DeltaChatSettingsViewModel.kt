@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** The Delta Chat profile's details the user can change. */
 @Immutable
 internal data class DeltaChatProfile(
     val displayName: String = "",
@@ -25,6 +26,7 @@ internal data class DeltaChatProfile(
     val readReceipts: Boolean = true,
 )
 
+/** Everything Delta Chat settings shows: whether set up, progress or errors, and the profile. */
 @Immutable
 internal data class DeltaChatSettingsUiState(
     val isAvailable: Boolean = true,
@@ -38,6 +40,7 @@ internal data class DeltaChatSettingsUiState(
     val deliveryMode: TwillDeliveryMode = TwillDeliveryMode.WhileOpen,
 )
 
+/** Reads and changes Delta Chat settings: profiles, name, read receipts and invites. */
 @HiltViewModel
 internal class DeltaChatSettingsViewModel @Inject constructor(
     private val protocol: DeltaChatProtocol,
