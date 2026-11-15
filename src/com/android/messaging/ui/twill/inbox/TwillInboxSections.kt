@@ -90,6 +90,7 @@ internal class ConversationListSections(
     val isSmsOnly: Boolean = false,
 )
 
+/** Which new-conversation dialog is open, and for which protocol's tab. */
 private sealed interface NewChatDialog {
     data object None : NewChatDialog
 
@@ -399,6 +400,7 @@ private fun PickerRow(
     }
 }
 
+/** One protocol's chats in the inbox list, under its own header. */
 private fun LazyListScope.protocolSection(
     section: TwillInboxSection,
     controller: TwillInboxController,
@@ -441,6 +443,7 @@ private fun LazyListScope.protocolSection(
     }
 }
 
+/** A protocol's heading in the inbox; tapping it folds the section away or opens it. */
 @Composable
 private fun InboxSectionHeader(
     title: String,
@@ -480,6 +483,10 @@ private fun InboxSectionHeader(
     }
 }
 
+/**
+ * One chat in the inbox: picture, name, latest message, time and unread count.
+ * Long-press to pin or delete it.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ChatRow(
@@ -626,6 +633,7 @@ private fun ChatRow(
     }
 }
 
+/** Starting a chat: type a name, npub, NIP-05 or email address, with suggestions as you type. */
 @Composable
 private fun NewChatDialogContent(
     protocol: TwillProtocolId,
@@ -786,6 +794,7 @@ private fun SuggestionRow(member: TwillMember, protocol: TwillProtocolId, onClic
 private const val SUGGESTION_DELAY_MILLIS = 120L
 private const val SEARCH_FURTHER_DELAY_MILLIS = 600L
 
+/** Starting a group chat: its name and the people to add. */
 @Composable
 private fun NewGroupDialogContent(
     protocol: TwillProtocolId,

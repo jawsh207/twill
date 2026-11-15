@@ -118,6 +118,10 @@ import com.android.messaging.ui.twill.search.withTwillSearchHighlight
 import java.io.File
 import kotlinx.coroutines.launch
 
+/**
+ * An open Nostr or Delta Chat conversation: messages, the SMS-style message box,
+ * search, zaps, replies and reactions. Also used inside a bubble ([isInBubble]).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun TwillChatScreen(
@@ -481,6 +485,7 @@ internal fun TwillChatScreen(
     }
 }
 
+/** The title bar's name, picture and subtitle; tapping it opens the chat's info. */
 @Composable
 private fun ChatTitle(details: TwillChatDetails, protocol: TwillProtocolId, onClick: () -> Unit) {
     Row(
@@ -514,9 +519,11 @@ private fun ChatTitle(details: TwillChatDetails, protocol: TwillProtocolId, onCl
     }
 }
 
+/** A file extension for [mimeType], for naming saved files. */
 private fun extensionOf(mimeType: String?): String =
     mimeType?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) } ?: "bin"
 
+/** The picture's width over height, or a usual photo shape when its size isn't known. */
 private fun TwillAttachment.aspectRatio(): Float {
     val w = width ?: return DEFAULT_PHOTO_RATIO
     val h = height ?: return DEFAULT_PHOTO_RATIO
@@ -528,6 +535,7 @@ private const val DEFAULT_PHOTO_RATIO = 4f / 3f
 /** Load older messages when this close to the oldest one shown. */
 private const val LOAD_OLDER_THRESHOLD = 10
 
+/** A centred notice in the chat, such as "Alice joined the group". */
 @Composable
 private fun InfoMessage(text: String) {
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -547,6 +555,10 @@ private fun InfoMessage(text: String) {
     }
 }
 
+/**
+ * One message: its bubble (text, picture, voice or file, any quote it replies to),
+ * reactions under it, and the time and delivery status.
+ */
 @Composable
 private fun MessageBubble(
     message: TwillMessage,
@@ -711,6 +723,7 @@ private fun MessageBubble(
     }
 }
 
+/** The small line under a message: its time, plus Sending, Delivered, Read or Failed. */
 @Composable
 private fun statusLine(context: Context, message: TwillMessage): String {
     val time = DateUtils.formatDateTime(
@@ -727,6 +740,7 @@ private fun statusLine(context: Context, message: TwillMessage): String {
     }
 }
 
+/** A picture that is on the phone, at its own shape; tapping opens it full screen. */
 @Composable
 private fun DownloadedImage(
     path: String,
@@ -754,6 +768,7 @@ private fun DownloadedImage(
     }
 }
 
+/** A picture not downloaded yet: tap to fetch it (a spinner shows while it loads). */
 @Composable
 private fun AttachmentPlaceholder(
     icon: ImageVector,
@@ -793,6 +808,7 @@ private fun AttachmentPlaceholder(
     }
 }
 
+/** A non-picture file: its name and size. Tap to download it, then tap again to save it. */
 @Composable
 private fun FileRow(
     name: String,
@@ -836,6 +852,7 @@ private fun FileRow(
     }
 }
 
+/** A picture full screen on black; tap to close. */
 @Composable
 private fun ImageViewer(path: String, onDismiss: () -> Unit) {
     val bitmap by produceState<ImageBitmap?>(null, path) {
@@ -868,6 +885,7 @@ private fun ImageViewer(path: String, onDismiss: () -> Unit) {
     }
 }
 
+/** The chat's details: who it's with, or a group's name, members and invite code. */
 @Composable
 private fun ChatInfoDialog(
     details: TwillChatDetails,
@@ -980,6 +998,7 @@ private fun ChatInfoDialog(
     )
 }
 
+/** Shown instead of the message box for a chat from someone new: Accept or Block. */
 @Composable
 private fun RequestBar(onAccept: () -> Unit, onBlock: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
@@ -1006,6 +1025,7 @@ private fun RequestBar(onAccept: () -> Unit, onBlock: () -> Unit) {
     }
 }
 
+/** Copies a downloaded file to where the user chose to save it. */
 private fun copyToUri(context: Context, source: File, target: Uri) {
     runCatching {
         context.contentResolver.openOutputStream(target)?.use { out ->

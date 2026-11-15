@@ -82,6 +82,7 @@ import com.android.messaging.util.UiUtils
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
+/** Which Nostr settings dialog is open. */
 private enum class NostrSettingsDialog {
     None,
     PrivateKey,
@@ -93,6 +94,10 @@ private enum class NostrSettingsDialog {
     DisconnectWallet,
 }
 
+/**
+ * Nostr settings: signing in (Amber or a key), profile, wallet, message and search relays,
+ * media server and how messages arrive.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NostrSettingsScreen(
@@ -338,8 +343,8 @@ internal fun NostrSettingsScreen(
                 SettingsClickableItem(
                     title = stringResource(R.string.nostr_media_server),
                     summary =
-                    uiState.mediaServer + "\n" +
-                        stringResource(R.string.nostr_media_server_summary),
+                        uiState.mediaServer + "\n" +
+                            stringResource(R.string.nostr_media_server_summary),
                     onClick = { dialog = NostrSettingsDialog.MediaServer },
                 )
             }
@@ -510,6 +515,7 @@ private fun RelayListLabel(text: String) {
     )
 }
 
+/** The signed-in account: picture, name and npub, with a button to copy the npub. */
 @Composable
 private fun OwnProfileRow(
     pubKeyHex: String,
@@ -576,12 +582,14 @@ private fun OwnProfileRow(
     )
 }
 
+/** Whether Twill may post notifications at all. */
 private fun areNotificationsAllowed(context: Context): Boolean =
     context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
         PackageManager.PERMISSION_GRANTED &&
         context.getSystemService(NotificationManager::class.java)
             ?.areNotificationsEnabled() != false
 
+/** Opens Android's notification settings for Twill. */
 private fun openNotificationSettings(context: Context) {
     runCatching {
         context.startActivity(
@@ -592,6 +600,7 @@ private fun openNotificationSettings(context: Context) {
     }
 }
 
+/** One choice of how messages arrive (always connected, or checking now and then). */
 @Composable
 private fun DeliveryModeRow(
     mode: TwillDeliveryMode,
@@ -623,6 +632,7 @@ private fun DeliveryModeRow(
     )
 }
 
+/** Shows the nsec for backing up, masked like a password. */
 @Composable
 private fun PrivateKeyDialog(
     onSignIn: (String) -> Boolean,
@@ -677,6 +687,10 @@ private fun PrivateKeyDialog(
     )
 }
 
+/**
+ * Confirms signing out. With a key kept in Twill, it warns the key is gone unless backed up
+ * and offers to copy it first.
+ */
 @Composable
 private fun SignOutDialog(
     isLocalKey: Boolean,
@@ -717,6 +731,7 @@ private fun SignOutDialog(
     )
 }
 
+/** Changes the Blossom server that encrypted pictures and files are uploaded to. */
 @Composable
 private fun MediaServerDialog(
     current: String,
@@ -858,6 +873,7 @@ private fun ConnectWalletDialog(
     )
 }
 
+/** Adds a relay address to the message or search relay list. */
 @Composable
 private fun AddRelayDialog(
     title: String,
@@ -905,6 +921,7 @@ private fun AddRelayDialog(
     )
 }
 
+/** Copies [text]; a private key is marked sensitive so clipboard previews hide it. */
 private fun copyToClipboard(
     context: Context,
     text: String,

@@ -14,6 +14,7 @@ import javax.crypto.spec.SecretKeySpec
  * and NIP-44 v2 encryption (ChaCha20 + HMAC-SHA256).
  */
 
+/** Converts between bytes and the lowercase hex Nostr uses for keys, ids and signatures. */
 internal object Hex {
     private const val CHARS = "0123456789abcdef"
 
@@ -44,11 +45,14 @@ internal object Hex {
 
 internal val secureRandom = SecureRandom()
 
+/** [n] cryptographically secure random bytes. */
 internal fun randomBytes(n: Int) = ByteArray(n).also { secureRandom.nextBytes(it) }
 
+/** The SHA-256 hash of [data], as used for event ids and file hashes. */
 internal fun sha256(data: ByteArray): ByteArray =
     MessageDigest.getInstance("SHA-256").digest(data)
 
+/** HMAC-SHA256 over [parts] in order. NIP-44 uses it for keys and message authentication. */
 internal fun hmacSha256(key: ByteArray, vararg parts: ByteArray): ByteArray {
     val mac = Mac.getInstance("HmacSHA256")
     mac.init(SecretKeySpec(key, "HmacSHA256"))

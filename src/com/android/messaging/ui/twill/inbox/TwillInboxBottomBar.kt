@@ -76,6 +76,7 @@ internal fun TwillInboxBottomBar(
     }
 }
 
+/** The tab's name under its icon. */
 @Composable
 private fun TwillInboxTab.label(): String = stringResource(
     when (this) {
@@ -87,6 +88,7 @@ private fun TwillInboxTab.label(): String = stringResource(
     },
 )
 
+/** The tab's icon, filled when it is the selected tab. */
 private fun TwillInboxTab.iconRes(isSelected: Boolean): Int = when (this) {
     TwillInboxTab.Sms -> if (isSelected) {
         R.drawable.ic_twill_tab_sms

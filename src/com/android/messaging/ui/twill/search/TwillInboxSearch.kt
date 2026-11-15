@@ -306,6 +306,7 @@ internal fun TwillInboxSearchResults(
     }
 }
 
+/** One group of search results under its heading (Chats, Messages). */
 private fun LazyListScope.resultGroup(
     key: String,
     title: Int,
@@ -339,6 +340,7 @@ private fun LazyListScope.resultGroup(
     }
 }
 
+/** One search result: the chat, and the matching words highlighted. */
 @Composable
 private fun ResultRow(
     item: TwillInboxSearchItem,
@@ -426,6 +428,7 @@ private fun snippet(text: String, query: String): String {
 
 private const val SNIPPET_LEAD = 40
 
+/** This text with every match of [query] highlighted. */
 private fun String.highlighted(query: String, style: SpanStyle): AnnotatedString =
     buildAnnotatedString {
         append(this@highlighted)

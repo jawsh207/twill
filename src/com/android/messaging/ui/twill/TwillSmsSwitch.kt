@@ -19,6 +19,7 @@ import com.android.messaging.R
 import com.android.messaging.twill.twillEntryPoint
 import com.android.messaging.ui.appsettings.common.SettingsSwitchItem
 
+/** Which dialog the SMS on/off switch is showing. */
 private enum class SmsSwitchDialog { None, ChooseOtherApp, ConfirmOff }
 
 /**

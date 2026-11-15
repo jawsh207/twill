@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 
+/** An open request for events on some relays. Pass it to [RelayPool.close] to end it. */
 internal class Subscription(
     val id: String,
     val relays: Set<String>,
@@ -37,6 +38,7 @@ internal class Subscription(
     }
 }
 
+/** What a relay said about an event sent to it: accepted, or refused and why. */
 internal data class PublishResult(
     val ok: Boolean,
     val message: String,

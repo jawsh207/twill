@@ -39,6 +39,7 @@ internal class TwillProtocols @Inject constructor(
     fun installAll() = all.forEach { it.install() }
 }
 
+/** Tells Hilt which classes provide the protocols and the wallet. */
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class TwillProtocolsModule {

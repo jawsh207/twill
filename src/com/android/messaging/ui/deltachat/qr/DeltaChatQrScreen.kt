@@ -102,6 +102,7 @@ internal data class DeltaChatQrNavKey(
     val groupChatId: String? = null,
 ) : NavKey
 
+/** Makes this profile's (or a group's) invite QR code and acts on scanned ones. */
 @HiltViewModel
 internal class DeltaChatQrViewModel @Inject constructor(
     private val protocol: DeltaChatProtocol,
@@ -189,6 +190,7 @@ internal fun DeltaChatQrScreen(
     }
 }
 
+/** Shows the invite QR code with Copy and Share for the invite link. */
 @Composable
 private fun MyQrCode(viewModel: DeltaChatQrViewModel, groupChatId: String?) {
     val context = LocalContext.current
@@ -274,6 +276,7 @@ private fun MyQrCode(viewModel: DeltaChatQrViewModel, groupChatId: String?) {
     }
 }
 
+/** Draws a QR code. */
 @Composable
 private fun QrCodeImage(matrix: BitMatrix, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
@@ -294,6 +297,7 @@ private fun QrCodeImage(matrix: BitMatrix, modifier: Modifier = Modifier) {
     }
 }
 
+/** Encodes [text] as a QR code. */
 private fun encodeQr(text: String): BitMatrix = QRCodeWriter().encode(
     text,
     BarcodeFormat.QR_CODE,
@@ -305,6 +309,7 @@ private fun encodeQr(text: String): BitMatrix = QRCodeWriter().encode(
     ),
 )
 
+/** Scans someone's Delta Chat QR code with the camera to start a chat or join a group. */
 @Composable
 private fun ScanQrCode(
     viewModel: DeltaChatQrViewModel,
@@ -464,11 +469,13 @@ private fun decode(reader: QRCodeReader, image: ImageProxy): String? {
     }
 }
 
+/** Opens Android's share sheet for [text]. */
 private fun shareText(context: Context, text: String) {
     val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
     context.startActivity(Intent.createChooser(intent, null))
 }
 
+/** Copies [text] to the clipboard. */
 private fun copyText(context: Context, text: String) {
     context.getSystemService(ClipboardManager::class.java)
         ?.setPrimaryClip(ClipData.newPlainText(null, text))
