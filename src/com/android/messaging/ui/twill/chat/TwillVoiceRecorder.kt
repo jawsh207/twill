@@ -18,7 +18,8 @@ import kotlinx.coroutines.launch
 /**
  * Records voice messages for chats whose protocol has them (Delta Chat), driving the same
  * recording UI as SMS: hold the mic to record, slide up to lock, slide left to cancel.
- * Records AAC in an .m4a file, which is what Delta Chat itself sends.
+ * Records exactly what Delta Chat for Android records (AAC-LC, mono, 44.1 kHz, 32 kbit/s, in
+ * an MPEG-4 .m4a file), so a voice message from Twill looks like one from the official app.
  */
 internal class TwillVoiceRecorder(
     private val context: Context,
@@ -111,7 +112,7 @@ internal class TwillVoiceRecorder(
 
     private companion object {
         const val SAMPLE_RATE = 44_100
-        const val BIT_RATE = 64_000
+        const val BIT_RATE = 32_000
         const val MAX_DURATION_MILLIS = 10 * 60 * 1000
         const val MIN_DURATION_MILLIS = 700L
         const val TICK_MILLIS = 200L

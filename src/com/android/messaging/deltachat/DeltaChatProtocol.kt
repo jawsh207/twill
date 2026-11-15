@@ -453,6 +453,18 @@ internal class DeltaChatProtocol @Inject constructor(
         emptyList()
     }
 
+    /**
+     * The file's type. Voice and audio messages always count as audio, so they play in the
+     * chat whichever client recorded them (some name WebM or Ogg recordings as video).
+     */
+    private fun mimeOf(message: JSONObject): String? {
+        val mime = message.optStringOrNull("fileMime")
+        val viewType = message.optString("viewType")
+        if (viewType != "Voice" && viewType != "Audio") return mime
+        if (mime?.startsWith("audio/") == true) return mime
+        return "audio/" + (mime?.substringAfter('/', "")?.ifBlank { null } ?: "mp4")
+    }
+
     private fun JSONObject.toCached(): CachedMessage {
         val fromId = optInt("fromId")
         val isOutgoing = fromId == DC_CONTACT_ID_SELF
@@ -471,7 +483,7 @@ internal class DeltaChatProtocol @Inject constructor(
                 isInfo = optBoolean("isInfo"),
                 attachment = when {
                     file != null || downloadState == "Available" -> TwillAttachment(
-                        mimeType = optStringOrNull("fileMime"),
+                        mimeType = mimeOf(this),
                         fileName = optStringOrNull("fileName"),
                         size = optLong("fileBytes").takeIf { it > 0 },
                         width = optInt("dimensionsWidth").takeIf { it > 0 },
@@ -606,7 +618,9 @@ internal class DeltaChatProtocol @Inject constructor(
                 mapOf(
                     "viewtype" to "Voice",
                     "file" to file.absolutePath,
-                    "filename" to file.name,
+                    // As Delta Chat for Android names its recordings, so the message (built
+                    // by the same core) is the same as one from the official app.
+                    "filename" to VOICE_FILE_NAME,
                     "text" to text.ifBlank { null },
                 ),
             )
@@ -952,6 +966,8 @@ internal class DeltaChatProtocol @Inject constructor(
         if (has(name) && !isNull(name)) optString(name).takeIf { it.isNotEmpty() } else null
 
     private companion object {
+        /** What Delta Chat for Android calls a voice recording. */
+        const val VOICE_FILE_NAME = "voice.m4a"
         const val TAG = "DeltaChatProtocol"
         const val DC_GCL_NO_SPECIALS = 0x02
         const val DC_CONTACT_ID_SELF = 1
