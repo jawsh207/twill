@@ -124,6 +124,7 @@ internal fun TwillSettingsScreen(
     }
 }
 
+/** Android Studio preview of the settings screen, light and dark. */
 @PreviewLightDark
 @Composable
 private fun TwillSettingsScreenPreview() {
