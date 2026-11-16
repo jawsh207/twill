@@ -232,7 +232,10 @@ internal class DeltaChatProtocol @Inject constructor(
                 TwillNotifications.cancelChat(context, id, chatId.toString())
             }
 
-            DeltaChatEvents.CHAT_MODIFIED, DeltaChatEvents.CHAT_DELETED -> {
+            DeltaChatEvents.CHAT_MODIFIED,
+            DeltaChatEvents.CHAT_EPHEMERAL_TIMER_MODIFIED,
+            DeltaChatEvents.CHAT_DELETED,
+            -> {
                 listChanged()
                 chatChanged(chatId, affectsDetails = true)
             }
@@ -751,6 +754,40 @@ internal class DeltaChatProtocol @Inject constructor(
             if (ids.isNotEmpty()) rpc.call("delete_messages", account(), ids)
             Unit
         }
+
+    override val canDeleteForEveryone: Boolean get() = true
+
+    /** The core's own "delete for everyone", which the official apps also honour. */
+    override fun deleteForEveryone(chatId: String, messageId: String) = launchCall(
+        TwillError.SendFailed,
+        chatId,
+    ) { account ->
+        rpc.call("delete_messages_for_all", account, listOf(messageId.toInt()))
+    }
+
+    /**
+     * Delta Chat's disappearing messages: the timer belongs to the chat, so changing it here
+     * changes it for everyone in it, and the core deletes messages when they're due.
+     */
+    override val canDisappear: Boolean get() = true
+
+    override fun disappearAfter(chatId: String): Flow<Long> =
+        changesFor(chatId.toInt(), detailsOnly = true)
+            .map {
+                runCatching {
+                    rpc.call("get_chat_ephemeral_timer", account(), chatId.toInt())
+                        .toString().toLong()
+                }.getOrDefault(0L)
+            }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+
+    override fun setDisappearAfter(chatId: String, seconds: Long) = launchCall(
+        TwillError.SendFailed,
+        chatId,
+    ) { account ->
+        rpc.call("set_chat_ephemeral_timer", account, chatId.toInt(), seconds)
+    }
 
     /**
      * Sends a notification reply. If the core's network isn't running (Twill closed and not

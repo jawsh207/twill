@@ -48,6 +48,7 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -254,6 +255,9 @@ internal fun TwillChatScreen(
     val scheduledHere = rememberScheduledMessagesFor(scheduler, scheduleKey)
     var isScheduleDialogVisible by rememberSaveable { mutableStateOf(false) }
     var isScheduledListVisible by rememberSaveable { mutableStateOf(false) }
+    var isTimerDialogVisible by rememberSaveable { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf<TwillMessage?>(null) }
+    val disappearAfter by viewModel.disappearAfter.collectAsStateWithLifecycle()
     val held by viewModel.heldSend.collectAsStateWithLifecycle()
     val heldUi = held?.let {
         DelayedSendUi(
@@ -328,9 +332,23 @@ internal fun TwillChatScreen(
                                 count = scheduledHere.size,
                                 onClick = { isScheduledListVisible = true },
                             )
-                            // A bubble can't open another bubble of itself.
-                            if (info != null && !isInBubble) {
-                                ChatMenu(onBubble = { bubbleChat() })
+                            val canSetTimer = viewModel.canDisappear && info?.canSend == true
+                            if (disappearAfter > 0) {
+                                IconButton(onClick = { isTimerDialogVisible = true }) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Timer,
+                                        contentDescription =
+                                            stringResource(R.string.twill_disappearing_messages),
+                                    )
+                                }
+                            }
+                            if (info != null && (!isInBubble || canSetTimer)) {
+                                ChatMenu(
+                                    // A bubble can't open another bubble of itself.
+                                    onBubble = { bubbleChat() }.takeIf { !isInBubble },
+                                    onDisappearing = { isTimerDialogVisible = true }
+                                        .takeIf { canSetTimer },
+                                )
                             }
                         },
                     )
@@ -500,6 +518,33 @@ internal fun TwillChatScreen(
 
     viewerPath?.let { path -> ImageViewer(path = path, onDismiss = { viewerPath = null }) }
 
+    deleting?.let { message ->
+        TwillDeleteMessageDialog(
+            canDeleteForEveryone = viewModel.canDeleteForEveryone && message.isOutgoing &&
+                message.status != TwillMessage.Status.Sending &&
+                message.status != TwillMessage.Status.Failed,
+            onDeleteForMe = {
+                deleting = null
+                viewModel.deleteForMe(message)
+            },
+            onDeleteForEveryone = {
+                deleting = null
+                viewModel.deleteForEveryone(message)
+            },
+            onDismiss = { deleting = null },
+        )
+    }
+    if (isTimerDialogVisible) {
+        TwillDisappearingDialog(
+            current = disappearAfter,
+            isShared = protocol == TwillProtocolId.DeltaChat,
+            onPick = { seconds ->
+                isTimerDialogVisible = false
+                viewModel.setDisappearAfter(seconds)
+            },
+            onDismiss = { isTimerDialogVisible = false },
+        )
+    }
     if (isScheduledListVisible && scheduledHere.isNotEmpty()) {
         ScheduledMessagesListDialog(
             messages = scheduledHere,
@@ -551,6 +596,10 @@ internal fun TwillChatScreen(
             onReply = {
                 acting = null
                 replyToId = message.id
+            },
+            onDelete = {
+                acting = null
+                deleting = message
             },
             onCopy = message.text.takeIf { it.isNotBlank() }?.let { text ->
                 {
@@ -1160,7 +1209,7 @@ private fun copyToUri(context: Context, source: File, target: Uri) {
 
 /** The chat's ⋮ menu. */
 @Composable
-private fun ChatMenu(onBubble: () -> Unit) {
+private fun ChatMenu(onBubble: (() -> Unit)?, onDisappearing: (() -> Unit)?) {
     var isExpanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { isExpanded = true }) {
@@ -1170,13 +1219,24 @@ private fun ChatMenu(onBubble: () -> Unit) {
             )
         }
         DropdownMenu(expanded = isExpanded, onDismissRequest = { isExpanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.twill_bubble_chat)) },
-                onClick = {
-                    isExpanded = false
-                    onBubble()
-                },
-            )
+            onBubble?.let {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.twill_bubble_chat)) },
+                    onClick = {
+                        isExpanded = false
+                        it()
+                    },
+                )
+            }
+            onDisappearing?.let {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.twill_disappearing_messages)) },
+                    onClick = {
+                        isExpanded = false
+                        it()
+                    },
+                )
+            }
         }
     }
 }

@@ -14,11 +14,16 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** An encrypted file sent with NIP-17 (kind 15). */
@@ -62,6 +67,8 @@ internal data class NostrMessage(
     /** NIP-17: the message this one answers (its first `e` tag). */
     val replyTo: String? = null,
     val reactions: List<NostrReaction> = emptyList(),
+    /** When a disappearing message is deleted (NIP-40, seconds), or null to keep it. */
+    val expiresAtSeconds: Long? = null,
 ) {
     enum class Status(
         val code: Int,
@@ -184,6 +191,80 @@ internal class NostrMessageStore @Inject constructor(
 
     private fun chatVersion(chatKey: String) =
         chatVersions.getOrPut(chatKey) { MutableStateFlow(0L) }
+
+    /** Wakes up when the next disappearing message is due, to delete it. */
+    private val expiryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var expiryJob: Job? = null
+
+    /**
+     * Deletes disappearing messages whose time has come, then waits for the next one. Run on
+     * startup and whenever a disappearing message is stored.
+     */
+    fun deleteExpired() {
+        val now = System.currentTimeMillis() / 1000
+        val db = helper.writableDatabase
+        val expired = db.rawQuery(
+            "SELECT id, peer FROM messages WHERE expires_at IS NOT NULL AND expires_at <= ?",
+            arrayOf(now.toString()),
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) add(cursor.getString(0) to cursor.getString(1))
+            }
+        }
+        expired.forEach { (id, _) -> deleteMessage(id) }
+        val next = db.rawQuery(
+            "SELECT MIN(expires_at) FROM messages WHERE expires_at IS NOT NULL",
+            null,
+        ).use { cursor ->
+            if (cursor.moveToFirst() &&
+                !cursor.isNull(0)
+            ) {
+                cursor.getLong(0)
+            } else {
+                null
+            }
+        }
+        expiryJob?.cancel()
+        if (next != null) {
+            expiryJob = expiryScope.launch {
+                delay(((next - now).coerceAtLeast(1)) * 1000)
+                deleteExpired()
+            }
+        }
+    }
+
+    /** How long new messages in [chatKey] last (seconds), or 0 when they don't disappear. */
+    fun disappearAfter(chatKey: String): Flow<Long> =
+        chatVersion(chatKey).map { queryDisappearAfter(chatKey) }.flowOn(Dispatchers.IO)
+
+    fun disappearAfterNow(chatKey: String): Long = queryDisappearAfter(chatKey)
+
+    /**
+     * Sets how long new messages in [chatKey] last. Nostr has no shared chat setting for it, so
+     * this only affects messages sent from here (each carries its own expiration).
+     */
+    fun setDisappearAfter(chatKey: String, seconds: Long) {
+        val db = helper.writableDatabase
+        if (seconds <= 0) {
+            db.delete("timers", "peer = ?", arrayOf(chatKey))
+        } else {
+            db.insertWithOnConflict(
+                "timers",
+                null,
+                ContentValues().apply {
+                    put("peer", chatKey)
+                    put("seconds", seconds)
+                },
+                SQLiteDatabase.CONFLICT_REPLACE,
+            )
+        }
+        notifyChanged(chatKey)
+    }
+
+    private fun queryDisappearAfter(chatKey: String): Long = helper.readableDatabase.rawQuery(
+        "SELECT seconds FROM timers WHERE peer = ?",
+        arrayOf(chatKey),
+    ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else 0L }
 
     fun conversations(): Flow<List<NostrConversation>> =
         changes.map { queryConversations() }.flowOn(Dispatchers.IO)
@@ -513,6 +594,27 @@ internal class NostrMessageStore @Inject constructor(
         notifyChanged(message?.chatKey)
     }
 
+    /**
+     * Removes the messages and reactions among [ids] that [sender] wrote in [chatKey]: a
+     * NIP-17 deletion, which may only take back the deleter's own messages.
+     */
+    fun deleteFromSender(chatKey: String, ids: List<String>, sender: String) {
+        if (ids.isEmpty()) return
+        val db = helper.writableDatabase
+        ids.forEach { id ->
+            val message = message(id)
+            if (message != null && message.chatKey == chatKey && message.senderPubKey == sender) {
+                deleteMessage(id)
+            }
+            db.delete(
+                "reactions",
+                "id = ? AND peer = ? AND sender = ?",
+                arrayOf(id, chatKey, sender),
+            )
+        }
+        notifyChanged(chatKey)
+    }
+
     fun markConversationRead(chatKey: String) {
         val updated = helper.writableDatabase.update(
             "messages",
@@ -563,6 +665,7 @@ internal class NostrMessageStore @Inject constructor(
         db.delete("reactions", "peer = ?", arrayOf(chatKey))
         db.delete("pinned", "peer = ?", arrayOf(chatKey))
         db.delete("groups", "chat_key = ?", arrayOf(chatKey))
+        db.delete("timers", "peer = ?", arrayOf(chatKey))
         notifyChanged(chatKey)
     }
 
@@ -685,6 +788,7 @@ internal class NostrMessageStore @Inject constructor(
             "groups",
             "people",
             "reactions",
+            "timers",
         ).forEach { table ->
             db.delete(table, null, null)
         }
@@ -877,6 +981,7 @@ internal class NostrMessageStore @Inject constructor(
         put("sender", senderPubKey)
         put("content", content)
         put("created_at", createdAtSeconds)
+        put("expires_at", expiresAtSeconds)
         put("outgoing", if (isOutgoing) 1 else 0)
         put("is_read", if (isRead) 1 else 0)
         put("status", status.code)
@@ -908,6 +1013,7 @@ internal class NostrMessageStore @Inject constructor(
             senderPubKey = getString(getColumnIndexOrThrow("sender")),
             content = getString(getColumnIndexOrThrow("content")),
             createdAtSeconds = getLong(getColumnIndexOrThrow("created_at")),
+            expiresAtSeconds = getLongOrNull("expires_at"),
             isOutgoing = getInt(getColumnIndexOrThrow("outgoing")) == 1,
             isRead = getInt(getColumnIndexOrThrow("is_read")) == 1,
             status = NostrMessage.Status.from(getInt(getColumnIndexOrThrow("status"))),
@@ -968,12 +1074,20 @@ internal class NostrMessageStore @Inject constructor(
             upgradeToVersion2(db)
             upgradeToVersion3(db)
             upgradeToVersion4(db)
+            upgradeToVersion5(db)
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             if (oldVersion < 2) upgradeToVersion2(db)
             if (oldVersion < 3) upgradeToVersion3(db)
             if (oldVersion < 4) upgradeToVersion4(db)
+            if (oldVersion < 5) upgradeToVersion5(db)
+        }
+
+        /** Version 5: disappearing messages (NIP-17 with NIP-40 expiration), per-chat timers. */
+        private fun upgradeToVersion5(db: SQLiteDatabase) {
+            db.execSQL("ALTER TABLE messages ADD COLUMN expires_at INTEGER")
+            db.execSQL("CREATE TABLE timers (peer TEXT PRIMARY KEY, seconds INTEGER NOT NULL)")
         }
 
         /** Version 4: replies and reactions (NIP-17 carrying NIP-25), as in Zino. */
@@ -1032,7 +1146,7 @@ internal class NostrMessageStore @Inject constructor(
 
     private companion object {
         const val DATABASE_NAME = "nostr.db"
-        const val DATABASE_VERSION = 4
+        const val DATABASE_VERSION = 5
         const val PUBKEY_HEX_LENGTH = 64
         const val BULK_MISS_AGE_MILLIS = 24 * 60 * 60 * 1000L + 60_000L
         const val MAX_SEARCH_HITS = 500

@@ -266,6 +266,7 @@ internal object DeltaChatEvents {
     const val MSG_READ = 2015
     const val MSG_DELETED = 2016
     const val CHAT_MODIFIED = 2020
+    const val CHAT_EPHEMERAL_TIMER_MODIFIED = 2021
     const val CHAT_DELETED = 2023
     const val CONTACTS_CHANGED = 2030
     const val CONFIGURE_PROGRESS = 2041

@@ -218,6 +218,32 @@ internal class TwillChatViewModel @Inject constructor(
         }
     }
 
+    /** Deletes [message] from this phone only. */
+    fun deleteForMe(message: TwillMessage) = withTarget { protocol, chatId ->
+        viewModelScope.launch { protocol.deleteMessages(chatId, listOf(message.id)) }
+    }
+
+    /** Whether your own messages can be deleted for everyone in this chat. */
+    val canDeleteForEveryone: Boolean
+        get() = target.value?.protocol?.canDeleteForEveryone == true
+
+    fun deleteForEveryone(message: TwillMessage) = withTarget { protocol, chatId ->
+        protocol.deleteForEveryone(chatId, message.id)
+    }
+
+    /** Whether this chat can have disappearing messages. */
+    val canDisappear: Boolean
+        get() = target.value?.protocol?.canDisappear == true
+
+    /** How long new messages here last, in seconds (0: they don't disappear). */
+    val disappearAfter: StateFlow<Long> = target
+        .flatMapLatest { it?.protocol?.disappearAfter(it.chatId) ?: flowOf(0L) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(SUBSCRIBE_MILLIS), 0L)
+
+    fun setDisappearAfter(seconds: Long) = withTarget { protocol, chatId ->
+        protocol.setDisappearAfter(chatId, seconds)
+    }
+
     /** Cancels a message held by "Delay sending". */
     fun undoSend() {
         heldJob?.takeIf { it.isActive }?.cancel()
@@ -259,3 +285,6 @@ internal class TwillChatViewModel @Inject constructor(
 
 /** How long "Delay sending" holds a message, the same as for SMS. */
 private const val SEND_DELAY_MILLIS = 3_000L
+
+/** How long the chat's flows keep running after the screen stops watching them. */
+private const val SUBSCRIBE_MILLIS = 5_000L

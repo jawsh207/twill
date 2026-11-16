@@ -324,6 +324,21 @@ internal interface TwillProtocol {
     /** Deletes [messageIds] of [chatId] from this device ("Delete" on a notification). */
     suspend fun deleteMessages(chatId: String, messageIds: List<String>) = Unit
 
+    /** Your own messages can be deleted for everyone in the chat, not only here. */
+    val canDeleteForEveryone: Boolean get() = false
+
+    /** Deletes your message [messageId] here and asks everyone else's apps to remove it. */
+    fun deleteForEveryone(chatId: String, messageId: String) = Unit
+
+    /** Chats can have disappearing messages. */
+    val canDisappear: Boolean get() = false
+
+    /** How long new messages in [chatId] last, in seconds; 0 when they don't disappear. */
+    fun disappearAfter(chatId: String): Flow<Long> = flowOf(0L)
+
+    /** Sets how long new messages in [chatId] last; 0 turns disappearing messages off. */
+    fun setDisappearAfter(chatId: String, seconds: Long) = Unit
+
     /**
      * Sends a reply typed in a notification, connecting for the moment if Twill isn't
      * connected, and returns once it's sent (or failed).

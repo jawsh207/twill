@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -76,6 +77,7 @@ internal fun TwillMessageActions(
     onMoreReactions: () -> Unit,
     onReply: () -> Unit,
     onCopy: (() -> Unit)?,
+    onDelete: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -115,6 +117,11 @@ internal fun TwillMessageActions(
                     onClick = it,
                 )
             }
+            ActionRow(
+                label = stringResource(R.string.twill_delete_message),
+                icon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
+                onClick = onDelete,
+            )
         }
     }
 }
