@@ -24,6 +24,8 @@ import com.android.messaging.twill.TwillNotifications
 import com.android.messaging.twill.TwillProtocol
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.twill.TwillQuote
+import com.android.messaging.twill.TwillReaction
 import com.android.messaging.twill.TwillSearchHit
 import com.android.messaging.util.LogUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -453,6 +455,20 @@ internal class DeltaChatProtocol @Inject constructor(
         emptyList()
     }
 
+    /** The core's summary of a message's reactions: each emoji, its count, and whether ours. */
+    private fun reactionsOf(message: JSONObject): List<TwillReaction> {
+        val list = message.optJSONObject("reactions")?.optJSONArray("reactions")
+            ?: return emptyList()
+        return (0 until list.length()).mapNotNull { index ->
+            val reaction = list.optJSONObject(index) ?: return@mapNotNull null
+            TwillReaction(
+                emoji = reaction.optString("emoji").ifBlank { return@mapNotNull null },
+                count = reaction.optInt("count"),
+                isMine = reaction.optBoolean("isFromSelf"),
+            )
+        }.sortedByDescending { it.count }
+    }
+
     /**
      * The file's type. Voice and audio messages always count as audio, so they play in the
      * chat whichever client recorded them (some name WebM or Ogg recordings as video).
@@ -481,6 +497,19 @@ internal class DeltaChatProtocol @Inject constructor(
                 isOutgoing = isOutgoing,
                 status = stateToStatus(state, isOutgoing),
                 isInfo = optBoolean("isInfo"),
+                replyToId = optJSONObject("quote")
+                    ?.takeIf { it.optString("kind") == "WithMessage" }
+                    ?.optInt("messageId")
+                    ?.takeIf { it > 0 }
+                    ?.toString(),
+                quote = optJSONObject("quote")?.let { quote ->
+                    TwillQuote(
+                        author = quote.optStringOrNull("overrideSenderName")
+                            ?: quote.optStringOrNull("authorDisplayName"),
+                        text = quote.optString("text"),
+                    )
+                },
+                reactions = reactionsOf(this),
                 attachment = when {
                     file != null || downloadState == "Available" -> TwillAttachment(
                         mimeType = mimeOf(this),
@@ -579,6 +608,32 @@ internal class DeltaChatProtocol @Inject constructor(
         chatId
     ) { account ->
         rpc.call("misc_send_text_message", account, chatId.toInt(), text)
+    }
+
+    override val canReplyAndReact: Boolean get() = true
+
+    /** A reply quotes the message it answers, as the official apps' replies do. */
+    override fun sendReply(chatId: String, text: String, replyToId: String) = launchCall(
+        TwillError.SendFailed,
+        chatId,
+    ) { account ->
+        rpc.call(
+            "send_msg",
+            account,
+            chatId.toInt(),
+            mapOf("text" to text, "quotedMessageId" to replyToId.toInt()),
+        )
+    }
+
+    /**
+     * Delta Chat keeps one reaction per person, so a new emoji replaces the old one, as in the
+     * official apps.
+     */
+    override fun react(chatId: String, messageId: String, emoji: String) = launchCall(
+        TwillError.SendFailed,
+        chatId,
+    ) { account ->
+        rpc.call("send_reaction", account, messageId.toInt(), listOf(emoji))
     }
 
     override fun sendFile(chatId: String, uri: Uri) = launchCall(

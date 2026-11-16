@@ -98,11 +98,23 @@ internal data class TwillMessage(
     val isInfo: Boolean = false,
     /** The message this one answers, if any (it may not be loaded, or known, here). */
     val replyToId: String? = null,
+    /**
+     * How the answered message began, from the protocol, for when that message isn't loaded
+     * (Delta Chat sends this with every reply).
+     */
+    val quote: TwillQuote? = null,
     /** Emoji reactions, most used first. */
     val reactions: List<TwillReaction> = emptyList(),
 ) {
     enum class Status { Sending, Sent, Delivered, Read, Failed }
 }
+
+/** The start of a message being replied to, and who wrote it if known. */
+@Immutable
+internal data class TwillQuote(
+    val author: String?,
+    val text: String,
+)
 
 /** One emoji under a message: how many people sent it, and whether you're one of them. */
 @Immutable

@@ -46,6 +46,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -95,6 +96,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.messaging.R
 import com.android.messaging.twill.TwillAttachment
@@ -106,7 +108,17 @@ import com.android.messaging.twill.TwillMember
 import com.android.messaging.twill.TwillMessage
 import com.android.messaging.twill.TwillProtocolId
 import com.android.messaging.twill.TwillProtocolText
+import com.android.messaging.twill.TwillScheduledTarget
 import com.android.messaging.ui.common.components.contentSurfaceShape
+import com.android.messaging.ui.conversation.composer.ui.DelayedSendUi
+import com.android.messaging.ui.conversation.composer.ui.LocalDelayedSendUi
+import com.android.messaging.ui.conversation.composer.ui.LocalSendLongPressActions
+import com.android.messaging.ui.conversation.composer.ui.SendLongPressAction
+import com.android.messaging.ui.conversation.scheduled.ScheduleMessageDialog
+import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesListDialog
+import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesTopBarAction
+import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesViewModel
+import com.android.messaging.ui.conversation.scheduled.rememberScheduledMessagesFor
 import com.android.messaging.ui.conversation.screen.showBubbleResult
 import com.android.messaging.ui.nostr.NostrForegroundHost
 import com.android.messaging.ui.twill.TwillAvatarImage
@@ -225,7 +237,43 @@ internal fun TwillChatScreen(
     val title = info?.title.orEmpty()
     val isGroup = info?.isGroup == true
 
-    CompositionLocalProvider(LocalTwillSearch provides search.takeIf { it.isActive }) {
+    // As in SMS chats: "Delay sending" shows a countdown on the send button with an undo, a
+    // long press on it schedules the message, and scheduled ones show by the title.
+    val scheduler: ScheduledMessagesViewModel = hiltViewModel()
+    val scheduleKey = remember(protocol, chatId) {
+        TwillScheduledTarget.conversationId(protocol, chatId)
+    }
+    val scheduledHere = rememberScheduledMessagesFor(scheduler, scheduleKey)
+    var isScheduleDialogVisible by rememberSaveable { mutableStateOf(false) }
+    var isScheduledListVisible by rememberSaveable { mutableStateOf(false) }
+    val held by viewModel.heldSend.collectAsStateWithLifecycle()
+    val heldUi = held?.let {
+        DelayedSendUi(
+            startedAtElapsedMillis = it.startedAtElapsedMillis,
+            durationMillis = it.durationMillis,
+            onCancel = viewModel::undoSend,
+        )
+    }
+    val scheduleLabel = stringResource(R.string.schedule_message_menu)
+    val longPressActions = remember(scheduleLabel, info?.canSend) {
+        if (info?.canSend == true) {
+            listOf(
+                SendLongPressAction(
+                    label = scheduleLabel,
+                    icon = Icons.Rounded.Schedule,
+                    onClick = { isScheduleDialogVisible = true },
+                ),
+            )
+        } else {
+            emptyList()
+        }
+    }
+
+    CompositionLocalProvider(
+        LocalTwillSearch provides search.takeIf { it.isActive },
+        LocalDelayedSendUi provides heldUi,
+        LocalSendLongPressActions provides longPressActions,
+    ) {
         Scaffold(
             modifier = modifier,
             topBar = {
@@ -265,6 +313,10 @@ internal fun TwillChatScreen(
                                 }
                             }
                             if (messages.isNotEmpty()) TwillSearchAction(onClick = search::open)
+                            ScheduledMessagesTopBarAction(
+                                count = scheduledHere.size,
+                                onClick = { isScheduledListVisible = true },
+                            )
                             // A bubble can't open another bubble of itself.
                             if (info != null && !isInBubble) {
                                 ChatMenu(onBubble = { bubbleChat() })
@@ -300,15 +352,13 @@ internal fun TwillChatScreen(
                             onTextChange = { text, revision ->
                                 if (revision == draftRevision) draft = text
                             },
-                            onSend = { voice ->
-                                if (voice != null) {
-                                    viewModel.sendVoice(voice, draft)
-                                } else {
-                                    viewModel.send(draft, replying?.id)
+                            onSend = { voice, onSent ->
+                                viewModel.submit(draft, replying?.id, voice) {
+                                    draft = ""
+                                    draftRevision++
+                                    replyToId = null
+                                    onSent()
                                 }
-                                draft = ""
-                                draftRevision++
-                                replyToId = null
                             },
                             onPickPhoto = {
                                 pickPhoto.launch(
@@ -438,6 +488,38 @@ internal fun TwillChatScreen(
     }
 
     viewerPath?.let { path -> ImageViewer(path = path, onDismiss = { viewerPath = null }) }
+
+    if (isScheduledListVisible && scheduledHere.isNotEmpty()) {
+        ScheduledMessagesListDialog(
+            messages = scheduledHere,
+            onCancel = scheduler::cancel,
+            onDismiss = { isScheduledListVisible = false },
+        )
+    }
+    if (isScheduleDialogVisible) {
+        ScheduleMessageDialog(
+            conversationId = scheduleKey,
+            controller = scheduler,
+            messageText = draft,
+            subjectText = "",
+            selfParticipantId = null,
+            hasAttachments = false,
+            onScheduled = {
+                isScheduleDialogVisible = false
+                // The message now lives in the schedule, so empty the message box.
+                draft = ""
+                draftRevision++
+                replyToId = null
+                Toast.makeText(
+                    context,
+                    R.string.schedule_message_scheduled_toast,
+                    Toast.LENGTH_SHORT
+                )
+                    .show()
+            },
+            onDismiss = { isScheduleDialogVisible = false },
+        )
+    }
 
     acting?.let { message ->
         val canReplyAndReact = viewModel.canReplyAndReact &&
@@ -628,10 +710,11 @@ private fun MessageBubble(
                 },
             ) {
                 Column {
-                    if (message.replyToId != null) {
+                    if (message.replyToId != null || message.quote != null) {
                         TwillReplyQuote(
                             message = replied,
                             senderName = repliedName,
+                            fallback = message.quote,
                             modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp),
                             onClick = onOpenReply.takeIf { replied != null },
                             onLongClick = onLongPress,

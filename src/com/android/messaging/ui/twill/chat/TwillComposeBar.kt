@@ -40,8 +40,11 @@ internal fun TwillComposeBar(
     isEnabled: Boolean,
     canSendVoice: Boolean,
     onTextChange: (text: String, revision: Int) -> Unit,
-    /** Sends the text, with the recorded voice message when there is one. */
-    onSend: (voice: File?) -> Unit,
+    /**
+     * Sends the text, with the recorded voice message when there is one. [onSent] runs once
+     * it has really gone (not if a held send is undone), and clears the attached recording.
+     */
+    onSend: (voice: File?, onSent: () -> Unit) -> Unit,
     onPickPhoto: () -> Unit,
     onPickFile: () -> Unit,
 ) {
@@ -51,10 +54,12 @@ internal fun TwillComposeBar(
     val recording by recorder.state.collectAsStateWithLifecycle()
     // As in SMS, a finished recording is attached, not sent: Send sends it.
     var voice by remember { mutableStateOf<Pair<File, Long>?>(null) }
+    // While a send is held for undo, the recording belongs to it: don't delete it on leaving.
+    var isVoiceHandedOff by remember { mutableStateOf(false) }
     DisposableEffect(recorder) {
         onDispose {
             recorder.cancel()
-            voice?.first?.delete()
+            if (!isVoiceHandedOff) voice?.first?.delete()
         }
     }
 
@@ -125,8 +130,11 @@ internal fun TwillComposeBar(
             onAudioRecordingCancel = recorder::cancel,
             onSendClick = {
                 val attached = voice?.first
-                voice = null
-                onSend(attached)
+                isVoiceHandedOff = attached != null
+                onSend(attached) {
+                    voice = null
+                    isVoiceHandedOff = false
+                }
             },
             onSendActionLongClick = {},
             onSubjectChipClick = {},
