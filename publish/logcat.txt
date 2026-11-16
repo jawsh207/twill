@@ -1,0 +1,300 @@
+11-16 08:45:52.541   624   736 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:45:52.613 11052 11079 I TwillRelays: wss://relay.damus.io connection: handshake refused: HTTP/1.1 503 Service Unavailable
+11-16 08:45:53.083 11052 11081 I TwillRelays: wss://relay.primal.net connected
+11-16 08:45:53.132   624   678 I ActivityTaskManager: Displayed app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity for user 0: +1s596ms
+11-16 08:45:53.138   624   736 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:45:53.308 11052 11080 I TwillRelays: wss://nos.lol connected
+11-16 08:45:53.317 11052 11081 D nativeloader: Load /data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk!/lib/x86_64/libsecp256k1-jni.so using class loader ns clns-9 (caller=/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk): ok
+11-16 08:45:53.360 11052 11112 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.BackgroundWorkerService#1001' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:45:53.361   624  1703 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.BackgroundWorkerService#1001' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:45:53.393   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:45:53.396   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:45:53.523   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:45:53.524   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:45:53.582  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1293 onStartInput(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-16 08:45:53.591   624   736 W PackageConfigPersister: App-specific configuration not found for packageName: app.twill.perf and userId: 0
+11-16 08:45:53.732   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:45:53.736   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:45:53.809   624  1703 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:45:55.239 11115 11115 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:45:55.241 11115 11115 I AndroidRuntime: Using default boot image
+11-16 08:45:55.241 11115 11115 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:45:55.318 11115 11115 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:45:56.197   624   777 I ImeTracker: app.twill.perf:e8c1679c: setFinished at PHASE_WM_GET_CONTROL_WITH_LEASH with STATUS_TIMEOUT
+11-16 08:45:56.374 11115 11115 D AndroidRuntime: Shutting down VM
+11-16 08:45:57.263   624   736 D CoreBackPreview: Window{19d4363 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@bb7730e, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+11-16 08:45:57.740 11052 11129 I TwillRelays: wss://relay.damus.io connected
+11-16 08:45:57.771 11052 11129 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-16 08:45:57.800 11052 11129 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-16 08:45:58.269 11052 11147 D ProfileInstaller: Skipping profile installation for app.twill.perf
+11-16 08:45:59.581 11155 11155 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:45:59.586 11155 11155 I AndroidRuntime: Using default boot image
+11-16 08:45:59.586 11155 11155 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:45:59.695 11155 11155 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:46:00.733 11155 11155 D AndroidRuntime: Shutting down VM
+11-16 08:46:03.916 11185 11185 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:46:03.919 11185 11185 I AndroidRuntime: Using default boot image
+11-16 08:46:03.919 11185 11185 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:46:03.999 11185 11185 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:46:05.032 11185 11185 D AndroidRuntime: Shutting down VM
+11-16 08:46:09.216 11220 11220 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:46:09.218 11220 11220 I AndroidRuntime: Using default boot image
+11-16 08:46:09.218 11220 11220 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:46:09.289 11220 11220 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:46:10.321 11220 11220 D AndroidRuntime: Shutting down VM
+11-16 08:46:15.536 11259 11259 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:46:15.538 11259 11259 I AndroidRuntime: Using default boot image
+11-16 08:46:15.538 11259 11259 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:46:15.610 11259 11259 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:46:16.638 11259 11259 D AndroidRuntime: Shutting down VM
+11-16 08:46:20.853 11295 11295 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:46:20.856 11295 11295 I AndroidRuntime: Using default boot image
+11-16 08:46:20.856 11295 11295 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:46:20.928 11295 11295 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:46:21.966 11295 11295 D AndroidRuntime: Shutting down VM
+11-16 08:46:26.111   624  1001 D CoreBackPreview: Window{19d4363 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@f08a930, mPriority=-1, mIsAnimationCallback=false, mOverrideBehavior=0}
+11-16 08:46:26.172   624  1001 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:27.180 11333 11333 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:46:27.182 11333 11333 I AndroidRuntime: Using default boot image
+11-16 08:46:27.182 11333 11333 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:46:27.252 11333 11333 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:46:28.284 11333 11333 D AndroidRuntime: Shutting down VM
+11-16 08:46:29.144   624  1887 D CoreBackPreview: Window{19d4363 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@857a9b7, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+11-16 08:46:29.261   624  1887 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:31.496   624   678 V WindowManager:         {WCT{RemoteToken{9cdb939 Task{3678821 #23 type=standard A=10216:app.twill.perf}}} m=TO_BACK f=NONE leash=Surface(name=Task=23)/@0xd979e32 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 taskParent=-1},
+11-16 08:46:36.623 11052 11081 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-16 08:46:36.624 11052 11080 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-16 08:46:36.624 11052 11129 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-16 08:46:39.114 11052 11389 I TwillRelays: wss://nos.lol connection: Unable to resolve host "nos.lol": No address associated with hostname
+11-16 08:46:39.414 11052 11391 I TwillRelays: wss://relay.damus.io connection: Unable to resolve host "relay.damus.io": No address associated with hostname
+11-16 08:46:39.596 11052 11393 I TwillRelays: wss://relay.primal.net connection: Unable to resolve host "relay.primal.net": No address associated with hostname
+11-16 08:46:40.972   624  1703 I ActivityManager: Force stopping app.twill.perf appid=10216 user=0: from pid 11409
+11-16 08:46:40.973   624  1703 I ActivityManager: Killing 11052:app.twill.perf/u0a216 (adj 700): stop app.twill.perf due to from pid 11409
+11-16 08:46:40.980   624  1703 W ActivityTaskManager: Force removing ActivityRecord{203400840 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity t23 f}}: app died, no saved state
+11-16 08:46:40.980   624   750 W UsageStatsService: Unexpected activity event reported! (app.twill.perf/com.android.messaging.ui.MainActivity event : 23 instanceId : 152384582)
+11-16 08:46:40.982   624  1703 I AppsFilter: interaction: PackageSetting{74112c1 com.android.microdroid.empty_payload/10197} -> PackageSetting{daa5cd6 app.twill.perf/10216} BLOCKED
+11-16 08:46:40.983  1185  1185 D CarrierSvcBindHelper: onHandleForceStop: [app.twill.perf]
+11-16 08:46:40.983   624   960 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10216 package app.twill.perf isStopped true
+11-16 08:46:40.987   624  1152 V ActivityManager: Got obituary of 11052:app.twill.perf
+11-16 08:46:40.988   624   960 I AppWidgetServiceImpl: cancelBroadcastsLocked() for Provider{ProviderId{user:0, app:10216, cmp:ComponentInfo{app.twill.perf/com.android.messaging.widget.BugleWidgetProvider}}}
+11-16 08:46:40.988   624   960 I AppWidgetServiceImpl: cancelBroadcastsLocked() for Provider{ProviderId{user:0, app:10216, cmp:ComponentInfo{app.twill.perf/com.android.messaging.widget.WidgetConversationProvider}}}
+11-16 08:46:41.501  1308  1308 D AlphabeticIndexCompat: computeSectionName: cs: Twill sectionName: T
+11-16 08:46:41.823  1308  1308 D AlphabeticIndexCompat: computeSectionName: cs: Twill sectionName: T
+11-16 08:46:41.834  1308  1331 D b/267448330: provider: ComponentInfo{app.twill.perf/com.android.messaging.widget.WidgetConversationProvider}, paddedSizes: [266.2857x344.0, 266.2857x344.0, 465.5238x208.38095, 465.5238x208.38095], getMinMaxSizes: Rect(266, 208 - 465, 344)
+11-16 08:46:41.840  1308  1331 D b/267448330: provider: ComponentInfo{app.twill.perf/com.android.messaging.widget.WidgetConversationProvider}, paddedSizes: [266.2857x344.0, 266.2857x344.0, 465.5238x208.38095, 465.5238x208.38095], getMinMaxSizes: Rect(266, 208 - 465, 344)
+11-16 08:46:49.870   624  2053 I ActivityManager: Force stopping app.twill.perf appid=10216 user=0: from pid 11476
+11-16 08:46:49.871   624  2053 I AppsFilter: interaction: PackageSetting{74112c1 com.android.microdroid.empty_payload/10197} -> PackageSetting{daa5cd6 app.twill.perf/10216} BLOCKED
+11-16 08:46:49.873  1185  1185 D CarrierSvcBindHelper: onHandleForceStop: [app.twill.perf]
+11-16 08:46:49.875   624   960 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10216 package app.twill.perf isStopped true
+11-16 08:46:50.043   624  2053 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+11-16 08:46:50.044  1018  1070 V WindowManagerShell: Transition requested (#84): android.os.BinderProxy@eeef318 TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=25 effectiveUid=10216 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity } baseActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} topActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} origActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} realActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} numActivities=1 lastActiveTime=1426648 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@65f0171} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 136 - 0, 0) topActivityInfo=ActivityInfo{74a3b56 com.android.messaging.ui.conversationlist.ConversationListActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=Rect(276, 696 - 805, 1776) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 84 }
+11-16 08:46:50.141   624   688 I ActivityManager: Start proc 11485:app.twill.perf/u0a216 for next-top-activity {app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}
+11-16 08:46:50.157   624   661 I AppsFilter: interaction: PackageSetting{74112c1 com.android.microdroid.empty_payload/10197} -> PackageSetting{2dc66f6 app.twill.perf/10216} BLOCKED
+11-16 08:46:50.196 11485 11485 I app.twill.perf: Using CollectorTypeCMC GC.
+11-16 08:46:50.196 11485 11485 W app.twill.perf: Unexpected CPU variant for x86: x86_64.
+11-16 08:46:50.196 11485 11485 W app.twill.perf: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, alderlake, default
+11-16 08:46:50.210 11485 11485 E app.twill.perf: Not starting debugger since process cannot load the jdwp agent.
+11-16 08:46:50.273   624   960 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10216 package app.twill.perf isStopped false
+11-16 08:46:50.274   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:46:50.274   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:46:50.340 11485 11485 D nativeloader: Configuring clns-9 for other apk /data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk. target_sdk_version=37, uses_libraries=, library_path=/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/lib/x86_64:/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/app.twill.perf
+11-16 08:46:50.357   624   678 V WindowManager: Sent Transition (#84) createdAt=11-16 08:46:50.000 via request=TransitionRequestInfo { type = OPEN, triggerTask = TaskInfo{userId=0 taskId=25 effectiveUid=10216 displayId=0 isRunning=true baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity } baseActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} topActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} origActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} realActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} numActivities=1 lastActiveTime=1426648 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{f0ed900 Task{8cf659 #25 type=standard A=10216:app.twill.perf}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 136 - 0, 0) topActivityInfo=ActivityInfo{5709539 com.android.messaging.ui.conversationlist.ConversationListActivity} launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=false isVisible=false isVisibleRequested=false isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=false lastNonFullscreenBounds=Rect(276, 696 - 805, 1776) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= true isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 1080, 2400) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=inactive}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 84 }
+11-16 08:46:50.357   624   678 V WindowManager:         {WCT{RemoteToken{f0ed900 Task{8cf659 #25 type=standard A=10216:app.twill.perf}}} m=OPEN f=NONE leash=Surface(name=Task=25)/@0xfaa8fe7 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 taskParent=-1},
+11-16 08:46:50.369 11485 11485 I app.twill.perf: AssetManager2(0x71b9bd4ddaf8) locale list changing from [] to [en-US]
+11-16 08:46:50.404 11485 11485 V GraphicsEnvironment: app.twill.perf is not listed in per-application setting
+11-16 08:46:50.404 11485 11485 V GraphicsEnvironment: app.twill.perf is not listed in ANGLE allowlist or settings, returning default
+11-16 08:46:50.452 11485 11485 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:50.452   624  1100 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:50.465   624  1166 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:50.476   624  1166 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:50.496   624  1166 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:50.584 11485 11485 I app.twill.perf: AssetManager2(0x71b9bd4d6758) locale list changing from [] to [en-US]
+11-16 08:46:50.586 11485 11499 I app.twill.perf: AssetManager2(0x71b9bd4d57b8) locale list changing from [] to [en-US]
+11-16 08:46:50.682 11485 11509 D nativeloader: Load libtwill_deltachat.so using class loader ns clns-9 (caller=/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk): dlopen failed: library "libtwill_deltachat.so" not found
+11-16 08:46:50.685   624  1702 D CoreBackPreview: Window{ec6098c u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@b05d8d, mPriority=-1, mIsAnimationCallback=false, mOverrideBehavior=0}
+11-16 08:46:50.714 11485 11528 I TwillRelays: connecting
+11-16 08:46:50.729   624   661 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:50.789 11485 11512 I TwillRelays: wss://relay.damus.io connected
+11-16 08:46:50.962 11485 11512 D nativeloader: Load /data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk!/lib/x86_64/libsecp256k1-jni.so using class loader ns clns-9 (caller=/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk): ok
+11-16 08:46:50.963 11485 11512 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-16 08:46:50.990 11485 11512 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-16 08:46:51.219 11485 11513 I TwillRelays: wss://nos.lol connected
+11-16 08:46:51.237   624   678 I ActivityTaskManager: Displayed app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity for user 0: +1s241ms
+11-16 08:46:51.238   624  1702 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:51.381 11485 11514 I TwillRelays: wss://relay.primal.net connected
+11-16 08:46:51.479 11485 11501 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.BackgroundWorkerService#1001' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:51.479   624  1332 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.BackgroundWorkerService#1001' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:51.536  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1293 onStartInput(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-16 08:46:51.537   624  1332 W PackageConfigPersister: App-specific configuration not found for packageName: app.twill.perf and userId: 0
+11-16 08:46:51.555   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:46:51.561   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:46:51.693   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:46:51.694   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:46:51.901   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:46:51.996   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:46:52.002   624  2053 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:46:53.559 11562 11562 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:46:53.561 11562 11562 I AndroidRuntime: Using default boot image
+11-16 08:46:53.561 11562 11562 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:46:53.631 11562 11562 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:46:54.682 11562 11562 D AndroidRuntime: Shutting down VM
+11-16 08:46:55.567   624  2053 D CoreBackPreview: Window{ec6098c u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@16c401f, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+11-16 08:46:55.594 11485 11485 I ImeTracker: app.twill.perf:e0a6c61d: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false
+11-16 08:46:55.595  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1293 onStartInput(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=8001, inputTypeString=Normal[AutoCorrect], enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=2000003, privateImeOptions=null, actionName=SEARCH, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[mParcelledData.dataSize=404], hintText=null, hintLocales=[]}}, false)
+11-16 08:46:55.620   624  2053 D ContentCapturePerUserService: Notified activity assist data for activity: Token{ea321e ActivityRecord{243894944 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity t25}} without a session Id
+11-16 08:46:55.676 11485 11485 I ImeTracker: app.twill.perf:5c511525: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+11-16 08:46:55.676 11485 11485 I ImeTracker: app.twill.perf:5c511525: onCancelled at PHASE_CLIENT_REPORT_REQUESTED_VISIBLE_TYPES
+11-16 08:46:55.682   624  1702 W PackageConfigPersister: App-specific configuration not found for packageName: app.twill.perf and userId: 0
+11-16 08:46:55.683  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1293 onStartInput(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=8001, inputTypeString=Normal[AutoCorrect], enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=2000003, privateImeOptions=null, actionName=SEARCH, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[mParcelledData.dataSize=404], hintText=null, hintLocales=[]}}, true)
+11-16 08:46:55.693   624  1332 W PackageConfigPersister: App-specific configuration not found for packageName: app.twill.perf and userId: 0
+11-16 08:46:55.700  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInputView():1392 onStartInputView(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=8001, inputTypeString=Normal[AutoCorrect], enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=2000003, privateImeOptions=null, actionName=SEARCH, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[{android.support.text.emoji.emojiCompat_metadataVersion=11, androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true, android.support.text.emoji.emojiCompat_replaceAll=false}], hintText=null, hintLocales=[]}}, false)
+11-16 08:46:55.719  1527  1527 I AndroidIME: AbstractIme.onActivate():90 LatinIme.onActivate() : EditorInfo = EditorInfo{packageName=app.twill.perf, inputType=8001, inputTypeString=Normal[AutoCorrect], enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=2000003, privateImeOptions=null, actionName=SEARCH, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[{android.support.text.emoji.emojiCompat_metadataVersion=11, androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true, android.support.text.emoji.emojiCompat_replaceAll=false}], hintText=null, hintLocales=[]}, IncognitoMode = false, DeviceLocked = false
+11-16 08:46:55.835   624  1168 D CoreBackPreview: Window{ec6098c u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@f1af5d2, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+11-16 08:46:55.946   624  1168 I ImeTracker: app.twill.perf:e0a6c61d: onCancelled at PHASE_WM_POST_LAYOUT_NOTIFY_CONTROLS_CHANGED
+11-16 08:46:55.970 11485 11485 W InteractionJankMonitor: Initializing without READ_DEVICE_CONFIG permission. enabled=true, interval=1, missedFrameThreshold=3, frameTimeThreshold=64, package=app.twill.perf
+11-16 08:46:56.054 11485 11587 D ProfileInstaller: Skipping profile installation for app.twill.perf
+11-16 08:46:56.172 11485 11485 W FrameTracker: Missed App frame:JANK_APPLICATION, 68798, 122627916, CUJ=J<IME_INSETS_SHOW_ANIMATION::0@1@app.twill.perf>
+11-16 08:47:01.977 11600 11600 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:01.979 11600 11600 I AndroidRuntime: Using default boot image
+11-16 08:47:01.979 11600 11600 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:02.052 11600 11600 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:03.082 11600 11600 D AndroidRuntime: Shutting down VM
+11-16 08:47:04.144   624  1702 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:04.181   624   777 I ImeTracker: app.twill.perf:b753fd: onRequestShow at ORIGIN_SERVER reason ATTACH_NEW_INPUT fromUser false
+11-16 08:47:04.183  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1293 onStartInput(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=8001, inputTypeString=Normal[AutoCorrect], enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=2000003, privateImeOptions=null, actionName=SEARCH, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[mParcelledData.dataSize=404], hintText=null, hintLocales=[]}}, true)
+11-16 08:47:04.183 11485 11485 I ImeTracker: app.twill.perf:e4b49854: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT_BY_INSETS_API fromUser false
+11-16 08:47:04.183 11485 11485 I ImeTracker: app.twill.perf:e4b49854: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+11-16 08:47:04.230   624  1241 D ContentCapturePerUserService: Notified activity assist data for activity: Token{ea321e ActivityRecord{243894944 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity t25}} without a session Id
+11-16 08:47:04.288   624  2053 W PackageConfigPersister: App-specific configuration not found for packageName: app.twill.perf and userId: 0
+11-16 08:47:04.288  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInputView():1392 onStartInputView(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=8001, inputTypeString=Normal[AutoCorrect], enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=2000003, privateImeOptions=null, actionName=SEARCH, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[{android.support.text.emoji.emojiCompat_metadataVersion=11, androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true, android.support.text.emoji.emojiCompat_replaceAll=false}], hintText=null, hintLocales=[]}}, true)
+11-16 08:47:04.334 11485 11485 I ImeTracker: app.twill.perf:b9a71ee6: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+11-16 08:47:04.335 11485 11485 I ImeTracker: app.twill.perf:b9a71ee6: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+11-16 08:47:04.481  1527  1527 I AndroidIME: AbstractIme.onActivate():90 LatinIme.onActivate() : EditorInfo = EditorInfo{packageName=app.twill.perf, inputType=8001, inputTypeString=Normal[AutoCorrect], enableLearning=true, autoCorrection=true, autoComplete=true, imeOptions=2000003, privateImeOptions=null, actionName=SEARCH, actionLabel=null, initialSelStart=0, initialSelEnd=0, initialCapsMode=0, label=null, fieldId=-1, fieldName=null, extras=Bundle[{android.support.text.emoji.emojiCompat_metadataVersion=11, androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true, android.support.text.emoji.emojiCompat_replaceAll=false}], hintText=null, hintLocales=[]}, IncognitoMode = false, DeviceLocked = false
+11-16 08:47:09.201   624  1241 I ActivityManager: Force stopping app.twill.perf appid=10216 user=0: from pid 11632
+11-16 08:47:09.202   624  1241 I ActivityManager: Killing 11485:app.twill.perf/u0a216 (adj 0): stop app.twill.perf due to from pid 11632
+11-16 08:47:09.207   624  1241 W ActivityTaskManager: Force removing ActivityRecord{243894944 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity t25 f}}: app died, no saved state
+11-16 08:47:09.209  1018  1070 V WindowManagerShell: Transition requested (#85): android.os.BinderProxy@f5a3984 TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=25 effectiveUid=10216 displayId=0 isRunning=false baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity } baseActivity=null topActivity=null origActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} realActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} numActivities=0 lastActiveTime=1427097 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{android.window.IWindowContainerToken$Stub$Proxy@708e56d} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=true lastNonFullscreenBounds=Rect(276, 696 - 805, 1776) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= false isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 0, 0) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=undefined}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 85 }
+11-16 08:47:09.216   624   768 W InputDispatcher: channel 'ec6098c app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity' ~ Consumer closed input channel or an error occurred.  events=0x9
+11-16 08:47:09.216   624   768 E InputDispatcher: channel 'ec6098c app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity' ~ Channel is unrecoverably broken and will be disposed!
+11-16 08:47:09.216   624  1700 I WindowManager: WIN DEATH: Window{ec6098c u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}
+11-16 08:47:09.217   624  1152 I ImeTracker: app.twill.perf:689f53f1: onRequestHide at ORIGIN_SERVER reason HIDE_REMOVE_CLIENT fromUser false
+11-16 08:47:09.220   624  1241 I AppsFilter: interaction: PackageSetting{74112c1 com.android.microdroid.empty_payload/10197} -> PackageSetting{f244578 app.twill.perf/10216} BLOCKED
+11-16 08:47:09.221   624   660 V ActivityManager: Got obituary of 11485:app.twill.perf
+11-16 08:47:09.223   624   960 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10216 package app.twill.perf isStopped true
+11-16 08:47:09.223   624   960 I AppWidgetServiceImpl: cancelBroadcastsLocked() for Provider{ProviderId{user:0, app:10216, cmp:ComponentInfo{app.twill.perf/com.android.messaging.widget.BugleWidgetProvider}}}
+11-16 08:47:09.224   624   960 I AppWidgetServiceImpl: cancelBroadcastsLocked() for Provider{ProviderId{user:0, app:10216, cmp:ComponentInfo{app.twill.perf/com.android.messaging.widget.WidgetConversationProvider}}}
+11-16 08:47:09.235  1185  1185 D CarrierSvcBindHelper: onHandleForceStop: [app.twill.perf]
+11-16 08:47:09.252  1527  1527 I ImeTracker: app.twill.perf:689f53f1: onHidden
+11-16 08:47:09.399   624  1702 I ActivityTaskManager: Add Task{8cf659 #25 type=standard A=10216:app.twill.perf} to hidden list because adding Task{cc8f3f2 #26 type=standard A=10216:app.twill.perf}
+11-16 08:47:09.399   624  1702 I ActivityTaskManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} with LAUNCH_SINGLE_TOP from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+11-16 08:47:09.400   624   682 W ActivityTaskManager: Unable to send transaction to client proc app.twill.perf: no app thread
+11-16 08:47:09.431   624   688 I ActivityManager: Start proc 11641:app.twill.perf/u0a216 for next-top-activity {app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}
+11-16 08:47:09.465 11641 11641 I app.twill.perf: Using CollectorTypeCMC GC.
+11-16 08:47:09.468 11641 11641 W app.twill.perf: Unexpected CPU variant for x86: x86_64.
+11-16 08:47:09.468 11641 11641 W app.twill.perf: Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, goldmont-without-sha-xsaves, tremont, kabylake, alderlake, default
+11-16 08:47:09.491 11641 11641 E app.twill.perf: Not starting debugger since process cannot load the jdwp agent.
+11-16 08:47:09.496   624   660 I AppsFilter: interaction: PackageSetting{74112c1 com.android.microdroid.empty_payload/10197} -> PackageSetting{673a0ec app.twill.perf/10216} BLOCKED
+11-16 08:47:09.592   624   960 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10216 package app.twill.perf isStopped false
+11-16 08:47:09.598   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:47:09.601   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:47:09.644   624   682 W ActivityTaskManager: Unable to send transaction to client proc app.twill.perf: no app thread
+11-16 08:47:09.844 11641 11641 D nativeloader: Configuring clns-9 for other apk /data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk. target_sdk_version=37, uses_libraries=, library_path=/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/lib/x86_64:/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk!/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/app.twill.perf
+11-16 08:47:09.877 11641 11641 I app.twill.perf: AssetManager2(0x71b9bd4ddaf8) locale list changing from [] to [en-US]
+11-16 08:47:09.902 11641 11641 V GraphicsEnvironment: app.twill.perf is not listed in per-application setting
+11-16 08:47:09.902 11641 11641 V GraphicsEnvironment: app.twill.perf is not listed in ANGLE allowlist or settings, returning default
+11-16 08:47:09.966   624   682 W ActivityTaskManager: Unable to send transaction to client proc app.twill.perf: no app thread
+11-16 08:47:09.980 11641 11641 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:09.980   624  2072 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:10.168   624  1241 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:10.169   624   660 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:10.178 11641 11657 I app.twill.perf: AssetManager2(0x71b9bd4dedb8) locale list changing from [] to [en-US]
+11-16 08:47:10.216   624   678 V WindowManager: Sent Transition (#85) createdAt=11-16 08:47:09.208 via request=TransitionRequestInfo { type = CLOSE, triggerTask = TaskInfo{userId=0 taskId=25 effectiveUid=10216 displayId=0 isRunning=false baseIntent=Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=app.twill.perf cmp=app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity } baseActivity=null topActivity=null origActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity} realActivity=ComponentInfo{app.twill.perf/com.android.messaging.ui.MainActivity} numActivities=0 lastActiveTime=1427097 supportsMultiWindow=true resizeMode=1 isResizeable=true minWidth=-1 minHeight=-1 defaultMinSize=220 token=WCT{RemoteToken{f0ed900 Task{8cf659 #25 type=standard A=10216:app.twill.perf}}} topActivityType=1 pictureInPictureParams=null shouldDockBigOverlays=false launchIntoPipHostTaskId=-1 lastParentTaskIdBeforePip=-1 displayCutoutSafeInsets=Rect(0, 0 - 0, 0) topActivityInfo=null launchCookies=[] positionInParent=Point(0, 0) parentTaskId=-1 isFocused=true isVisible=true isVisibleRequested=true isTopActivityNoDisplay=false isSleeping=false locusId=null displayAreaFeatureId=1 isTopActivityTransparent=false isActivityStackTransparent=true lastNonFullscreenBounds=Rect(276, 696 - 805, 1776) capturedLink=null capturedLinkTimestamp=0 requestedVisibleTypes=-9 topActivityRequestOpenInBrowserEducationTimestamp=0 appCompatTaskInfo=AppCompatTaskInfo { topActivityInSizeCompat=false eligibleForLetterboxEducation= false isLetterboxEducationEnabled= false isLetterboxDoubleTapEnabled= false eligibleForUserAspectRatioButton= false topActivityBoundsLetterboxed= false isFromLetterboxDoubleTap= false topActivityLetterboxVerticalPosition= -1 topActivityLetterboxHorizontalPosition= -1 topActivityLetterboxWidth=-1 topActivityLetterboxHeight=-1 topActivityAppBounds=Rect(0, 0 - 0, 0) isUserFullscreenOverrideEnabled=false isSystemFullscreenOverrideEnabled=false hasMinAspectRatioOverride=false topActivityLetterboxBounds=null cameraCompatTaskInfo=CameraCompatTaskInfo { freeformCameraCompatMode=undefined}} topActivityMainWindowFrame=null}, pipChange = null, remoteTransition = null, displayChange = null, flags = 0, debugId = 85 }
+11-16 08:47:10.216   624   678 V WindowManager:         {WCT{RemoteToken{81a0850 Task{cc8f3f2 #26 type=standard A=10216:app.twill.perf}}} m=OPEN f=MOVE_TO_TOP leash=Surface(name=Task=26)/@0x55b1776 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 taskParent=-1},
+11-16 08:47:10.216   624   678 V WindowManager:         {WCT{RemoteToken{f0ed900 Task{8cf659 #25 type=standard A=10216:app.twill.perf}}} m=CLOSE f=NONE leash=Surface(name=Task=25)/@0xfaa8fe7 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 taskParent=-1}
+11-16 08:47:10.217 11641 11641 I app.twill.perf: AssetManager2(0x71b9bd4d0038) locale list changing from [] to [en-US]
+11-16 08:47:10.348   624  1168 W WindowManager: Exception thrown during dispatchAppVisibility Window{ec6098c u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity EXITING}
+11-16 08:47:10.535   624  1166 D CoreBackPreview: Window{a9714f1 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@94c61f3, mPriority=-1, mIsAnimationCallback=false, mOverrideBehavior=0}
+11-16 08:47:10.577   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:47:10.581 11641 11673 I TwillRelays: connecting
+11-16 08:47:10.585 11641 11675 D nativeloader: Load libtwill_deltachat.so using class loader ns clns-9 (caller=/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk): dlopen failed: library "libtwill_deltachat.so" not found
+11-16 08:47:10.587   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:47:10.604   624  1241 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:10.872 11641 11676 I TwillRelays: wss://relay.damus.io connected
+11-16 08:47:11.137 11641 11676 D nativeloader: Load /data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk!/lib/x86_64/libsecp256k1-jni.so using class loader ns clns-9 (caller=/data/app/~~gAu_-PJgYIvZBjB0mgd6ZQ==/app.twill.perf-fnHOpAzJcvsG1fg7pTwlhw==/base.apk): ok
+11-16 08:47:11.137 11641 11676 I TwillRelays: wss://relay.damus.io asked for sign-in: ERROR: auth-required: requested filter requires authentication
+11-16 08:47:11.175 11641 11677 I TwillRelays: wss://nos.lol connected
+11-16 08:47:11.233   624  1168 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:11.242   624   678 I ActivityTaskManager: Displayed app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity for user 0: +1s850ms
+11-16 08:47:11.305   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:47:11.319   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:47:11.379  1527  1527 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1293 onStartInput(EditorInfo{EditorInfo{packageName=app.twill.perf, inputType=0, inputTypeString=NULL, enableLearning=false, autoCorrection=false, autoComplete=false, imeOptions=0, privateImeOptions=null, actionName=UNSPECIFIED, actionLabel=null, initialSelStart=-1, initialSelEnd=-1, initialCapsMode=0, label=null, fieldId=0, fieldName=null, extras=null, hintText=null, hintLocales=[]}}, false)
+11-16 08:47:11.380   624   660 W PackageConfigPersister: App-specific configuration not found for packageName: app.twill.perf and userId: 0
+11-16 08:47:11.385 11641 11658 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.BackgroundWorkerService#1001' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:11.385   624  1168 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.BackgroundWorkerService#1001' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:11.438 11641 11678 I TwillRelays: wss://relay.primal.net connected
+11-16 08:47:11.440 11641 11676 I TwillRelays: wss://relay.damus.io sign-in failed: error: relay needs serviceUrl to be configured before AUTH can work
+11-16 08:47:11.447   624  1696 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:11.573   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 2
+11-16 08:47:11.574   624   960 D AppWidgetServiceImpl: Trying to notify widget update for package app.twill.perf with widget id: 3
+11-16 08:47:11.791   624  1696 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:13.329 11708 11708 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:13.332 11708 11708 I AndroidRuntime: Using default boot image
+11-16 08:47:13.332 11708 11708 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:13.405 11708 11708 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:14.185   624   777 I ImeTracker: app.twill.perf:b753fd: setFinished at PHASE_WM_GET_CONTROL_WITH_LEASH with STATUS_TIMEOUT
+11-16 08:47:14.462 11708 11708 D AndroidRuntime: Shutting down VM
+11-16 08:47:15.345   624  1168 D CoreBackPreview: Window{a9714f1 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@2523389, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+11-16 08:47:15.949 11641 11731 D ProfileInstaller: Skipping profile installation for app.twill.perf
+11-16 08:47:17.649 11739 11739 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:17.651 11739 11739 I AndroidRuntime: Using default boot image
+11-16 08:47:17.651 11739 11739 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:17.729 11739 11739 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:18.779 11739 11739 D AndroidRuntime: Shutting down VM
+11-16 08:47:21.961 11768 11768 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:21.964 11768 11768 I AndroidRuntime: Using default boot image
+11-16 08:47:21.964 11768 11768 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:22.041 11768 11768 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:23.079 11768 11768 D AndroidRuntime: Shutting down VM
+11-16 08:47:27.277 11802 11802 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:27.280 11802 11802 I AndroidRuntime: Using default boot image
+11-16 08:47:27.280 11802 11802 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:27.351 11802 11802 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:28.381 11802 11802 D AndroidRuntime: Shutting down VM
+11-16 08:47:33.578 11841 11841 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:33.581 11841 11841 I AndroidRuntime: Using default boot image
+11-16 08:47:33.581 11841 11841 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:33.651 11841 11841 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:34.671 11841 11841 D AndroidRuntime: Shutting down VM
+11-16 08:47:35.792 11641 11671 I TwillWallet: open: 3 relays, info=true
+11-16 08:47:35.796 11641 11671 I TwillWallet: call get_info: request 5071b4e3
+11-16 08:47:37.864 11641 11672 I TwillWallet: call get_balance: request c883210c
+11-16 08:47:38.868 11876 11876 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:38.871 11876 11876 I AndroidRuntime: Using default boot image
+11-16 08:47:38.871 11876 11876 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:38.940 11876 11876 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:39.966 11876 11876 D AndroidRuntime: Shutting down VM
+11-16 08:47:44.095   624  1332 D CoreBackPreview: Window{a9714f1 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@91a9657, mPriority=-1, mIsAnimationCallback=false, mOverrideBehavior=0}
+11-16 08:47:44.147   624  1332 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:45.175 11915 11915 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-16 08:47:45.178 11915 11915 I AndroidRuntime: Using default boot image
+11-16 08:47:45.178 11915 11915 I AndroidRuntime: Leaving lock profiling enabled
+11-16 08:47:45.249 11915 11915 D AndroidRuntime: Calling main entry com.android.commands.uiautomator.Launcher
+11-16 08:47:46.280 11915 11915 D AndroidRuntime: Shutting down VM
+11-16 08:47:47.145   624  2069 D CoreBackPreview: Window{a9714f1 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@41d2d99, mPriority=0, mIsAnimationCallback=true, mOverrideBehavior=0}
+11-16 08:47:47.261   624  2069 W JobInfo : Job 'app.twill.perf/com.android.messaging.datamodel.action.ActionServiceImpl#1000' has a deadline with no functional constraints. The deadline won't improve job execution latency. Consider removing the deadline.
+11-16 08:47:49.451   624   678 V WindowManager:         {WCT{RemoteToken{81a0850 Task{cc8f3f2 #26 type=standard A=10216:app.twill.perf}}} m=TO_BACK f=NONE leash=Surface(name=Task=26)/@0x55b1776 sb=Rect(0, 0 - 1080, 2400) eb=Rect(0, 0 - 1080, 2400) epz=Point(1080, 2400) d=0 taskParent=-1},
+11-16 08:47:54.533 11641 11676 I TwillRelays: wss://relay.damus.io connection: Software caused connection abort
+11-16 08:47:54.533 11641 11677 I TwillRelays: wss://nos.lol connection: Software caused connection abort
+11-16 08:47:54.534 11641 11678 I TwillRelays: wss://relay.primal.net connection: Software caused connection abort
+11-16 08:47:56.938 11641 11969 I TwillRelays: wss://nos.lol connection: Unable to resolve host "nos.lol": No address associated with hostname
+11-16 08:47:57.347 11641 11971 I TwillRelays: wss://relay.primal.net connection: Unable to resolve host "relay.primal.net": No address associated with hostname
+11-16 08:47:59.113   624   661 I ActivityManager: Force stopping app.twill.perf appid=10216 user=0: from pid 11987
+11-16 08:47:59.113   624   661 I ActivityManager: Killing 11641:app.twill.perf/u0a216 (adj 700): stop app.twill.perf due to from pid 11987
+11-16 08:47:59.114   624   661 W ActivityTaskManager: Force removing ActivityRecord{93391613 u0 app.twill.perf/com.android.messaging.ui.conversationlist.ConversationListActivity t26 f}}: app died, no saved state
+11-16 08:47:59.115   624   750 W UsageStatsService: Unexpected activity event reported! (app.twill.perf/com.android.messaging.ui.MainActivity event : 23 instanceId : 185584195)
+11-16 08:47:59.122   624   661 I AppsFilter: interaction: PackageSetting{74112c1 com.android.microdroid.empty_payload/10197} -> PackageSetting{7dea083 app.twill.perf/10216} BLOCKED
+11-16 08:47:59.133  1185  1185 D CarrierSvcBindHelper: onHandleForceStop: [app.twill.perf]
+11-16 08:47:59.149   624  1886 V ActivityManager: Got obituary of 11641:app.twill.perf
+11-16 08:47:59.159   624   960 I AppWidgetServiceImpl: Updating package stopped masked state for uid 10216 package app.twill.perf isStopped true
+11-16 08:47:59.159   624   960 I AppWidgetServiceImpl: cancelBroadcastsLocked() for Provider{ProviderId{user:0, app:10216, cmp:ComponentInfo{app.twill.perf/com.android.messaging.widget.BugleWidgetProvider}}}
+11-16 08:47:59.160   624   960 I AppWidgetServiceImpl: cancelBroadcastsLocked() for Provider{ProviderId{user:0, app:10216, cmp:ComponentInfo{app.twill.perf/com.android.messaging.widget.WidgetConversationProvider}}}

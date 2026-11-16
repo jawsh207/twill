@@ -1,0 +1,28 @@
+wallet info on wss://nos.lol ["OK","40695ef62e34fae8d51385e963cfd5c40c4b51db12ca947bb24258cf9ae130bc",true,""]
+wallet info on wss://relay.primal.net ["OK","40695ef62e34fae8d51385e963cfd5c40c4b51db12ca947bb24258cf9ae130bc",true,""]
+wallet info on wss://relay.damus.io ["OK","40695ef62e34fae8d51385e963cfd5c40c4b51db12ca947bb24258cf9ae130bc",true,""]
+wallet relay wss://relay.nostr.band failed: timed out during opening handshake
+wallet relay wss://relay.damus.io ['EOSE', 'nwc']
+wallet relay wss://nos.lol ['EOSE', 'nwc']
+wallet relay wss://relay.primal.net ['EOSE', 'nwc']
+wallet relay wss://relay.damus.io ['EVENT', 'nwc', {'content': 'AnUSvjdnqspbWGtKZsAZXd1RkZbtGQ1iMp2CHSeRdLX9F366orX+cA2coLlUTp82Bcs+Rp7iL2sp/26HcCD0kdW4BrZBUp39sIDyWc29uxUW+OSZLnaw+Q6oaNUfr3yWMC
+wallet request: get_info
+wallet relay wss://nos.lol ['EVENT', 'nwc', {'content': 'AnUSvjdnqspbWGtKZsAZXd1RkZbtGQ1iMp2CHSeRdLX9F366orX+cA2coLlUTp82Bcs+Rp7iL2sp/26HcCD0kdW4BrZBUp39sIDyWc29uxUW+OSZLnaw+Q6oaNUfr3yWMC
+wallet relay wss://relay.primal.net ['EVENT', 'nwc', {'content': 'AnUSvjdnqspbWGtKZsAZXd1RkZbtGQ1iMp2CHSeRdLX9F366orX+cA2coLlUTp82Bcs+Rp7iL2sp/26HcCD0kdW4BrZBUp39sIDyWc29uxUW+OSZLnaw+Q6oaNUfr3yWMC
+wallet relay wss://relay.damus.io ['OK', 'e7534573155121fcecdc944c6572df9f8ce7b159df0f45259989984fa9b271c3', True, '']
+wallet relay wss://nos.lol ['OK', 'e7534573155121fcecdc944c6572df9f8ce7b159df0f45259989984fa9b271c3', True, '']
+wallet relay wss://relay.primal.net ['OK', 'e7534573155121fcecdc944c6572df9f8ce7b159df0f45259989984fa9b271c3', True, '']
+wallet relay wss://relay.damus.io ['EVENT', 'nwc', {'content': 'ArjmT2ssmOv4ZOuRUXwEniBi7gBxrs/4XiLWvI/oCAjRQ9uGrNJixhiJDYEht90cNznsqr7Ya0kPww48lDj60SlndbfnSEEUIScSJ23urnIVgNAMATFdDo74gWSZp6MeEk
+wallet request: get_info
+wallet relay wss://relay.damus.io ['OK', 'f5501ce630f7622dd3a8095299a4d3f7e169d24e55d90d9427418794be1de87a', True, '']
+wallet relay wss://nos.lol ['EVENT', 'nwc', {'content': 'ArjmT2ssmOv4ZOuRUXwEniBi7gBxrs/4XiLWvI/oCAjRQ9uGrNJixhiJDYEht90cNznsqr7Ya0kPww48lDj60SlndbfnSEEUIScSJ23urnIVgNAMATFdDo74gWSZp6MeEk
+wallet relay wss://relay.primal.net ['EVENT', 'nwc', {'content': 'ArjmT2ssmOv4ZOuRUXwEniBi7gBxrs/4XiLWvI/oCAjRQ9uGrNJixhiJDYEht90cNznsqr7Ya0kPww48lDj60SlndbfnSEEUIScSJ23urnIVgNAMATFdDo74gWSZp6MeEk
+wallet relay wss://nos.lol ['OK', 'f5501ce630f7622dd3a8095299a4d3f7e169d24e55d90d9427418794be1de87a', True, '']
+wallet relay wss://relay.primal.net ['OK', 'f5501ce630f7622dd3a8095299a4d3f7e169d24e55d90d9427418794be1de87a', True, '']
+wallet relay wss://relay.damus.io ['EVENT', 'nwc', {'content': 'AszeX91reN22iARzSjUu1M2//s8Hx9JLtb89oC4zaceitx+lgp00sOxVfjAug8NgrLg+PqZxZdGQ0DbLg3+9eM3sALoZ609r91bJBPsSGyK/GCeJs6rWnEuDGhU/xs20UW
+wallet request: get_balance
+wallet relay wss://nos.lol ['EVENT', 'nwc', {'content': 'AszeX91reN22iARzSjUu1M2//s8Hx9JLtb89oC4zaceitx+lgp00sOxVfjAug8NgrLg+PqZxZdGQ0DbLg3+9eM3sALoZ609r91bJBPsSGyK/GCeJs6rWnEuDGhU/xs20UW
+wallet relay wss://relay.primal.net ['EVENT', 'nwc', {'content': 'AszeX91reN22iARzSjUu1M2//s8Hx9JLtb89oC4zaceitx+lgp00sOxVfjAug8NgrLg+PqZxZdGQ0DbLg3+9eM3sALoZ609r91bJBPsSGyK/GCeJs6rWnEuDGhU/xs20UW
+wallet relay wss://relay.damus.io ['OK', 'b77827f441c390ae01dc8ca91d0cd24475aed69e54f2b7e5def357bf9cbc872d', False, 'rate-limited: you are noting too much']
+wallet relay wss://nos.lol ['OK', 'b77827f441c390ae01dc8ca91d0cd24475aed69e54f2b7e5def357bf9cbc872d', True, '']
+wallet relay wss://relay.primal.net ['OK', 'b77827f441c390ae01dc8ca91d0cd24475aed69e54f2b7e5def357bf9cbc872d', True, '']
