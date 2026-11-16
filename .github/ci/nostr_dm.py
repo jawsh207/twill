@@ -156,7 +156,7 @@ def signed(priv, kind, content, tags, created_at=None):
     return ev
 
 
-def gift_wrap(sender, recipient_hex, text, kind=14, tags=()):
+def gift_wrap(sender, recipient_hex, text, kind=14, tags=(), expires=None):
     rumor = {
         "pubkey": xonly(sender).hex(),
         "created_at": int(time.time()),
@@ -167,11 +167,13 @@ def gift_wrap(sender, recipient_hex, text, kind=14, tags=()):
     rumor["id"] = event_id(rumor)
     gift_wrap.last_rumor_id = rumor["id"]
     past = lambda: int(time.time()) - secrets.randbelow(2 * 24 * 3600)  # noqa: E731
-    seal = signed(sender, 13, nip44_encrypt(json.dumps(rumor), sender, recipient_hex), [],
-                  past())
+    # NIP-17 disappearing messages: a NIP-40 expiration on the seal and the wrap.
+    expiration = [["expiration", str(expires)]] if expires else []
+    seal = signed(sender, 13, nip44_encrypt(json.dumps(rumor), sender, recipient_hex),
+                  expiration, past())
     wrapper = secrets.randbelow(N - 1) + 1
     return signed(wrapper, 1059, nip44_encrypt(json.dumps(seal), wrapper, recipient_hex),
-                  [["p", recipient_hex]], past())
+                  [["p", recipient_hex]] + expiration, past())
 
 
 async def publish(events):
@@ -354,9 +356,11 @@ def main():
         wallet = secrets.randbelow(N - 1) + 1
         client = secrets.randbelow(N - 1) + 1
         asyncio.run(run_wallet(wallet, client, int(sys.argv[4]), sys.argv[3]))
-    elif command in ("send", "reply", "react"):
+    elif command in ("send", "reply", "react", "expiring", "unsend"):
         # send: a message. reply: a message answering the first one sent (NIP-17 "e" tag).
         # react: an emoji on the first message sent (NIP-25 inside NIP-17, as Zino sends).
+        # expiring: a disappearing message, gone after argv[4] seconds (NIP-17 with NIP-40).
+        # unsend: deletes the last reply for everyone (a kind 5 inside a gift wrap, NIP-17).
         with open(keyfile) as f:
             keys = json.load(f)
         account, sender = int(keys["account"], 16), int(keys["sender"], 16)
@@ -368,6 +372,15 @@ def main():
             dm = gift_wrap(sender, recipient, text)
         elif command == "reply":
             dm = gift_wrap(sender, recipient, sys.argv[3], tags=[["e", first]])
+            keys["reply"] = gift_wrap.last_rumor_id
+            with open(keyfile, "w") as f:
+                json.dump(keys, f)
+        elif command == "expiring":
+            dm = gift_wrap(sender, recipient, sys.argv[3],
+                           expires=int(time.time()) + int(sys.argv[4]))
+        elif command == "unsend":
+            dm = gift_wrap(sender, recipient, "", kind=5,
+                           tags=[["e", keys["reply"]], ["k", "14"]])
         else:
             dm = gift_wrap(sender, recipient, sys.argv[3], kind=7,
                            tags=[["e", first], ["k", "14"]])

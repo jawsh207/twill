@@ -212,6 +212,47 @@ $UI tap "Send Message" || $UI dump "$OUT/nostr-reply-send.xml"
 sleep 10
 shot "nostr-11d-replied-reacted"
 
+# Disappearing messages and deletions (NIP-17): one from the sender that expires in 40 s,
+# then the sender deletes its reply for everyone.
+python3 .github/ci/nostr_dm.py expiring "$KEYS" "This message disappears" 40 >> "$OUT/log.txt" 2>&1
+sleep 8
+shot "nostr-11e-expiring"
+python3 .github/ci/nostr_dm.py unsend "$KEYS" >> "$OUT/log.txt" 2>&1
+sleep 8
+shot "nostr-11f-reply-unsent"
+# Twill deletes its own reply for everyone from the long-press menu.
+$UI longpress "1 works" || $UI dump "$OUT/nostr-own-longpress.xml"
+sleep 2
+$UI tap "Delete" || $UI dump "$OUT/nostr-delete-menu.xml"
+sleep 2
+shot "nostr-11g-delete-dialog"
+$UI tap "Delete for everyone" || $UI dump "$OUT/nostr-delete-dialog.xml"
+sleep 4
+shot "nostr-11h-deleted"
+# The chat menu's disappearing-messages timer.
+$UI tap "More options" || $UI dump "$OUT/nostr-menu-timer.xml"
+sleep 1
+$UI tap "Disappearing messages" || $UI dump "$OUT/nostr-menu-timer-open.xml"
+sleep 2
+shot "nostr-11i-timer-dialog"
+$UI tap "1 hour" || $UI dump "$OUT/nostr-timer-dialog.xml"
+sleep 2
+# Scheduling: long-press Send offers "Schedule message", as in SMS.
+$UI tap "Send message"
+adb shell input text "Later%smessage"
+sleep 1
+$UI longpress "Send Message" || $UI dump "$OUT/nostr-send-longpress.xml"
+sleep 2
+shot "nostr-11j-send-longpress"
+$UI tap "Schedule message" || $UI dump "$OUT/nostr-schedule-menu.xml"
+sleep 2
+shot "nostr-11k-schedule-dialog"
+back
+sleep 1
+# By now the 40-second message has gone.
+sleep 10
+shot "nostr-11l-expired"
+
 # Wallet (Nostr Wallet Connect) with a test wallet service: connect it, pay the invoice card,
 # then open the zap sheet (the test sender has no Lightning address, so that zap is refused).
 LINK=$(mktemp)
