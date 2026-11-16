@@ -98,11 +98,23 @@ internal data class TwillMessage(
     val isInfo: Boolean = false,
     /** The message this one answers, if any (it may not be loaded, or known, here). */
     val replyToId: String? = null,
+    /**
+     * How the answered message began, from the protocol, for when that message isn't loaded
+     * (Delta Chat sends this with every reply).
+     */
+    val quote: TwillQuote? = null,
     /** Emoji reactions, most used first. */
     val reactions: List<TwillReaction> = emptyList(),
 ) {
     enum class Status { Sending, Sent, Delivered, Read, Failed }
 }
+
+/** The start of a message being replied to, and who wrote it if known. */
+@Immutable
+internal data class TwillQuote(
+    val author: String?,
+    val text: String,
+)
 
 /** One emoji under a message: how many people sent it, and whether you're one of them. */
 @Immutable
@@ -311,6 +323,21 @@ internal interface TwillProtocol {
 
     /** Deletes [messageIds] of [chatId] from this device ("Delete" on a notification). */
     suspend fun deleteMessages(chatId: String, messageIds: List<String>) = Unit
+
+    /** Your own messages can be deleted for everyone in the chat, not only here. */
+    val canDeleteForEveryone: Boolean get() = false
+
+    /** Deletes your message [messageId] here and asks everyone else's apps to remove it. */
+    fun deleteForEveryone(chatId: String, messageId: String) = Unit
+
+    /** Chats can have disappearing messages. */
+    val canDisappear: Boolean get() = false
+
+    /** How long new messages in [chatId] last, in seconds; 0 when they don't disappear. */
+    fun disappearAfter(chatId: String): Flow<Long> = flowOf(0L)
+
+    /** Sets how long new messages in [chatId] last; 0 turns disappearing messages off. */
+    fun setDisappearAfter(chatId: String, seconds: Long) = Unit
 
     /**
      * Sends a reply typed in a notification, connecting for the moment if Twill isn't

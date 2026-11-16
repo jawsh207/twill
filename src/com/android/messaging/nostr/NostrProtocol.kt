@@ -184,6 +184,22 @@ internal class NostrProtocol @Inject constructor(
     override suspend fun deleteMessages(chatId: String, messageIds: List<String>) =
         withContext(Dispatchers.IO) { messageIds.forEach(store::deleteMessage) }
 
+    override val canDeleteForEveryone: Boolean get() = true
+
+    override fun deleteForEveryone(chatId: String, messageId: String) =
+        messenger.deleteForEveryone(chatKey = chatId, messageId = messageId)
+
+    /**
+     * NIP-17 disappearing messages. Nostr has no setting shared by the chat, so the timer only
+     * applies to what's sent from here; each message carries its own expiration.
+     */
+    override val canDisappear: Boolean get() = true
+
+    override fun disappearAfter(chatId: String): Flow<Long> = messenger.disappearAfter(chatId)
+
+    override fun setDisappearAfter(chatId: String, seconds: Long) =
+        messenger.setDisappearAfter(chatId, seconds)
+
     override fun sendFile(chatId: String, uri: Uri) = messenger.sendFile(
         chatKey = chatId,
         uri = uri

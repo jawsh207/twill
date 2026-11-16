@@ -2,8 +2,13 @@ package com.android.messaging.ui.twill.chat
 
 import android.content.Context
 import android.net.Uri
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.messaging.data.appsettings.model.AppBooleanPref
+import com.android.messaging.data.appsettings.repository.AppPreferenceReader
+import com.android.messaging.data.appsettings.repository.AppSettingsRepository
+import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.twill.TwillActionError
 import com.android.messaging.twill.TwillAppVisibility
 import com.android.messaging.twill.TwillChatDetails
@@ -18,16 +23,21 @@ import com.android.messaging.twill.TwillSearchHit
 import com.android.messaging.twill.TwillWallet
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** One chat of any Twill protocol. Call [bind] before use. */
@@ -38,7 +48,25 @@ internal class TwillChatViewModel @Inject constructor(
     private val runtime: TwillRuntime,
     private val visibility: TwillAppVisibility,
     private val wallet: TwillWallet,
+    // A held message is sent even if the chat is closed during the undo window, as in SMS.
+    @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
+    private val appSettings: AppSettingsRepository,
 ) : ViewModel() {
+
+    private val _linkPreviews = MutableStateFlow(TwillLinkPreviews())
+
+    /** SMS's link preview settings (both off by default), which Twill chats follow too. */
+    val linkPreviews: StateFlow<TwillLinkPreviews> = _linkPreviews.asStateFlow()
+
+    /** Re-reads the link preview settings, which may have changed while the chat was hidden. */
+    fun refreshSettings() {
+        viewModelScope.launch {
+            _linkPreviews.value = TwillLinkPreviews(
+                websites = appSettings.isWebLinkPreviewsEnabled(),
+                youTube = appSettings.isYouTubeLinkPreviewsEnabled(),
+            )
+        }
+    }
 
     val isWalletConnected: StateFlow<Boolean> = wallet.isConnected
     val paidInvoices: StateFlow<Set<String>> = wallet.paidInvoices
@@ -126,15 +154,6 @@ internal class TwillChatViewModel @Inject constructor(
         target.value?.let { block(it.protocol, it.chatId) }
     }
 
-    fun send(text: String, replyToId: String? = null) = withTarget { protocol, chatId ->
-        val trimmed = text.trim()
-        when {
-            trimmed.isEmpty() -> Unit
-            replyToId != null -> protocol.sendReply(chatId, trimmed, replyToId)
-            else -> protocol.send(chatId, trimmed)
-        }
-    }
-
     /** Whether long-pressing a message offers Reply and reactions in this chat. */
     val canReplyAndReact: Boolean
         get() = target.value?.protocol?.canReplyAndReact == true
@@ -152,8 +171,83 @@ internal class TwillChatViewModel @Inject constructor(
     val canSendVoice: Boolean
         get() = target.value?.protocol?.canSendVoice == true
 
-    fun sendVoice(file: java.io.File, text: String) = withTarget { protocol, chatId ->
-        protocol.sendVoice(chatId, file, text.trim())
+    /** A message held by "Delay sending" (Settings), with when the hold began. */
+    data class HeldSend(
+        val startedAtElapsedMillis: Long,
+        val durationMillis: Long,
+    )
+
+    private val _heldSend = MutableStateFlow<HeldSend?>(null)
+    val heldSend: StateFlow<HeldSend?> = _heldSend.asStateFlow()
+    private var heldJob: Job? = null
+
+    /**
+     * Sends [text] (answering [replyToId], or as [voice]'s caption), then calls [onSent]. With
+     * "Delay sending" on, it is held for a few seconds first, as SMS messages are; [undoSend]
+     * during that time cancels it and [onSent] isn't called, so the message stays in the box.
+     */
+    fun submit(text: String, replyToId: String?, voice: java.io.File?, onSent: () -> Unit) {
+        val current = target.value ?: return
+        val send = {
+            if (voice != null) {
+                current.protocol.sendVoice(current.chatId, voice, text.trim())
+            } else {
+                val trimmed = text.trim()
+                when {
+                    trimmed.isEmpty() -> Unit
+                    replyToId != null ->
+                        current.protocol.sendReply(current.chatId, trimmed, replyToId)
+                    else -> current.protocol.send(current.chatId, trimmed)
+                }
+            }
+            onSent()
+        }
+        if (!AppPreferenceReader.Default.isEnabled(AppBooleanPref.SEND_DELAY)) {
+            send()
+            return
+        }
+        heldJob?.cancel()
+        heldJob = appScope.launch(Dispatchers.Main) {
+            _heldSend.value = HeldSend(SystemClock.elapsedRealtime(), SEND_DELAY_MILLIS)
+            try {
+                delay(SEND_DELAY_MILLIS)
+            } finally {
+                _heldSend.value = null
+            }
+            send()
+        }
+    }
+
+    /** Deletes [message] from this phone only. */
+    fun deleteForMe(message: TwillMessage) = withTarget { protocol, chatId ->
+        viewModelScope.launch { protocol.deleteMessages(chatId, listOf(message.id)) }
+    }
+
+    /** Whether your own messages can be deleted for everyone in this chat. */
+    val canDeleteForEveryone: Boolean
+        get() = target.value?.protocol?.canDeleteForEveryone == true
+
+    fun deleteForEveryone(message: TwillMessage) = withTarget { protocol, chatId ->
+        protocol.deleteForEveryone(chatId, message.id)
+    }
+
+    /** Whether this chat can have disappearing messages. */
+    val canDisappear: Boolean
+        get() = target.value?.protocol?.canDisappear == true
+
+    /** How long new messages here last, in seconds (0: they don't disappear). */
+    val disappearAfter: StateFlow<Long> = target
+        .flatMapLatest { it?.protocol?.disappearAfter(it.chatId) ?: flowOf(0L) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(SUBSCRIBE_MILLIS), 0L)
+
+    fun setDisappearAfter(seconds: Long) = withTarget { protocol, chatId ->
+        protocol.setDisappearAfter(chatId, seconds)
+    }
+
+    /** Cancels a message held by "Delay sending". */
+    fun undoSend() {
+        heldJob?.takeIf { it.isActive }?.cancel()
+        heldJob = null
     }
 
     fun download(message: TwillMessage) = withTarget { protocol, _ -> protocol.download(message) }
@@ -188,3 +282,9 @@ internal class TwillChatViewModel @Inject constructor(
         const val PAGE_SIZE = 100
     }
 }
+
+/** How long "Delay sending" holds a message, the same as for SMS. */
+private const val SEND_DELAY_MILLIS = 3_000L
+
+/** How long the chat's flows keep running after the screen stops watching them. */
+private const val SUBSCRIBE_MILLIS = 5_000L

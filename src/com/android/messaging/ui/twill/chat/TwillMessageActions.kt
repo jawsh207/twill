@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.rounded.Reply
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.messaging.R
 import com.android.messaging.twill.TwillMessage
+import com.android.messaging.twill.TwillQuote
 import com.android.messaging.twill.TwillReaction
 import java.text.BreakIterator
 
@@ -75,6 +77,7 @@ internal fun TwillMessageActions(
     onMoreReactions: () -> Unit,
     onReply: () -> Unit,
     onCopy: (() -> Unit)?,
+    onDelete: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -114,6 +117,11 @@ internal fun TwillMessageActions(
                     onClick = it,
                 )
             }
+            ActionRow(
+                label = stringResource(R.string.twill_delete_message),
+                icon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
+                onClick = onDelete,
+            )
         }
     }
 }
@@ -208,6 +216,8 @@ internal fun TwillReplyQuote(
     message: TwillMessage?,
     senderName: String?,
     modifier: Modifier = Modifier,
+    /** What the protocol says was quoted, shown when [message] isn't loaded here. */
+    fallback: TwillQuote? = null,
     onClick: (() -> Unit)? = null,
     /** Long-pressing the quote acts on the message it sits in, like the rest of the bubble. */
     onLongClick: (() -> Unit)? = null,
@@ -238,7 +248,9 @@ internal fun TwillReplyQuote(
         Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)) {
             Text(
                 text = when {
-                    message == null -> stringResource(R.string.twill_earlier_message)
+                    message == null ->
+                        fallback?.author
+                            ?: stringResource(R.string.twill_earlier_message)
                     message.isOutgoing -> stringResource(R.string.twill_you)
                     else -> senderName ?: stringResource(R.string.twill_earlier_message)
                 },
@@ -248,12 +260,10 @@ internal fun TwillReplyQuote(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = if (message !=
-                    null
-                ) {
-                    quoteText(message)
-                } else {
-                    stringResource(R.string.twill_not_loaded)
+                text = when {
+                    message != null -> quoteText(message)
+                    fallback != null && fallback.text.isNotBlank() -> fallback.text
+                    else -> stringResource(R.string.twill_not_loaded)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurface,

@@ -13,6 +13,8 @@ import com.android.messaging.data.conversation.model.draft.ConversationDraft
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.domain.conversation.usecase.draft.SendConversationDraft
 import com.android.messaging.receiver.ScheduledMessageReceiver
+import com.android.messaging.twill.TwillScheduledTarget
+import com.android.messaging.twill.twillEntryPoint
 import com.android.messaging.util.LogUtil
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -111,6 +113,13 @@ internal class ScheduledMessageScheduler @Inject constructor(
         store.remove(message.id) ?: return
 
         try {
+            // Twill: Nostr and Delta Chat messages share this schedule; send those through
+            // their protocol, which connects for the moment if it has to.
+            TwillScheduledTarget.parse(message.conversationId)?.let { (protocol, chatId) ->
+                context.twillEntryPoint().twillProtocols()[protocol]
+                    .sendFromNotification(chatId, message.messageText)
+                return
+            }
             sendConversationDraft(
                 conversationId = message.conversationId,
                 draft = ConversationDraft(

@@ -19,6 +19,7 @@ import com.android.messaging.nostr.core.normalizeRelay
 import com.android.messaging.nostr.core.nowSeconds
 import com.android.messaging.nostr.core.secureRandom
 import com.android.messaging.nostr.core.sha256
+import com.android.messaging.nostr.core.value
 import com.android.messaging.nostr.core.values
 import com.android.messaging.nostr.net.Http
 import com.android.messaging.nostr.net.RelayPool
@@ -42,6 +43,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -120,6 +122,8 @@ internal class NostrMessenger @Inject constructor(
             if (isInstalled) return
             isInstalled = true
         }
+        // Disappearing messages that came due while Twill wasn't running.
+        appScope.launch(Dispatchers.IO) { store.deleteExpired() }
 
         appScope.launch {
             combine(
@@ -247,7 +251,7 @@ internal class NostrMessenger @Inject constructor(
                 ),
             )
             try {
-                deliver(rumor, members, signer)
+                deliver(rumor, members, signer, expiryFor(chatKey))
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -480,6 +484,47 @@ internal class NostrMessenger @Inject constructor(
         }.getOrNull()
     }
 
+    /**
+     * Deletes one of our messages for everyone (NIP-17): a kind 5 deletion, sealed and
+     * gift-wrapped to the chat like a message, asks the others' apps to remove it. It goes
+     * from this phone at once; apps that ignore deletions keep their copy.
+     */
+    fun deleteForEveryone(chatKey: String, messageId: String) {
+        appScope.launch(Dispatchers.IO) {
+            val signer = signerProvider.signer() ?: return@launch
+            val target = store.message(messageId)?.takeIf { it.isOutgoing } ?: return@launch
+            val members = NostrChatKey.members(chatKey)
+            val kind = if (target.attachment != null) Kind.FILE_DM else Kind.DM
+            val rumor = Draft(
+                pubkey = signer.pubkey,
+                createdAt = nowSeconds(),
+                kind = Kind.DELETION,
+                tags = members.map { listOf("p", it) } +
+                    listOf(listOf("e", messageId), listOf("k", kind.toString())),
+                content = "",
+            )
+            store.deleteMessage(messageId)
+            try {
+                deliver(rumor, members, signer)
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                LogUtil.w(TAG, "Could not send deletion: ${exception.javaClass.simpleName}")
+            }
+        }
+    }
+
+    /** How long new messages in [chatKey] last, in seconds; 0 when they don't disappear. */
+    fun disappearAfter(chatKey: String): Flow<Long> = store.disappearAfter(chatKey)
+
+    fun setDisappearAfter(chatKey: String, seconds: Long) {
+        appScope.launch(Dispatchers.IO) { store.setDisappearAfter(chatKey, seconds) }
+    }
+
+    /** When a message sent now in [chatKey] should disappear, or null if it shouldn't. */
+    private fun expiryFor(chatKey: String): Long? =
+        store.disappearAfterNow(chatKey).takeIf { it > 0 }?.let { nowSeconds() + it }
+
     private fun JSONObject.optCleanString(key: String): String? =
         (opt(key) as? String)?.trim()?.takeIf { it.isNotEmpty() && it != "null" }
 
@@ -505,6 +550,7 @@ internal class NostrMessenger @Inject constructor(
             content = text,
         )
 
+        val expiresAt = expiryFor(chatKey)
         store.insertMessage(
             NostrMessage(
                 id = rumor.id,
@@ -516,9 +562,11 @@ internal class NostrMessenger @Inject constructor(
                 isRead = true,
                 status = NostrMessage.Status.Sending,
                 replyTo = replyTo,
+                expiresAtSeconds = expiresAt,
             ),
         )
-        val delivered = deliver(rumor, members, signer)
+        if (expiresAt != null) store.deleteExpired()
+        val delivered = deliver(rumor, members, signer, expiresAt)
         if (delivered && subject != null) store.clearPendingGroupSubject(chatKey)
         store.updateStatus(
             id = rumor.id,
@@ -611,6 +659,7 @@ internal class NostrMessenger @Inject constructor(
         }
 
         val (url, encryptedHash, rumor) = result
+        val expiresAt = expiryFor(chatKey)
         // Swap the placeholder for the real message (same local file).
         store.insertMessage(
             NostrMessage(
@@ -626,11 +675,13 @@ internal class NostrMessenger @Inject constructor(
                     url = url,
                     encryptedHash = encryptedHash,
                 ),
+                expiresAtSeconds = expiresAt,
             ),
         )
         removePlaceholderKeepingFile(placeholderId)
+        if (expiresAt != null) store.deleteExpired()
 
-        val delivered = deliver(rumor, members, signer)
+        val delivered = deliver(rumor, members, signer, expiresAt)
         store.updateStatus(
             id = rumor.id,
             status = if (delivered) NostrMessage.Status.Sent else NostrMessage.Status.Failed,
@@ -647,13 +698,18 @@ internal class NostrMessenger @Inject constructor(
      * Seals [rumor] for each member and for ourselves (NIP-59), and publishes each gift wrap to
      * its recipient's DM relays. True if any other member's relays took it.
      */
-    private suspend fun deliver(rumor: Draft, members: List<String>, signer: Signer): Boolean {
+    private suspend fun deliver(
+        rumor: Draft,
+        members: List<String>,
+        signer: Signer,
+        expiresAt: Long? = null,
+    ): Boolean {
         val me = signer.pubkey
         val myRelays = normalizedRelays(accountStore.relays.value)
         val json = rumor.toJson()
         val others = members.filter { it != me }.distinct()
         val ownCopy = try {
-            wrapFor(json, me, signer)
+            wrapFor(json, me, signer, expiresAt)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: Exception) {
@@ -666,7 +722,7 @@ internal class NostrMessenger @Inject constructor(
         var deliveredToSomeone = false
         for (recipient in others) {
             val wrap = try {
-                wrapFor(json, recipient, signer)
+                wrapFor(json, recipient, signer, expiresAt)
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -682,11 +738,21 @@ internal class NostrMessenger @Inject constructor(
         return if (others.isEmpty()) ownResult.ok else deliveredToSomeone
     }
 
-    /** A NIP-59 gift wrap of [rumorJson] for [recipient]: sealed by us, wrapped by a throwaway key. */
-    private suspend fun wrapFor(rumorJson: String, recipient: String, signer: Signer): Event {
+    /**
+     * A NIP-59 gift wrap of [rumorJson] for [recipient]: sealed by us, wrapped by a throwaway
+     * key. A disappearing message ([expiresAt]) carries a NIP-40 expiration on the wrap and the
+     * seal, as NIP-17 describes, so relays and clients delete it then.
+     */
+    private suspend fun wrapFor(
+        rumorJson: String,
+        recipient: String,
+        signer: Signer,
+        expiresAt: Long? = null,
+    ): Event {
+        val expiration = listOfNotNull(expiresAt?.let { listOf("expiration", it.toString()) })
         val sealContent = signer.nip44Encrypt(rumorJson, recipient)
         val seal = signer.sign(
-            Draft(signer.pubkey, pastTime(), Kind.SEAL, emptyList(), sealContent),
+            Draft(signer.pubkey, pastTime(), Kind.SEAL, expiration, sealContent),
         )
         val ephemeral = Keys.generate()
         val wrapper = LocalSigner(ephemeral)
@@ -696,7 +762,7 @@ internal class NostrMessenger @Inject constructor(
                 wrapper.pubkey,
                 pastTime(),
                 Kind.GIFT_WRAP,
-                listOf(listOf("p", recipient)),
+                listOf(listOf("p", recipient)) + expiration,
                 content,
             ),
         )
@@ -830,7 +896,11 @@ internal class NostrMessenger @Inject constructor(
         }
 
         val seal = Event.parse(sealJson)
-            ?.takeIf { it.kind == Kind.SEAL && it.tags.isEmpty() && it.isValid() }
+            // A seal has no tags, except the NIP-40 expiration NIP-17 puts on disappearing ones.
+            ?.takeIf { seal ->
+                seal.kind == Kind.SEAL && seal.isValid() &&
+                    seal.tags.all { it.firstOrNull() == "expiration" }
+            }
         val rumor = seal?.let {
             try {
                 Event.parseRumor(signer.nip44Decrypt(it.content, it.pubkey))
@@ -844,7 +914,13 @@ internal class NostrMessenger @Inject constructor(
         store.markWrapSeen(wrap.id)
         store.setLastSyncSeconds(wrap.createdAt)
         if (rumor == null) return
-        if (rumor.kind != Kind.DM && rumor.kind != Kind.FILE_DM && rumor.kind != Kind.REACTION) {
+        val kinds = setOf(Kind.DM, Kind.FILE_DM, Kind.REACTION, Kind.DELETION)
+        if (rumor.kind !in kinds) return
+        // NIP-40 on the wrap (or seal): a disappearing message, already gone if it's past due.
+        val expiresAt = (wrap.tags.value("expiration") ?: seal?.tags?.value("expiration"))
+            ?.toLongOrNull()
+        if (expiresAt != null && expiresAt <= nowSeconds()) {
+            store.markWrapSeen(wrap.id)
             return
         }
 
@@ -853,6 +929,13 @@ internal class NostrMessenger @Inject constructor(
             participants = recipients + rumor.pubkey,
             me = me
         )
+        if (rumor.kind == Kind.DELETION) {
+            // NIP-17 deletion: only the author's own messages and reactions, in this chat.
+            val targets = rumor.tags.values("e").filter(Hex::isKey)
+            store.deleteFromSender(chatKey, targets, sender = rumor.pubkey)
+            store.markWrapSeen(wrap.id)
+            return
+        }
         if (rumor.kind == Kind.REACTION) {
             // NIP-17 carries NIP-25 reactions too: the last `e` tag is the message reacted to.
             val target = rumor.tags.lastOrNull { it.size >= 2 && it[0] == "e" && Hex.isKey(it[1]) }
@@ -902,10 +985,12 @@ internal class NostrMessenger @Inject constructor(
             isRead = isOutgoing && !(isFromOtherDevice && isNew),
             status = NostrMessage.Status.Sent,
             attachment = attachment,
+            expiresAtSeconds = expiresAt,
             replyTo = rumor.tags.firstOrNull { it.size >= 2 && it[0] == "e" && Hex.isKey(it[1]) }
                 ?.get(1),
         )
         if (store.insertMessage(message)) {
+            if (expiresAt != null) store.deleteExpired()
             if ((!isOutgoing || isFromOtherDevice) && isNew) notify(message)
             if (attachment != null && !isOutgoing && accountStore.autoDownloadMedia.value) {
                 download(message)

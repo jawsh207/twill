@@ -11,6 +11,7 @@ internal object Kind {
     const val NOTE = 1
     const val FOLLOWS = 3
     const val LEGACY_DM = 4
+    const val DELETION = 5
     const val REPOST = 6
     const val REACTION = 7
     const val SEAL = 13
