@@ -3,6 +3,7 @@ package com.android.messaging.ui.twill.chat
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.text.format.DateUtils
 import android.text.format.Formatter
@@ -97,6 +98,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.android.messaging.R
 import com.android.messaging.twill.TwillAttachment
@@ -114,6 +116,7 @@ import com.android.messaging.ui.conversation.composer.ui.DelayedSendUi
 import com.android.messaging.ui.conversation.composer.ui.LocalDelayedSendUi
 import com.android.messaging.ui.conversation.composer.ui.LocalSendLongPressActions
 import com.android.messaging.ui.conversation.composer.ui.SendLongPressAction
+import com.android.messaging.ui.conversation.messages.ui.link.WebLinkPreviewCard
 import com.android.messaging.ui.conversation.scheduled.ScheduleMessageDialog
 import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesListDialog
 import com.android.messaging.ui.conversation.scheduled.ScheduledMessagesTopBarAction
@@ -182,6 +185,11 @@ internal fun TwillChatScreen(
         viewModel.bind(protocol, chatId)
         viewModel.setActive(true, isInBubble)
         onDispose { viewModel.setActive(false, isInBubble) }
+    }
+    // Settings may have changed while away (link previews).
+    LifecycleResumeEffect(Unit) {
+        viewModel.refreshSettings()
+        onPauseOrDispose {}
     }
 
     // Near the oldest loaded message (the top, in this reversed list), load an older page.
@@ -269,7 +277,10 @@ internal fun TwillChatScreen(
         }
     }
 
+    val linkPreviews by viewModel.linkPreviews.collectAsStateWithLifecycle()
+
     CompositionLocalProvider(
+        LocalTwillLinkPreviews provides linkPreviews,
         LocalTwillSearch provides search.takeIf { it.isActive },
         LocalDelayedSendUi provides heldUi,
         LocalSendLongPressActions provides longPressActions,
@@ -785,6 +796,29 @@ private fun MessageBubble(
                                 top = if (text.isEmpty() && index == 0) 8.dp else 0.dp,
                                 bottom = 8.dp,
                             ),
+                        )
+                    }
+                    // As in SMS chats, only when turned on in Settings (they visit the site).
+                    val previews = LocalTwillLinkPreviews.current
+                    val previewUrl = remember(text, previews) {
+                        if (attachment == null && invoices.isEmpty()) {
+                            twillPreviewUrl(text, previews)
+                        } else {
+                            null
+                        }
+                    }
+                    if (previewUrl != null) {
+                        WebLinkPreviewCard(
+                            url = previewUrl,
+                            onOpen = { url ->
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                    )
+                                }
+                            },
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
                         )
                     }
                 }

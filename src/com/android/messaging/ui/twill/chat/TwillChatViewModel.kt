@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.android.messaging.data.appsettings.model.AppBooleanPref
 import com.android.messaging.data.appsettings.repository.AppPreferenceReader
+import com.android.messaging.data.appsettings.repository.AppSettingsRepository
 import com.android.messaging.di.core.ApplicationCoroutineScope
 import com.android.messaging.twill.TwillActionError
 import com.android.messaging.twill.TwillAppVisibility
@@ -49,7 +50,23 @@ internal class TwillChatViewModel @Inject constructor(
     private val wallet: TwillWallet,
     // A held message is sent even if the chat is closed during the undo window, as in SMS.
     @param:ApplicationCoroutineScope private val appScope: CoroutineScope,
+    private val appSettings: AppSettingsRepository,
 ) : ViewModel() {
+
+    private val _linkPreviews = MutableStateFlow(TwillLinkPreviews())
+
+    /** SMS's link preview settings (both off by default), which Twill chats follow too. */
+    val linkPreviews: StateFlow<TwillLinkPreviews> = _linkPreviews.asStateFlow()
+
+    /** Re-reads the link preview settings, which may have changed while the chat was hidden. */
+    fun refreshSettings() {
+        viewModelScope.launch {
+            _linkPreviews.value = TwillLinkPreviews(
+                websites = appSettings.isWebLinkPreviewsEnabled(),
+                youTube = appSettings.isYouTubeLinkPreviewsEnabled(),
+            )
+        }
+    }
 
     val isWalletConnected: StateFlow<Boolean> = wallet.isConnected
     val paidInvoices: StateFlow<Set<String>> = wallet.paidInvoices
