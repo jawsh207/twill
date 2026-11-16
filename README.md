@@ -37,6 +37,9 @@ Twill can send and receive end-to-end encrypted Nostr direct messages (NIP-17: N
 - **Message delivery:** only while Twill is open (default), check every 15 minutes, or always connected (permanent notification, instant messages).
 - **Notifications:** Twill asks for notification permission when you sign in (it isn't granted automatically unless Twill is your default SMS app). If it's off, Nostr Settings shows a row to turn it on. Notes to yourself sent from another client notify too.
 - **Your profile:** Nostr Settings shows your name, picture and NIP-05 as relays have them; tap refresh after changing your profile elsewhere.
+- **Replies and reactions:** long-press a message to reply or react; it works with Zino in both directions. Reactions travel inside gift wraps, so only the chat's members see them.
+- **Disappearing messages:** set a timer from the chat's ⋮ menu. Messages you send carry a NIP-40 expiration, so relays and apps that support it delete them on time. Nostr has no shared chat setting, so the timer only covers what you send.
+- **Delete for everyone:** long-press one of your messages, then Delete. Twill sends a NIP-17 deletion; apps that don't support it keep their copy.
 - **Relays:** Twill publishes your DM relay list (kind 10050) and sends to each contact's DM relays. Relays can't read messages but can see your IP address.
 
 
@@ -52,8 +55,13 @@ Twill can send and receive [Delta Chat](https://delta.chat) messages: end-to-end
 - **Contact requests:** a chat from someone new shows **Accept** and **Block** instead of the message box.
 - **Groups, photos and files** work like the other sections; sent messages show ✓ when delivered and ✓✓ when read (read receipts can be turned off).
 - **Message delivery:** the same three choices as Nostr. If both use "Always connected", they share one permanent notification.
+- **Replies, reactions, voice messages, disappearing messages and delete for everyone** work as in the official Delta Chat apps, through the core. The disappearing-messages timer belongs to the chat, so changing it changes it for everyone.
 - Delta Chat notifications have their own icon (a speech bubble with a Δ).
 - The core is built from source (pinned version) and runs inside Twill; when Delta Chat isn't needed (Twill closed, not "always connected") it's unloaded after a minute to free memory. Twill ships for 64-bit ARM phones only (every phone GrapheneOS supports).
+
+## In every chat
+
+Nostr and Delta Chat chats share SMS's message box and these SMS features: **scheduled messages** (long-press Send), **Delay sending** with undo (Settings), **website and YouTube link previews** (Settings › Privacy, off by default) and **bubbles** (⋮ › Bubble).
 
 ## How the protocols fit together
 

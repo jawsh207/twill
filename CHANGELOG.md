@@ -4,6 +4,17 @@ What's new in each Twill release. The Release workflow copies the section for th
 being released onto its GitHub release page, and refuses to release a version that has no
 section here. Write entries for people using the app, newest version first.
 
+## 1.3.0
+
+- Delta Chat replies and reactions: long-press a message, as in Nostr chats. They work with
+  the official Delta Chat apps.
+- Disappearing messages in Nostr and Delta Chat chats (⋮ › Disappearing messages). In Delta
+  Chat the timer is shared with everyone in the chat; in Nostr it covers what you send.
+- Delete a message from the long-press menu, for you or, for your own messages, for everyone.
+- Nostr and Delta Chat chats can schedule messages (long-press Send) and use Delay sending
+  with undo, like SMS.
+- Link previews in Nostr and Delta Chat chats, when turned on in Settings (off by default).
+
 ## 1.2.0
 
 - Nostr and Delta Chat chats use the same message box as SMS: the ⊕ menu (Gallery and File)
